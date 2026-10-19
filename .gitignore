@@ -1,0 +1,10 @@
+# Estado de la ventana de Obsidian (cambia constantemente)
+.obsidian/workspace.json
+
+# Entornos virtuales y cachés de Python
+.venv/
+venv/
+__pycache__/
+
+# Secretos y variables de entorno
+.env
