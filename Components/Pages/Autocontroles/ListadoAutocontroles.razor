@@ -1,0 +1,91 @@
+@page "/autocontroles"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject ServicioAutocontroles ServicioAutocontroles
+
+<PageTitle>Autocontroles · Visual Inspector</PageTitle>
+
+@* Listado de los autocontroles realizados, del más reciente al más antiguo *@
+<div class="d-flex align-items-center justify-content-between">
+    <h1>Autocontroles</h1>
+    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
+        <a href="autocontroles/nuevo" class="btn btn-primary">Nuevo autocontrol</a>
+    </AuthorizeView>
+</div>
+
+<div class="d-flex gap-2 align-items-end my-3" style="max-width: 32rem">
+    <div class="flex-grow-1">
+        <label class="form-label" for="filtro">Buscar por orden de fabricación</label>
+        <input id="filtro" class="form-control" inputmode="numeric" maxlength="10"
+               placeholder="Todo o parte del número" @bind="filtroOrden" @bind:event="oninput"
+               @onkeydown="AlPulsarTeclaAsync" />
+    </div>
+    <button class="btn btn-primary" @onclick="BuscarAsync">Buscar</button>
+</div>
+
+@if (filas is null)
+{
+    <p>Cargando…</p>
+}
+else if (filas.Count == 0)
+{
+    <p>No hay autocontroles@(string.IsNullOrEmpty(filtroOrden) ? "" : " para esa orden").</p>
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Orden de fabricación</th>
+                <th>Fecha y hora</th>
+                <th>Tipo</th>
+                <th>Estado</th>
+                <th>Realizado por</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in filas)
+            {
+                <tr>
+                    <td><a href="@($"autocontroles/{a.Id}")">@a.CodigoOrden</a></td>
+                    <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@ServicioAutocontroles.NombreTipo(a.HorasDesdeInicio)</td>
+                    <td>@ServicioAutocontroles.NombreEstado(a.Estado)</td>
+                    <td>@a.CreadoPor</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="small text-secondary">Se muestran como máximo los 200 más recientes. Usa la búsqueda para encontrar los anteriores.</p>
+}
+
+@code {
+    private List<FilaAutocontrol>? filas;
+    private string filtroOrden = "";
+
+    /// <summary>
+    /// Carga los últimos autocontroles al abrir la pantalla.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await BuscarAsync();
+    }
+
+    /// <summary>
+    /// Vuelve a cargar la lista con el filtro escrito.
+    /// </summary>
+    private async Task BuscarAsync()
+    {
+        filas = await ServicioAutocontroles.ListarAsync(filtroOrden);
+    }
+
+    /// <summary>
+    /// Pulsar Intro en la búsqueda es lo mismo que pulsar el botón Buscar.
+    /// </summary>
+    private async Task AlPulsarTeclaAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BuscarAsync();
+        }
+    }
+}

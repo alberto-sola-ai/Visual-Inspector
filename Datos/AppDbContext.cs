@@ -18,6 +18,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
     public const string Ordenacion_wys = "utf8mb4_uca1400_spanish_ai_ci";
 
     public DbSet<Parametro> Parametros => Set<Parametro>();
+    public DbSet<OrdenFabricacion> OrdenesFabricacion => Set<OrdenFabricacion>();
+    public DbSet<Autocontrol> Autocontroles => Set<Autocontrol>();
 
     /// <summary>
     /// Dibuja el plano de las tablas: nombres, longitudes y qué valores no se pueden repetir.
@@ -47,6 +49,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             parametro.Property(p => p.Tipo).HasConversion<string>().HasMaxLength(20);
             parametro.Property(p => p.CreadoPor).HasMaxLength(256);
             parametro.Property(p => p.ModificadoPor).HasMaxLength(256);
+        });
+
+        builder.Entity<OrdenFabricacion>(orden =>
+        {
+            orden.ToTable("OrdenesFabricacion");
+            orden.HasIndex(o => o.Codigo).IsUnique();
+            orden.Property(o => o.Codigo).HasMaxLength(10);
+            orden.Property(o => o.Descripcion).HasMaxLength(200);
+            orden.Property(o => o.CreadoPor).HasMaxLength(256);
+            orden.Property(o => o.ModificadoPor).HasMaxLength(256);
+        });
+
+        builder.Entity<Autocontrol>(autocontrol =>
+        {
+            autocontrol.ToTable("Autocontroles");
+            // Una orden no puede tener dos controles de la misma hora (dos "Inicial" o dos "+4 h")
+            autocontrol.HasIndex(a => new { a.OrdenFabricacionId, a.HorasDesdeInicio }).IsUnique();
+            autocontrol.HasIndex(a => a.FechaControl);
+            // Restrict: no se puede borrar una orden que tenga autocontroles (son registro de fabricación)
+            autocontrol.HasOne(a => a.OrdenFabricacion)
+                .WithMany(o => o.Autocontroles)
+                .HasForeignKey(a => a.OrdenFabricacionId)
+                .OnDelete(DeleteBehavior.Restrict);
+            autocontrol.Property(a => a.Estado).HasConversion<string>().HasMaxLength(30);
+            autocontrol.Property(a => a.Observaciones).HasMaxLength(500);
+            autocontrol.Property(a => a.CreadoPor).HasMaxLength(256);
+            autocontrol.Property(a => a.ModificadoPor).HasMaxLength(256);
         });
     }
 

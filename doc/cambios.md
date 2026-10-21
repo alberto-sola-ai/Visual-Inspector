@@ -1,5 +1,16 @@
 # Registro de cambios
 
+## 0.2.1 — 2026-10-21
+- Nuevo autocontrol: quitado el número de ejemplo del campo de la orden (parecía una orden ya
+  escrita). Debajo del campo se explica el formato: exactamente 10 cifras, solo números.
+
+## 0.2.0 — 2026-10-21
+- Añadidas las órdenes de fabricación (10 cifras, por ejemplo 1000063961) y los autocontroles.
+- Pantallas: listado de autocontroles con búsqueda por orden, nuevo autocontrol y ficha.
+- El tipo de control se calcula solo (Inicial, +4 h, +8 h…) y la fecha y hora las pone el
+  servidor. Una orden no puede tener dos controles del mismo tipo.
+- Inicio con accesos directos a "Nuevo autocontrol" y "Autocontroles realizados".
+
 ## 0.1.1 — 2026-10-21
 - Corregido: los botones de las pantallas interactivas (por ejemplo "Guardar permisos") no hacían
   nada. La imagen de Docker no incluía el programa de Blazor (`_framework/blazor.web.js`) porque el

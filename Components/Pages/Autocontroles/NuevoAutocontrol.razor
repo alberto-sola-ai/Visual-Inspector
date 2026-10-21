@@ -1,0 +1,89 @@
+@page "/autocontroles/nuevo"
+@attribute [Authorize(Policy = Permisos.AutocontrolesRealizar_wys)]
+@inject ServicioAutocontroles ServicioAutocontroles
+@inject NavigationManager Navegacion
+
+<PageTitle>Nuevo autocontrol · Visual Inspector</PageTitle>
+
+@* Primer paso de un autocontrol: indicar la orden de fabricación. La fecha y hora y el tipo
+   (Inicial, +4 h…) los pone la aplicación *@
+<h1>Nuevo autocontrol</h1>
+<p><a href="autocontroles">Autocontroles</a> › Nuevo</p>
+
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger" role="alert">@error</div>
+}
+
+<div class="row">
+    <div class="col-6">
+        <div class="mb-3">
+            <label class="form-label" for="orden">Orden de fabricación</label>
+            <input id="orden" class="form-control form-control-lg" maxlength="10" inputmode="numeric"
+                   autocomplete="off"
+                   value="@codigoOrden" @oninput="CambiarOrdenAsync" />
+            @* Sin ejemplo dentro del campo: un número de ejemplo parece una orden ya escrita *@
+            <div class="form-text">Exactamente 10 cifras, solo números. Si la orden aún no existe, se crea en este momento.</div>
+        </div>
+
+        @if (tipoPrevisto is not null)
+        {
+            <p>
+                Será el autocontrol <span class="wys-etiqueta">@tipoPrevisto</span> de esta orden,
+                con fecha y hora de ahora.
+            </p>
+        }
+
+        <div class="mb-3">
+            <label class="form-label" for="observaciones">Observaciones (opcional)</label>
+            <textarea id="observaciones" class="form-control" rows="3"
+                      maxlength="@ServicioAutocontroles.LongitudMaximaObservaciones_wys"
+                      @bind="observaciones"></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-lg" @onclick="CrearAsync" disabled="@(estaOcupado || tipoPrevisto is null)">
+            Crear autocontrol
+        </button>
+        <a href="autocontroles" class="btn btn-link">Cancelar</a>
+    </div>
+</div>
+
+@code {
+    private string codigoOrden = "";
+    private string? observaciones;
+    private string? tipoPrevisto;
+    private string? error;
+    private bool estaOcupado;
+
+    /// <summary>
+    /// Cada vez que se escribe en la orden, deja solo las cifras y, cuando hay 10, enseña qué
+    /// tipo de control será (Inicial, +4 h…).
+    /// </summary>
+    private async Task CambiarOrdenAsync(ChangeEventArgs e)
+    {
+        codigoOrden = new string((e.Value?.ToString() ?? "").Where(char.IsAsciiDigit).Take(10).ToArray());
+        tipoPrevisto = codigoOrden.Length == 10
+            ? await ServicioAutocontroles.PrevisualizarTipoAsync(codigoOrden)
+            : null;
+    }
+
+    /// <summary>
+    /// Crea el autocontrol y abre su ficha. El botón se bloquea mientras tanto para que un
+    /// doble clic no cree dos.
+    /// </summary>
+    private async Task CrearAsync()
+    {
+        estaOcupado = true;
+        error = null;
+
+        var resultado = await ServicioAutocontroles.CrearAsync(codigoOrden, observaciones);
+        if (resultado.Id is not null)
+        {
+            Navegacion.NavigateTo($"autocontroles/{resultado.Id}");
+            return;
+        }
+
+        error = resultado.Error;
+        estaOcupado = false;
+    }
+}

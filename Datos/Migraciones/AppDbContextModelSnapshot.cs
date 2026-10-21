@@ -156,6 +156,100 @@ namespace VisualInspector.Datos.Migraciones
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("VisualInspector.Datos.Autocontrol", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreadoPor")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<DateTime>("FechaControl")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaModificacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("HorasDesdeInicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ModificadoPor")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<int>("OrdenFabricacionId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FechaControl");
+
+                    b.HasIndex("OrdenFabricacionId", "HorasDesdeInicio")
+                        .IsUnique();
+
+                    b.ToTable("Autocontroles", (string)null);
+                });
+
+            modelBuilder.Entity("VisualInspector.Datos.OrdenFabricacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Activa")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
+
+                    b.Property<string>("CreadoPor")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaModificacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModificadoPor")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique();
+
+                    b.ToTable("OrdenesFabricacion", (string)null);
+                });
+
             modelBuilder.Entity("VisualInspector.Datos.Parametro", b =>
                 {
                     b.Property<int>("Id")
@@ -356,6 +450,22 @@ namespace VisualInspector.Datos.Migraciones
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("VisualInspector.Datos.Autocontrol", b =>
+                {
+                    b.HasOne("VisualInspector.Datos.OrdenFabricacion", "OrdenFabricacion")
+                        .WithMany("Autocontroles")
+                        .HasForeignKey("OrdenFabricacionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OrdenFabricacion");
+                });
+
+            modelBuilder.Entity("VisualInspector.Datos.OrdenFabricacion", b =>
+                {
+                    b.Navigation("Autocontroles");
                 });
 #pragma warning restore 612, 618
         }

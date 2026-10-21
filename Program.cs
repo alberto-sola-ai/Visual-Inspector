@@ -132,6 +132,7 @@ builder.Services.AddScoped<ServicioAutorizacion>();
 builder.Services.AddScoped<ServicioParametros>();
 builder.Services.AddScoped<ServicioUsuarios>();
 builder.Services.AddScoped<ServicioVersiones>();
+builder.Services.AddScoped<ServicioAutocontroles>();
 
 // Si la red de WYS publica la aplicación a través de un proxy, esto permite conocer la IP real
 // del usuario para el diario de seguridad. Desactivado salvo que se active en la configuración.

@@ -1,6 +1,6 @@
 # Arquitectura de Visual Inspector
 
-Última actualización: 21/10/2026 · Versión 0.1.0
+Última actualización: 21/10/2026 · Versión 0.2.0
 
 ## Resumen
 
@@ -36,7 +36,7 @@ directamente: siempre pasan por un servicio, que es quien comprueba los permisos
  │              cabeceras, comprobación de permisos             │
  ├─────────────────────────────────────────────────────────────┤
  │ Servicios/   Lógica de negocio (usuarios, parámetros,        │
- │              versiones; próximamente autocontroles y visión) │
+ │              versiones, autocontroles; próximamente visión)  │
  ├─────────────────────────────────────────────────────────────┤
  │ Datos/       AppDbContext, entidades, trazabilidad,          │
  │              migraciones, inicialización                     │
@@ -80,6 +80,8 @@ Detalle completo en [seguridad.md](seguridad.md).
 | `AspNetRoles`, `AspNetUserRoles` | Roles `Administrador` y `Usuario` |
 | `AspNetUserClaims` | Permisos concedidos (tipo `permiso`) |
 | `Parametros` | Ajustes de la aplicación (`MfaActivo`, `IaActiva`…) |
+| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción y si está activa |
+| `Autocontroles` | Orden, fecha y hora (las pone el servidor), `HorasDesdeInicio` (0 = Inicial, 4, 8…), estado y observaciones. Índice único orden + horas: una orden no puede tener dos controles del mismo tipo |
 
 Todas las tablas propias guardan quién y cuándo creó y modificó cada registro (`CreadoPor`,
 `FechaCreacion`, `ModificadoPor`, `FechaModificacion`), en hora de Madrid. Juego de caracteres
@@ -91,8 +93,7 @@ Según [master/02-definicion-mvp.md](master/02-definicion-mvp.md):
 
 | Tabla | Contenido |
 |---|---|
-| `OrdenesFabricacion` | Código de la orden (OF-XXXXXX) y datos básicos |
-| `Autocontroles` | Orden, tipo (Inicial, +4 h…), fecha y hora, patrón usado y su versión, resultado global |
+| `Autocontroles` (ampliación) | Patrón usado y su versión, resultado global |
 | `ArchivosAutocontrol` | Patrón PDF y las dos muestras: ruta en el volumen de archivos, nombre original, tamaño y huella SHA-256 (para demostrar que no se han cambiado) |
 | `ResultadosComparacion` | Una fila por comparación (patrón ↔ muestra 1, patrón ↔ muestra 2, muestra 1 ↔ muestra 2): similitud, número de diferencias e imagen del mapa de diferencias |
 
@@ -132,8 +133,8 @@ rechazo.
 
 En el orden del principio de desarrollo del MVP (cada paso, solo cuando el anterior funcione):
 
-1. Probar el esqueleto con Docker Desktop (pendiente de instalar).
-2. Tablas `OrdenesFabricacion` y `Autocontroles` y pantalla para iniciar un autocontrol.
+1. ~~Probar el esqueleto con Docker Desktop.~~ Hecho (0.1.1).
+2. ~~Tablas `OrdenesFabricacion` y `Autocontroles` y pantalla para iniciar un autocontrol.~~ Hecho (0.2.0).
 3. Carga del patrón PDF y de las dos muestras, con su huella, y visualización de los tres.
 4. Conversión del PDF a imagen.
 5. Preparación y alineación de las muestras.

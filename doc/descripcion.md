@@ -23,8 +23,9 @@ y [master/02-definicion-mvp.md](master/02-definicion-mvp.md).
 
 - Usuarios de la aplicación (usuario, nombre completo, rol, permisos, último acceso).
 - Parámetros de la aplicación.
-- Próximamente: órdenes de fabricación, autocontroles, patrones PDF, imágenes de las muestras y
-  resultados de las comparaciones.
+- Órdenes de fabricación (código de 10 cifras) y sus autocontroles (fecha y hora, tipo:
+  Inicial, +4 h, +8 h…, estado y observaciones).
+- Próximamente: patrones PDF, imágenes de las muestras y resultados de las comparaciones.
 
 No contiene datos personales más allá del nombre de los usuarios.
 
@@ -42,9 +43,9 @@ Al principio nadie puede hacer nada, salvo el administrador (denegación por def
 | `Autocontroles.Ver` | Ver la aplicación y consultar los autocontroles realizados |
 | `Autocontroles.Realizar` | Hacer un autocontrol nuevo (cargar patrón y muestras y comparar) |
 
-## Estado actual (versión 0.1.0)
+## Estado actual (versión 0.2.0)
 
-Está hecho el esqueleto según las normas WYS: entrada con usuario y contraseña, permisos,
-Administración (usuarios, permisos, parámetros y versiones), registros en `log/`, identidad
-visual y Docker. La comparación de imágenes es el siguiente paso (ver
-[arquitectura.md](arquitectura.md)).
+Está hecho el esqueleto según las normas WYS (entrada con usuario y contraseña, permisos,
+Administración, registros en `log/`, identidad visual y Docker) y el primer paso del MVP: crear
+y consultar autocontroles de cada orden de fabricación. El siguiente paso es cargar el patrón y
+las muestras (ver [arquitectura.md](arquitectura.md)).

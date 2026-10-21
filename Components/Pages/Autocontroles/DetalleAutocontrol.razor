@@ -1,0 +1,81 @@
+@page "/autocontroles/{Id:int}"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject ServicioAutocontroles ServicioAutocontroles
+
+<PageTitle>Autocontrol · Visual Inspector</PageTitle>
+
+@* Ficha de un autocontrol. De momento solo los datos; en los siguientes pasos se añadirán
+   el patrón, las muestras y las comparaciones *@
+<h1>Autocontrol</h1>
+<p><a href="autocontroles">Autocontroles</a> › @ficha?.CodigoOrden</p>
+
+@if (noExiste)
+{
+    <p>Este autocontrol no existe.</p>
+}
+else if (ficha is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <div class="wys-caja wys-caja--azul d-flex gap-5 align-items-center">
+        <div>
+            <div class="small text-uppercase">Orden de fabricación</div>
+            <div class="h3 text-white mb-0">@ficha.CodigoOrden</div>
+        </div>
+        <div>
+            <div class="small text-uppercase">Tipo</div>
+            <div class="h3 text-white mb-0">@ServicioAutocontroles.NombreTipo(ficha.HorasDesdeInicio)</div>
+        </div>
+        <div>
+            <div class="small text-uppercase">Fecha y hora</div>
+            <div class="h3 text-white mb-0">@ficha.FechaControl.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+        <div>
+            <div class="small text-uppercase">Estado</div>
+            <span class="wys-etiqueta">@ServicioAutocontroles.NombreEstado(ficha.Estado)</span>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ficha.Observaciones))
+    {
+        <h2 class="h5 mt-4">Observaciones</h2>
+        @* El texto se muestra escapado (Blazor lo hace solo con @): nunca como HTML *@
+        <p style="white-space: pre-line">@ficha.Observaciones</p>
+    }
+
+    <div class="alert alert-secondary mt-4 d-flex gap-3 align-items-center">
+        <img src="recursos/iconos/color/notas.png" class="wys-icono" alt="" />
+        <span>
+            <strong>Siguiente paso:</strong> cargar el patrón PDF y las dos muestras escaneadas
+            (disponible en una próxima versión).
+        </span>
+    </div>
+
+    @* Quién y cuándo creó o modificó este autocontrol *@
+    <p class="wys-trazabilidad">
+        Creado por @ficha.CreadoPor el @ficha.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+        @if (ficha.ModificadoPor is not null)
+        {
+            <span> · Modificado por @ficha.ModificadoPor el @ficha.FechaModificacion?.ToString("dd/MM/yyyy HH:mm")</span>
+        }
+    </p>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private FichaAutocontrol? ficha;
+    private bool noExiste;
+
+    /// <summary>
+    /// Carga la ficha del autocontrol indicado en la dirección.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        ficha = await ServicioAutocontroles.ObtenerAsync(Id);
+        noExiste = ficha is null;
+    }
+}

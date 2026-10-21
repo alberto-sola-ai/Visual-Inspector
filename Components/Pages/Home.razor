@@ -3,21 +3,45 @@
 
 <PageTitle>Visual Inspector</PageTitle>
 
-@* Portada: qué hace la aplicación y en qué punto está su desarrollo *@
+@* Portada: qué hace la aplicación y accesos directos a los autocontroles *@
 <h1>Visual <span class="wys-ligero">Inspector</span></h1>
 <p class="lead">
     Asistente para el autocontrol visual de la impresión: compara el patrón gráfico aprobado por el
     cliente (PDF) con las dos muestras escaneadas y resalta las diferencias.
 </p>
 
-<div class="wys-caja wys-caja--gris d-flex align-items-center gap-4 mt-4">
-    <img src="recursos/iconos/color/ordenador_grafico.png" class="wys-icono--grande" alt="" />
-    <div>
-        <span class="wys-etiqueta">En desarrollo</span>
-        <h2 class="h4 mt-2 mb-1">Próximamente: nuevo autocontrol</h2>
-        <p class="mb-0">
-            Podrás indicar la orden de fabricación, cargar el patrón y las dos muestras, y ver dónde
-            hay diferencias. El resultado quedará registrado en el autocontrol.
-        </p>
+<div class="row g-4 mt-2">
+    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
+        <div class="col-6">
+            <a href="autocontroles/nuevo" class="text-decoration-none">
+                <div class="wys-caja wys-caja--azul d-flex align-items-center gap-4 h-100">
+                    <span class="wys-icono-circulo wys-icono-circulo--rojo">
+                        <img src="recursos/iconos/blanco/notas.png" alt="" />
+                    </span>
+                    <div>
+                        <h2 class="h4 text-white mb-1">Nuevo autocontrol</h2>
+                        <p class="mb-0">Al inicio de la orden de fabricación y cada 4 horas.</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </AuthorizeView>
+    <div class="col-6">
+        <a href="autocontroles" class="text-decoration-none">
+            <div class="wys-caja wys-caja--gris d-flex align-items-center gap-4 h-100">
+                <span class="wys-icono-circulo">
+                    <img src="recursos/iconos/blanco/ordenador_grafico.png" alt="" />
+                </span>
+                <div>
+                    <h2 class="h4 mb-1">Autocontroles realizados</h2>
+                    <p class="mb-0">Consulta los controles de cada orden de fabricación.</p>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
+
+<p class="mt-4 small text-secondary">
+    <span class="wys-etiqueta">En desarrollo</span>
+    Próximamente: carga del patrón y las muestras, y comparación automática.
+</p>
