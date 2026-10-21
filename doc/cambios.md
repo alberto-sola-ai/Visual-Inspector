@@ -1,5 +1,9 @@
 # Registro de cambios
 
+## Sin versión — 2026-10-21
+- Puerto de acceso desde fuera de Docker cambiado del 8080 al 8082 (`docker-compose.yml`). Dentro
+  del contenedor la aplicación sigue en el 8080. Ahora se abre <http://localhost:8082>.
+
 ## 0.2.1 — 2026-10-21
 - Nuevo autocontrol: quitado el número de ejemplo del campo de la orden (parecía una orden ya
   escrita). Debajo del campo se explica el formato: exactamente 10 cifras, solo números.

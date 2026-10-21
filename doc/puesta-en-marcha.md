@@ -18,7 +18,7 @@
    ```bash
    docker compose up --build
    ```
-3. Abre <http://localhost:8080>.
+3. Abre <http://localhost:8082>.
 
 Al arrancar, la aplicación crea sola las tablas (migraciones), los roles, los parámetros y los
 usuarios iniciales.

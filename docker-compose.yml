@@ -6,7 +6,8 @@ services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      # Fuera de Docker se entra por el 8082; dentro del contenedor la aplicación sigue en el 8080
+      - "8082:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
       TZ: Europe/Madrid
