@@ -1,0 +1,69 @@
+﻿@page "/Account/Manage/Disable2fa"
+
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Desactivar la verificación en dos pasos</PageTitle>
+
+@* Se puede desactivar aunque el administrador haya apagado la opción, para no dejar a nadie atrapado *@
+<StatusMessage />
+<h2 class="h4">Desactivar la verificación en dos pasos</h2>
+
+<div class="alert alert-warning" role="alert">
+    Al desactivarla, para entrar solo te pediremos usuario y contraseña. La clave de tu aplicación
+    del móvil no cambia: si quieres cambiarla, <a href="Account/Manage/ResetAuthenticator">reinicia la aplicación de autenticación</a>.
+</div>
+
+<form @formname="disable-2fa" @onsubmit="OnSubmitAsync" method="post">
+    <AntiforgeryToken />
+    <button class="btn btn-danger" type="submit">Desactivar</button>
+</form>
+
+@code {
+    private UsuarioAplicacion? usuario;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    /// <summary>
+    /// Carga a la persona conectada; si no tiene la verificación activada, vuelve al resumen.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        usuario = await UserManager.GetUserAsync(HttpContext.User);
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && !await UserManager.GetTwoFactorEnabledAsync(usuario))
+        {
+            RedirectManager.RedirectToWithStatus("Account/Manage", "La verificación en dos pasos no está activada.", HttpContext);
+        }
+    }
+
+    /// <summary>
+    /// Apaga el segundo candado y lo apunta en el diario de seguridad.
+    /// </summary>
+    private async Task OnSubmitAsync()
+    {
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var resultado = await UserManager.SetTwoFactorEnabledAsync(usuario, false);
+        if (!resultado.Succeeded)
+        {
+            throw new InvalidOperationException("No se ha podido desactivar la verificación en dos pasos.");
+        }
+
+        await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.DesactivacionMfa_wys, "Correcto", usuario.Id);
+        RedirectManager.RedirectToWithStatus("Account/Manage", "Verificación en dos pasos desactivada.", HttpContext);
+    }
+}

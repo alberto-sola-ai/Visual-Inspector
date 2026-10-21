@@ -1,0 +1,36 @@
+﻿@page "/Error"
+@attribute [AllowAnonymous]
+@attribute [ExcludeFromInteractiveRouting]
+@using Microsoft.AspNetCore.Diagnostics
+@inject ILogger<Error> Registro
+
+<PageTitle>Algo no ha ido bien</PageTitle>
+
+@* Mensaje amable cuando falla una página; el detalle técnico solo va a log/err-log *@
+<h1>Algo no ha ido bien</h1>
+<p>
+    Inténtalo de nuevo y, si se repite, avisa a IT indicando este código:
+    <strong>@codigo</strong>.
+</p>
+<a href="" class="btn btn-primary">Volver al inicio</a>
+
+@code {
+    private string codigo = "";
+
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    /// <summary>
+    /// Crea el código del aviso y apunta el error completo en el diario de errores con ese mismo código,
+    /// para que IT lo encuentre.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        codigo = CodigoError.Generar();
+        var fallo = HttpContext?.Features.Get<IExceptionHandlerPathFeature>();
+        if (fallo is not null)
+        {
+            Registro.LogError(fallo.Error, "Error {Codigo} en {Ruta}", codigo, fallo.Path);
+        }
+    }
+}

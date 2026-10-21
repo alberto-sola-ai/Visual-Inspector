@@ -1,0 +1,21 @@
+﻿@* Muestra una sola vez los códigos de recuperación recién creados *@
+<StatusMessage Message="@StatusMessage" />
+<h2 class="h4">Códigos de recuperación</h2>
+<div class="alert alert-warning" role="alert">
+    <p><strong>Guarda estos códigos en un lugar seguro.</strong></p>
+    <p class="mb-0">Si pierdes el móvil y no tienes los códigos, no podrás entrar. No se volverán a mostrar.</p>
+</div>
+<div>
+    @foreach (var codigo in RecoveryCodes)
+    {
+        <div><code class="recovery-code">@codigo</code></div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string[] RecoveryCodes { get; set; } = [];
+
+    [Parameter]
+    public string? StatusMessage { get; set; }
+}

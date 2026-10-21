@@ -1,0 +1,98 @@
+﻿@page "/Account/Manage/TwoFactorAuthentication"
+
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject SignInManager<UsuarioAplicacion> SignInManager
+@inject IdentityRedirectManager RedirectManager
+@inject ServicioParametros ServicioParametros
+
+<PageTitle>Verificación en dos pasos</PageTitle>
+
+@* Resumen de la verificación en dos pasos (un segundo candado con una aplicación del móvil).
+   Solo está disponible si el administrador la ha activado *@
+<StatusMessage />
+<h2 class="h4">Verificación en dos pasos</h2>
+@if (estaActivada)
+{
+    if (codigosRestantes == 0)
+    {
+        <div class="alert alert-danger">
+            <strong>No te quedan códigos de recuperación.</strong>
+            <p class="mb-0">Debes <a href="Account/Manage/GenerateRecoveryCodes">generar códigos nuevos</a> antes de poder entrar con uno.</p>
+        </div>
+    }
+    else if (codigosRestantes <= 3)
+    {
+        <div class="alert alert-warning">
+            <strong>Te quedan @codigosRestantes códigos de recuperación.</strong>
+            <p class="mb-0">Conviene <a href="Account/Manage/GenerateRecoveryCodes">generar códigos nuevos</a>.</p>
+        </div>
+    }
+
+    if (esEquipoRecordado)
+    {
+        <form style="display: inline-block" @formname="forget-browser" @onsubmit="OnSubmitForgetBrowserAsync" method="post">
+            <AntiforgeryToken />
+            <button type="submit" class="btn btn-primary">Olvidar este navegador</button>
+        </form>
+    }
+
+    <a href="Account/Manage/Disable2fa" class="btn btn-primary">Desactivar</a>
+    <a href="Account/Manage/GenerateRecoveryCodes" class="btn btn-primary">Generar códigos de recuperación</a>
+}
+
+<h3 class="h5 mt-4">Aplicación de autenticación</h3>
+@if (!tieneAutenticador)
+{
+    <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Añadir aplicación de autenticación</a>
+}
+else
+{
+    <a href="Account/Manage/EnableAuthenticator" class="btn btn-primary">Configurar aplicación de autenticación</a>
+    <a href="Account/Manage/ResetAuthenticator" class="btn btn-primary">Reiniciar aplicación de autenticación</a>
+}
+
+@code {
+    private bool tieneAutenticador;
+    private int codigosRestantes;
+    private bool estaActivada;
+    private bool esEquipoRecordado;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    /// <summary>
+    /// Carga el estado de la verificación en dos pasos de la persona conectada.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await ServicioParametros.EstaActivoAsync(ServicioParametros.MfaActivo_wys))
+        {
+            RedirectManager.RedirectToWithStatus("Account/Manage", "Error: La verificación en dos pasos no está activada en esta aplicación.", HttpContext);
+            return;
+        }
+
+        var usuario = await UserManager.GetUserAsync(HttpContext.User);
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        tieneAutenticador = await UserManager.GetAuthenticatorKeyAsync(usuario) is not null;
+        estaActivada = await UserManager.GetTwoFactorEnabledAsync(usuario);
+        esEquipoRecordado = await SignInManager.IsTwoFactorClientRememberedAsync(usuario);
+        codigosRestantes = await UserManager.CountRecoveryCodesAsync(usuario);
+    }
+
+    /// <summary>
+    /// Hace que este navegador vuelva a pedir el código en la próxima entrada.
+    /// </summary>
+    private async Task OnSubmitForgetBrowserAsync()
+    {
+        await SignInManager.ForgetTwoFactorClientAsync();
+        RedirectManager.RedirectToCurrentPageWithStatus(
+            "Este navegador se ha olvidado: la próxima vez que entres se te pedirá el código.", HttpContext);
+    }
+}

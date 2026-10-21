@@ -1,0 +1,145 @@
+﻿@page "/Account/Manage/EnableAuthenticator"
+
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject ServicioParametros ServicioParametros
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Configurar aplicación de autenticación</PageTitle>
+
+@if (codigosRecuperacion is not null)
+{
+    <ShowRecoveryCodes RecoveryCodes="codigosRecuperacion.ToArray()" StatusMessage="@message" />
+}
+else
+{
+    <StatusMessage Message="@message" />
+    <h2 class="h4">Configurar aplicación de autenticación</h2>
+    <ol>
+        <li>
+            <p>Instala en tu móvil una aplicación de autenticación (por ejemplo Microsoft Authenticator o Google Authenticator).</p>
+        </li>
+        <li>
+            <p>Añade una cuenta nueva en la aplicación y escribe esta clave: <kbd>@claveCompartida</kbd> (los espacios y las mayúsculas no importan).</p>
+        </li>
+        <li>
+            <p>La aplicación te mostrará un código de 6 cifras. Escríbelo aquí para confirmar:</p>
+            <div class="row">
+                <div class="col-6">
+                    <EditForm Model="Input" FormName="send-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+                        <DataAnnotationsValidator />
+                        <div class="form-floating mb-3">
+                            <InputText @bind-Value="Input.Code" id="Input.Code" class="form-control" autocomplete="off" placeholder="código" />
+                            <label for="Input.Code" class="control-label form-label">Código de verificación</label>
+                            <ValidationMessage For="() => Input.Code" class="text-danger" />
+                        </div>
+                        <button type="submit" class="w-100 btn btn-lg btn-primary">Confirmar</button>
+                    </EditForm>
+                </div>
+            </div>
+        </li>
+    </ol>
+}
+
+@code {
+    private string? message;
+    private UsuarioAplicacion? usuario;
+    private string? claveCompartida;
+    private IEnumerable<string>? codigosRecuperacion;
+    private bool estaBloqueada;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    /// <summary>
+    /// Prepara la clave que hay que copiar en la aplicación del móvil.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        if (!await ServicioParametros.EstaActivoAsync(ServicioParametros.MfaActivo_wys))
+        {
+            estaBloqueada = true;
+            RedirectManager.RedirectToWithStatus("Account/Manage", "Error: La verificación en dos pasos no está activada en esta aplicación.", HttpContext);
+            return;
+        }
+
+        usuario = await UserManager.GetUserAsync(HttpContext.User);
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        var clave = await UserManager.GetAuthenticatorKeyAsync(usuario);
+        if (string.IsNullOrEmpty(clave))
+        {
+            await UserManager.ResetAuthenticatorKeyAsync(usuario);
+            clave = await UserManager.GetAuthenticatorKeyAsync(usuario);
+        }
+        claveCompartida = FormatearClave(clave!);
+    }
+
+    /// <summary>
+    /// Comprueba el código del móvil y, si es correcto, enciende el segundo candado.
+    /// </summary>
+    private async Task OnValidSubmitAsync()
+    {
+        if (estaBloqueada || usuario is null)
+        {
+            return;
+        }
+
+        var codigo = Input.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
+        var esValido = await UserManager.VerifyTwoFactorTokenAsync(
+            usuario, UserManager.Options.Tokens.AuthenticatorTokenProvider, codigo);
+
+        if (!esValido)
+        {
+            message = "Error: El código no es correcto.";
+            return;
+        }
+
+        await UserManager.SetTwoFactorEnabledAsync(usuario, true);
+        await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.ActivacionMfa_wys, "Correcto", usuario.Id);
+        message = "La aplicación de autenticación se ha configurado correctamente.";
+
+        if (await UserManager.CountRecoveryCodesAsync(usuario) == 0)
+        {
+            codigosRecuperacion = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(usuario, 10);
+        }
+        else
+        {
+            RedirectManager.RedirectToWithStatus("Account/Manage/TwoFactorAuthentication", message, HttpContext);
+        }
+    }
+
+    /// <summary>
+    /// Separa la clave en grupos de 4 letras para que sea fácil de copiar.
+    /// </summary>
+    private static string FormatearClave(string clave)
+    {
+        var resultado = new StringBuilder();
+        for (var i = 0; i < clave.Length; i += 4)
+        {
+            resultado.Append(clave.AsSpan(i, Math.Min(4, clave.Length - i))).Append(' ');
+        }
+        return resultado.ToString().Trim().ToLowerInvariant();
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Escribe el código.")]
+        [StringLength(7, ErrorMessage = "El código tiene 6 cifras.", MinimumLength = 6)]
+        [DataType(DataType.Text)]
+        public string Code { get; set; } = "";
+    }
+}

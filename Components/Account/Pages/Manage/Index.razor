@@ -1,0 +1,41 @@
+﻿@page "/Account/Manage"
+
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Mis datos</PageTitle>
+
+@* Datos de la persona conectada. El nombre y el rol solo los cambia el administrador *@
+<h2 class="h4">Mis datos</h2>
+<StatusMessage />
+
+<dl class="row">
+    <dt class="col-3">Usuario</dt>
+    <dd class="col-9">@usuario?.UserName</dd>
+    <dt class="col-3">Nombre</dt>
+    <dd class="col-9">@usuario?.NombreCompleto</dd>
+    <dt class="col-3">Último acceso</dt>
+    <dd class="col-9">@(usuario?.UltimoAcceso?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
+</dl>
+<p class="text-secondary small">Si algún dato no es correcto, pídeselo al administrador.</p>
+
+@code {
+    private UsuarioAplicacion? usuario;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    /// <summary>
+    /// Carga los datos de la persona conectada.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        usuario = await UserManager.GetUserAsync(HttpContext.User);
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+        }
+    }
+}

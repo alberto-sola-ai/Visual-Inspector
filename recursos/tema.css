@@ -1,0 +1,110 @@
+/* ==========================================================================
+   Tema corporativo Witte y Solá (WYS)
+   Fuente de verdad de colores y tipografía. Si cambia la marca, se cambia aquí.
+   Cargar DESPUÉS de Bootstrap.
+   ========================================================================== */
+
+/* --- Tipografía corporativa: Lato (archivos locales, sin Google) --- */
+@font-face { font-family: "Lato"; font-weight: 300; font-style: normal; font-display: swap;
+  src: url("fuentes/lato-latin-300-normal.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("fuentes/lato-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("fuentes/lato-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Lato"; font-weight: 900; font-style: normal; font-display: swap;
+  src: url("fuentes/lato-latin-900-normal.woff2") format("woff2"); }
+
+:root {
+  /* Colores principales (Manual de Identidad Visual WYS) */
+  --wys-azul-oscuro: #003160;    /* Pantone 654 – color predominante */
+  --wys-rojo: #E2231A;           /* Pantone 485 – el rojo exacto del logo */
+  --wys-azul-brillante: #254A91; /* Pantone 7685 – enlaces e iconos */
+
+  /* Secundarios: variantes para estados (pasar el ratón, pulsado) */
+  --wys-azul-medio: #023E84;     /* Pantone 287 */
+  --wys-rojo-oscuro: #AE1615;    /* Pantone 7621 */
+  --wys-gris-azulado: #8597A3;   /* Pantone 7544 */
+  --wys-gris-azulado-claro: #ABB8C1; /* Pantone 7543 */
+
+  /* Complementarios: grises Cool Gray para fondos, bordes y franjas */
+  --wys-gris-1: #D9D9D6;
+  --wys-gris-2: #D0D0CE;
+  --wys-gris-3: #C8C9C7;
+  --wys-gris-4: #BBBCBC;
+
+  /* Texto */
+  --wys-texto: #000000;
+  --wys-texto-secundario: #5F5F5F;
+  --wys-fondo: #FFFFFF;
+  --wys-fondo-suave: #F4F4F3;
+
+  --wys-fuente: "Lato", "Segoe UI", Arial, sans-serif;
+
+  /* Adaptación de Bootstrap a la marca */
+  --bs-primary: var(--wys-azul-oscuro);
+  --bs-primary-rgb: 0, 49, 96;
+  --bs-danger: var(--wys-rojo);
+  --bs-danger-rgb: 226, 35, 26;
+  --bs-link-color: var(--wys-azul-brillante);
+  --bs-link-color-rgb: 37, 74, 145;
+  --bs-link-hover-color: var(--wys-azul-medio);
+  --bs-body-font-family: var(--wys-fuente);
+  --bs-body-color: var(--wys-texto);
+  --bs-border-radius: 2px;
+}
+
+/* Aplicaciones pensadas para pantalla de ordenador (no adaptadas a móvil/tablet) */
+.wys-app { min-width: 1280px; }
+
+body { font-family: var(--wys-fuente); font-weight: 400; color: var(--wys-texto); }
+
+/* Titulares en MAYÚSCULAS, combinando grosores (manual, pág. 14) */
+h1, h2, h3, .wys-titulo { text-transform: uppercase; color: var(--wys-azul-oscuro); letter-spacing: .01em; }
+h1 { font-weight: 900; }
+h2 { font-weight: 700; }
+h3 { font-weight: 300; }
+.wys-ligero { font-weight: 300; }
+
+/* Botones */
+.btn-primary {
+  --bs-btn-bg: var(--wys-azul-oscuro); --bs-btn-border-color: var(--wys-azul-oscuro);
+  --bs-btn-hover-bg: var(--wys-azul-medio); --bs-btn-hover-border-color: var(--wys-azul-medio);
+  --bs-btn-active-bg: var(--wys-azul-medio); --bs-btn-active-border-color: var(--wys-azul-medio);
+}
+.btn-danger, .btn-wys-accion {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--wys-rojo); --bs-btn-border-color: var(--wys-rojo);
+  --bs-btn-hover-bg: var(--wys-rojo-oscuro); --bs-btn-hover-border-color: var(--wys-rojo-oscuro);
+  --bs-btn-hover-color: #fff;
+}
+
+/* Cabecera y pie corporativos */
+.wys-cabecera { background: var(--wys-fondo); border-bottom: 1px solid var(--wys-gris-1);
+  display: flex; align-items: center; gap: 1.5rem; padding: .75rem 1.5rem; }
+.wys-cabecera--oscura { background: var(--wys-azul-oscuro); border-bottom: none; color: #fff; }
+.wys-logo { height: 40px; width: auto; min-width: 95px; } /* mínimo del manual: 25 mm ≈ 95 px */
+.wys-pie { background: var(--wys-azul-oscuro); color: #fff; text-align: center;
+  font-weight: 700; font-size: .8rem; padding: .6rem 1rem; text-transform: uppercase; }
+
+/* Cajas de contenido: sólidas, sin transparencias (manual, pág. 22) */
+.wys-caja { padding: 1.5rem; color: #fff; }
+.wys-caja--azul { background: var(--wys-azul-oscuro); }
+.wys-caja--roja { background: var(--wys-rojo); }
+.wys-caja--gris { background: var(--wys-gris-1); color: var(--wys-azul-oscuro); }
+.wys-etiqueta { display: inline-block; background: var(--wys-rojo); color: #fff;
+  font-weight: 700; font-size: .8rem; padding: .2rem .6rem; }
+
+/* Filetes: siempre horizontales y finos */
+.wys-filete, hr { border: 0; border-top: 1px solid var(--wys-gris-azulado); opacity: 1; }
+
+/* Iconos corporativos */
+.wys-icono { width: 32px; height: 32px; }
+.wys-icono--grande { width: 64px; height: 64px; }
+.wys-icono-circulo { display: inline-flex; align-items: center; justify-content: center;
+  width: 56px; height: 56px; border-radius: 50%; background: var(--wys-azul-oscuro); }
+.wys-icono-circulo--azul { background: var(--wys-azul-brillante); }
+.wys-icono-circulo--rojo { background: var(--wys-rojo); }
+.wys-icono-circulo img { width: 60%; height: 60%; }
+
+/* Pie de trazabilidad en formularios ("Creado por… · Modificado por…") */
+.wys-trazabilidad { font-size: .75rem; color: var(--wys-texto-secundario); margin-top: 1.5rem; }

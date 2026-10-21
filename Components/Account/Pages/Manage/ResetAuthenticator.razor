@@ -1,0 +1,47 @@
+﻿@page "/Account/Manage/ResetAuthenticator"
+
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject SignInManager<UsuarioAplicacion> SignInManager
+@inject IdentityRedirectManager RedirectManager
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Reiniciar aplicación de autenticación</PageTitle>
+
+<StatusMessage />
+<h2 class="h4">Reiniciar aplicación de autenticación</h2>
+<div class="alert alert-warning" role="alert">
+    Al reiniciar, tu aplicación del móvil dejará de servir hasta que la vuelvas a configurar con la
+    clave nueva, y la verificación en dos pasos quedará desactivada mientras tanto.
+</div>
+<form @formname="reset-authenticator" @onsubmit="OnSubmitAsync" method="post">
+    <AntiforgeryToken />
+    <button class="btn btn-danger" type="submit">Reiniciar</button>
+</form>
+
+@code {
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    /// <summary>
+    /// Cambia la clave de la aplicación del móvil y apaga la verificación hasta que se configure de nuevo.
+    /// </summary>
+    private async Task OnSubmitAsync()
+    {
+        var usuario = await UserManager.GetUserAsync(HttpContext.User);
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        await UserManager.SetTwoFactorEnabledAsync(usuario, false);
+        await UserManager.ResetAuthenticatorKeyAsync(usuario);
+        await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.DesactivacionMfa_wys, "Correcto (clave reiniciada)", usuario.Id);
+        await SignInManager.RefreshSignInAsync(usuario);
+
+        RedirectManager.RedirectToWithStatus("Account/Manage/EnableAuthenticator",
+            "Se ha reiniciado la clave: configura de nuevo la aplicación del móvil.", HttpContext);
+    }
+}

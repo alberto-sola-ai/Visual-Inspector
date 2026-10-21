@@ -1,0 +1,94 @@
+# Puesta en marcha
+
+## Requisitos
+
+- **Docker Desktop** (en el equipo) o Docker (en el servidor). Es lo único imprescindible.
+- Para programar: SDK de **.NET 10** y la herramienta de migraciones
+  (`dotnet tool install --global dotnet-ef`).
+
+## Arrancar con Docker (la forma normal)
+
+1. Copia `.env.example` como `.env` y rellena las contraseñas:
+   - `MARIADB_PASSWORD` y `MARIADB_ROOT_PASSWORD`: contraseñas de la base de datos.
+   - `PASSWORD_ADMIN` y `PASSWORD_PRUEBA`: contraseñas iniciales (mínimo 8 caracteres, con
+     mayúscula, minúscula y número). Si las dejas vacías, la aplicación inventa una y la muestra
+     una sola vez en la consola.
+   - `CREAR_USUARIO_PRUEBA`: `true` para pruebas; `false` en producción.
+2. En la carpeta del proyecto:
+   ```bash
+   docker compose up --build
+   ```
+3. Abre <http://localhost:8080>.
+
+Al arrancar, la aplicación crea sola las tablas (migraciones), los roles, los parámetros y los
+usuarios iniciales.
+
+`.env` nunca se sube a GitHub (está en `.gitignore`).
+
+## Primera entrada
+
+1. Entra con el usuario `admin` y la contraseña de `PASSWORD_ADMIN` (o la que salió en la
+   consola: `docker compose logs app`).
+2. La aplicación te pedirá cambiarla en ese momento.
+3. En **Administración → Usuarios** crea los usuarios reales y, en la ficha de cada uno,
+   marca sus permisos. Los usuarios nuevos no pueden hacer nada hasta que les des permisos.
+
+El usuario `prueba` existe solo si `CREAR_USUARIO_PRUEBA=true` y nace sin permisos.
+
+## Arrancar sin Docker (solo para programar)
+
+Hace falta un servidor MariaDB 11.4 accesible. La contraseña de la conexión se guarda con
+user-secrets (nunca en `appsettings.json`):
+
+```bash
+dotnet user-secrets set "ConnectionStrings:Principal" "Server=...;Port=3306;Database=visualinspector;User=visualinspector;Password=..."
+dotnet user-secrets set "UsuariosIniciales:PasswordAdmin" "..."
+dotnet run
+```
+
+Antes de dar por buena una versión, pruébala siempre con `docker compose up --build`.
+
+## Desplegar en un servidor
+
+1. Copia el proyecto al servidor.
+2. Crea el `.env` a partir de `.env.example` con los datos de ese servidor
+   (`ASPNETCORE_ENVIRONMENT=Production`, `CREAR_USUARIO_PRUEBA=false`).
+3. Arranca: `docker compose up -d --build`.
+4. Para actualizar a una versión nueva, repite el paso 3: los datos y los registros se conservan
+   en sus volúmenes (`datos-mariadb`, `registros-app` y `claves-app`, que guarda las claves de
+   las sesiones para que nadie tenga que volver a entrar tras actualizar).
+
+Los datos de los servidores de la empresa están pendientes de definir (skill wys-code,
+`references/infraestructura.md`).
+
+## Registros (carpeta `log/`)
+
+| Fichero | Contenido | Se guarda |
+|---|---|---|
+| `log/err-log-AAAAMMDD.log` | Errores y avisos, con el código `ERR-…` que ve el usuario | 30 días |
+| `log/Log-Wys-Seg-AAAAMMDD.log` | Seguridad: entradas, fallos, bloqueos, cambios de usuarios, permisos y parámetros | 90 días |
+
+- Sin Docker, están en la carpeta `log/` del proyecto.
+- Con Docker, están en el volumen `registros-app`. Para descargarlos al equipo:
+  ```bash
+  docker compose cp app:/app/log ./log-servidor
+  ```
+
+## Informe de versiones
+
+La pantalla **Administración → Versiones y actualizaciones** lee `recursos/versiones.json`.
+Regenéralo **antes de publicar cada versión** (necesita internet):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File generar-versiones.ps1
+```
+
+## Cambios en la base de datos
+
+Siempre con migraciones, nunca tocando la base de datos a mano:
+
+```bash
+dotnet ef migrations add NombreDelCambio -o Datos/Migraciones
+```
+
+La aplicación aplica las migraciones pendientes al arrancar.

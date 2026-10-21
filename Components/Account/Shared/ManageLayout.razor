@@ -1,0 +1,14 @@
+﻿@inherits LayoutComponentBase
+@layout VisualInspector.Components.Layout.MainLayout
+
+@* Diseño de las pantallas de "Mi cuenta": menú a la izquierda y contenido a la derecha *@
+<h1>Mi cuenta</h1>
+<hr />
+<div class="row">
+    <div class="col-3">
+        <ManageNavMenu />
+    </div>
+    <div class="col-9">
+        @Body
+    </div>
+</div>

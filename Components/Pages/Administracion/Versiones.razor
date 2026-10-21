@@ -1,0 +1,80 @@
+@page "/administracion/versiones"
+@inject ServicioVersiones ServicioVersiones
+
+<PageTitle>Versiones · Administración</PageTitle>
+
+@* Piezas que usa la aplicación y si conviene actualizarlas, como la hoja de revisión del coche *@
+<h1>Versiones y actualizaciones</h1>
+<p><a href="administracion">Administración</a> › Versiones</p>
+
+@if (!estaCargado)
+{
+    <p>Cargando…</p>
+}
+else if (informe is null)
+{
+    <div class="alert alert-warning">
+        Todavía no se ha generado el informe de versiones. Se crea al publicar cada versión con el
+        script <code>generar-versiones.ps1</code> (ver doc/puesta-en-marcha.md).
+    </div>
+}
+else
+{
+    <p class="text-secondary">Información revisada el @informe.Generado.ToString("dd/MM/yyyy HH:mm").</p>
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Componente</th>
+                <th>Versión instalada</th>
+                <th>Última versión</th>
+                <th>Recomendación</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in informe.Componentes)
+            {
+                <tr>
+                    <td>
+                        <strong>@c.Nombre</strong>
+                        <div class="small text-secondary">@c.Descripcion</div>
+                    </td>
+                    <td>@c.Instalada</td>
+                    <td>@c.Ultima</td>
+                    <td>
+                        @switch (c.Recomendacion)
+                        {
+                            case "Necesaria":
+                                <span class="wys-etiqueta">Necesaria</span>
+                                break;
+                            case "Recomendada":
+                                <span class="badge text-bg-warning">Recomendada</span>
+                                break;
+                            default:
+                                <span class="badge text-bg-success">Al día</span>
+                                break;
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="small text-secondary">
+        <strong>Necesaria:</strong> hay un fallo de seguridad conocido.
+        <strong>Recomendada:</strong> existe una versión más nueva.
+        <strong>Al día:</strong> no hace falta hacer nada.
+    </p>
+}
+
+@code {
+    private InformeVersiones? informe;
+    private bool estaCargado;
+
+    /// <summary>
+    /// Lee el informe de versiones al abrir la pantalla.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        informe = await ServicioVersiones.ObtenerAsync();
+        estaCargado = true;
+    }
+}

@@ -1,0 +1,44 @@
+# Normas de estilo WYS — avisos automáticos en Visual Studio Code
+root = true
+
+[*]
+charset = utf-8
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{json,yml,yaml,css,html,razor,csproj}]
+indent_size = 2
+
+[*.cs]
+# --- Regla de la casa: constantes y valores globales con sufijo _wys ---
+dotnet_naming_rule.constantes_wys.symbols = simbolos_constantes
+dotnet_naming_rule.constantes_wys.style = estilo_wys
+dotnet_naming_rule.constantes_wys.severity = warning
+
+dotnet_naming_rule.globales_wys.symbols = simbolos_globales
+dotnet_naming_rule.globales_wys.style = estilo_wys
+dotnet_naming_rule.globales_wys.severity = warning
+
+dotnet_naming_symbols.simbolos_constantes.applicable_kinds = field
+dotnet_naming_symbols.simbolos_constantes.applicable_accessibilities = *
+dotnet_naming_symbols.simbolos_constantes.required_modifiers = const
+
+dotnet_naming_symbols.simbolos_globales.applicable_kinds = field, property
+dotnet_naming_symbols.simbolos_globales.applicable_accessibilities = public, internal
+dotnet_naming_symbols.simbolos_globales.required_modifiers = static
+
+dotnet_naming_style.estilo_wys.capitalization = pascal_case
+dotnet_naming_style.estilo_wys.required_suffix = _wys
+
+# --- Convenciones habituales de C# ---
+dotnet_naming_rule.tipos_pascal.symbols = simbolos_tipos
+dotnet_naming_rule.tipos_pascal.style = estilo_pascal
+dotnet_naming_rule.tipos_pascal.severity = suggestion
+dotnet_naming_symbols.simbolos_tipos.applicable_kinds = class, struct, interface, enum, method, property, event
+dotnet_naming_style.estilo_pascal.capitalization = pascal_case
+
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_prefer_braces = true:suggestion
+dotnet_sort_system_directives_first = true

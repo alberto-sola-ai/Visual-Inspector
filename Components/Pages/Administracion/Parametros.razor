@@ -1,0 +1,116 @@
+@page "/administracion/parametros"
+@inject ServicioParametros ServicioParametros
+
+<PageTitle>Parámetros · Administración</PageTitle>
+
+@* Ajustes de la aplicación que el administrador cambia sin tocar el programa *@
+<h1>Parámetros</h1>
+<p><a href="administracion">Administración</a> › Parámetros</p>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @(esError ? "alert-danger" : "alert-success")" role="alert">@mensaje</div>
+}
+
+@if (parametros is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Parámetro</th>
+                <th>Para qué sirve</th>
+                <th style="width: 14rem">Valor</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in parametros)
+            {
+                <tr>
+                    <td><strong>@p.Clave</strong></td>
+                    <td>
+                        @p.Descripcion
+                        <div class="wys-trazabilidad mt-1">
+                            Creado por @p.CreadoPor el @p.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                            @if (p.ModificadoPor is not null)
+                            {
+                                <span> · Modificado por @p.ModificadoPor el @p.FechaModificacion?.ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                        </div>
+                    </td>
+                    <td>
+                        @if (!p.EsEditable)
+                        {
+                            <span>@MostrarValor(p)</span>
+                            <div class="small text-secondary">@p.MotivoNoEditable</div>
+                        }
+                        else if (p.Tipo == TipoParametro.SiNo)
+                        {
+                            <select class="form-select" @bind="valores[p.Id]">
+                                <option value="@ServicioParametros.ValorSi_wys">Sí</option>
+                                <option value="@ServicioParametros.ValorNo_wys">No</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <input class="form-control" @bind="valores[p.Id]"
+                                   placeholder="@(p.Tipo == TipoParametro.Fecha ? "dd/mm/aaaa" : "")" />
+                        }
+                    </td>
+                    <td>
+                        @if (p.EsEditable)
+                        {
+                            <button class="btn btn-primary btn-sm" @onclick="() => GuardarAsync(p)">Guardar</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Parametro>? parametros;
+    private Dictionary<int, string> valores = [];
+    private string? mensaje;
+    private bool esError;
+
+    /// <summary>
+    /// Carga los parámetros al abrir la pantalla.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarAsync();
+    }
+
+    /// <summary>
+    /// Lee los parámetros y prepara una copia de sus valores para editarlos.
+    /// </summary>
+    private async Task CargarAsync()
+    {
+        parametros = await ServicioParametros.ObtenerTodosAsync();
+        valores = parametros.ToDictionary(p => p.Id, p => p.Valor);
+    }
+
+    /// <summary>
+    /// Guarda el valor de un parámetro. El servicio comprueba que el valor es correcto.
+    /// </summary>
+    private async Task GuardarAsync(Parametro parametro)
+    {
+        var error = await ServicioParametros.GuardarAsync(parametro.Id, valores[parametro.Id]);
+        esError = error is not null;
+        mensaje = error ?? $"Parámetro {parametro.Clave} guardado correctamente.";
+        if (!esError)
+        {
+            await CargarAsync();
+        }
+    }
+
+    // Los valores Sí/No se guardan sin tilde ("Si"); en pantalla se muestran bien escritos
+    private static string MostrarValor(Parametro p) =>
+        p.Tipo == TipoParametro.SiNo && p.Valor == ServicioParametros.ValorSi_wys ? "Sí" : p.Valor;
+}

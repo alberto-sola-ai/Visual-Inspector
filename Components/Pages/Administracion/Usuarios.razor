@@ -1,0 +1,134 @@
+@page "/administracion/usuarios"
+@inject ServicioUsuarios ServicioUsuarios
+
+<PageTitle>Usuarios · Administración</PageTitle>
+
+@* Listado de usuarios y alta de usuarios nuevos *@
+<h1>Usuarios</h1>
+<p><a href="administracion">Administración</a> › Usuarios</p>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @(esError ? "alert-danger" : "alert-success")" role="alert">@mensaje</div>
+}
+
+@if (usuarios is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Estado</th>
+                <th>Último acceso</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var u in usuarios)
+            {
+                <tr>
+                    <td><a href="@($"administracion/usuarios/{u.Id}")">@u.NombreCompleto</a></td>
+                    <td>@u.Usuario</td>
+                    <td>@u.Rol</td>
+                    <td>
+                        @if (!u.Activo)
+                        {
+                            <span class="badge text-bg-secondary">Desactivado</span>
+                        }
+                        else if (u.Bloqueado)
+                        {
+                            <span class="wys-etiqueta">Bloqueado</span>
+                        }
+                        else
+                        {
+                            <span>Activo</span>
+                        }
+                    </td>
+                    <td>@(u.UltimoAcceso?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<hr />
+<h2 class="h4">Nuevo usuario</h2>
+<p class="text-secondary small">
+    El usuario nace sin permisos: después, en su ficha, marca lo que puede hacer.
+    La contraseña es temporal y se le pedirá cambiarla al entrar.
+</p>
+<EditForm Model="nuevo" OnValidSubmit="CrearAsync" FormName="nuevo-usuario">
+    <div class="row g-3 align-items-end">
+        <div class="col-2">
+            <label class="form-label" for="nuevo-usuario">Usuario</label>
+            <InputText id="nuevo-usuario" class="form-control" @bind-Value="nuevo.Usuario" autocomplete="off" />
+        </div>
+        <div class="col-3">
+            <label class="form-label" for="nuevo-nombre">Nombre completo</label>
+            <InputText id="nuevo-nombre" class="form-control" @bind-Value="nuevo.NombreCompleto" />
+        </div>
+        <div class="col-2">
+            <label class="form-label" for="nuevo-rol">Rol</label>
+            <InputSelect id="nuevo-rol" class="form-select" @bind-Value="nuevo.Rol">
+                @foreach (var rol in ServicioUsuarios.RolesDisponibles_wys)
+                {
+                    <option value="@rol">@rol</option>
+                }
+            </InputSelect>
+        </div>
+        <div class="col-3">
+            <label class="form-label" for="nuevo-password">Contraseña temporal</label>
+            <InputText id="nuevo-password" type="password" class="form-control" @bind-Value="nuevo.Password" autocomplete="new-password" />
+        </div>
+        <div class="col-2">
+            <button type="submit" class="btn btn-primary w-100" disabled="@estaOcupado">Crear usuario</button>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    private List<FichaUsuario>? usuarios;
+    private FormularioNuevo nuevo = new();
+    private string? mensaje;
+    private bool esError;
+    private bool estaOcupado;
+
+    /// <summary>
+    /// Carga la lista de usuarios al abrir la pantalla.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        usuarios = await ServicioUsuarios.ListarAsync();
+    }
+
+    /// <summary>
+    /// Crea el usuario con los datos del formulario. Las comprobaciones de verdad las hace el servicio.
+    /// </summary>
+    private async Task CrearAsync()
+    {
+        estaOcupado = true;
+        var error = await ServicioUsuarios.CrearAsync(nuevo.Usuario, nuevo.NombreCompleto, nuevo.Rol, nuevo.Password);
+        estaOcupado = false;
+
+        esError = error is not null;
+        mensaje = error ?? $"Usuario {nuevo.Usuario.Trim().ToLowerInvariant()} creado correctamente.";
+        if (!esError)
+        {
+            nuevo = new();
+            usuarios = await ServicioUsuarios.ListarAsync();
+        }
+    }
+
+    private sealed class FormularioNuevo
+    {
+        public string Usuario { get; set; } = "";
+        public string NombreCompleto { get; set; } = "";
+        public string Rol { get; set; } = Permisos.RolUsuario_wys;
+        public string Password { get; set; } = "";
+    }
+}

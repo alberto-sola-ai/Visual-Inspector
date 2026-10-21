@@ -1,0 +1,30 @@
+﻿@inject ServicioParametros ServicioParametros
+
+@* Opciones de "Mi cuenta". La verificación en dos pasos solo aparece si el administrador
+   la ha activado (parámetro MfaActivo) *@
+<ul class="nav nav-pills flex-column">
+    <li class="nav-item">
+        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Mis datos</NavLink>
+    </li>
+    <li class="nav-item">
+        <NavLink class="nav-link" href="Account/Manage/ChangePassword">Contraseña</NavLink>
+    </li>
+    @if (esMfaActivo)
+    {
+        <li class="nav-item">
+            <NavLink class="nav-link" href="Account/Manage/TwoFactorAuthentication">Verificación en dos pasos</NavLink>
+        </li>
+    }
+</ul>
+
+@code {
+    private bool esMfaActivo;
+
+    /// <summary>
+    /// Mira si la verificación en dos pasos está permitida en esta aplicación.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        esMfaActivo = await ServicioParametros.EstaActivoAsync(ServicioParametros.MfaActivo_wys);
+    }
+}

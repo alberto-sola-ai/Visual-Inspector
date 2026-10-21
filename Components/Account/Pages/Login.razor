@@ -1,0 +1,127 @@
+﻿@page "/Account/Login"
+@attribute [AllowAnonymous]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject SignInManager<UsuarioAplicacion> SignInManager
+@inject IdentityRedirectManager RedirectManager
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Entrar · Visual Inspector</PageTitle>
+
+@* Pantalla de entrada: usuario y contraseña. No hay registro público ni recuperación por correo:
+   los usuarios los crea y los desbloquea el administrador *@
+<div class="row">
+    <div class="col-4">
+        <h1>Entrar</h1>
+        <StatusMessage Message="@errorMessage" />
+        <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.Usuario" id="Input.Usuario" class="form-control" autocomplete="username" aria-required="true" placeholder="usuario" />
+                <label for="Input.Usuario" class="form-label">Usuario</label>
+                <ValidationMessage For="() => Input.Usuario" class="text-danger" />
+            </div>
+            <div class="form-floating mb-3">
+                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="contraseña" />
+                <label for="Input.Password" class="form-label">Contraseña</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Entrar</button>
+            <p class="mt-3 text-secondary small">
+                ¿Has olvidado tu contraseña o tu acceso está bloqueado? Avisa al administrador de la aplicación.
+            </p>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private string? errorMessage;
+    private EditContext editContext = default!;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// Prepara el formulario vacío al abrir la pantalla.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+        editContext = new EditContext(Input);
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method))
+        {
+            // Borra restos de un inicio de sesión externo anterior para empezar limpio
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+        }
+    }
+
+    /// <summary>
+    /// Comprueba usuario y contraseña, como un portero que mira la entrada. Si alguien se
+    /// equivoca 3 veces seguidas, la puerta se cierra 15 minutos. Todo se apunta en el diario
+    /// de seguridad, sin la contraseña.
+    /// </summary>
+    public async Task LoginUser()
+    {
+        if (!editContext.Validate())
+        {
+            return;
+        }
+
+        var nombreUsuario = Input.Usuario.Trim().ToLowerInvariant();
+        var usuario = await UserManager.FindByNameAsync(nombreUsuario);
+
+        // lockoutOnFailure: true es lo que hace que funcione el bloqueo tras 3 fallos
+        var resultado = await SignInManager.PasswordSignInAsync(nombreUsuario, Input.Password, isPersistent: false, lockoutOnFailure: true);
+
+        if (resultado.Succeeded && usuario is not null)
+        {
+            usuario.UltimoAcceso = DateTime.Now;
+            await UserManager.UpdateAsync(usuario);
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.InicioSesion_wys, "Correcto", usuario.Id);
+
+            // Con contraseña temporal, lo primero es cambiarla
+            RedirectManager.RedirectTo(usuario.DebeCambiarPassword ? "Account/Manage/ChangePassword" : ReturnUrl);
+        }
+        else if (resultado.RequiresTwoFactor)
+        {
+            RedirectManager.RedirectTo("Account/LoginWith2fa", new() { ["returnUrl"] = ReturnUrl });
+        }
+        else if (resultado.IsLockedOut)
+        {
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.Bloqueo_wys, "Denegado (cuenta bloqueada 15 minutos)", usuario?.Id);
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            // El mensaje es siempre el mismo: no revela si el usuario existe o está desactivado
+            var detalle = usuario is null ? "usuario inexistente"
+                : resultado.IsNotAllowed ? "usuario desactivado"
+                : $"{await UserManager.GetAccessFailedCountAsync(usuario)}/3";
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.InicioSesion_wys, $"Fallido ({detalle})", usuario?.Id);
+            errorMessage = "Error: Usuario o contraseña incorrectos.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Escribe tu usuario.")]
+        [StringLength(50)]
+        public string Usuario { get; set; } = "";
+
+        [Required(ErrorMessage = "Escribe tu contraseña.")]
+        [StringLength(100)]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = "";
+    }
+}

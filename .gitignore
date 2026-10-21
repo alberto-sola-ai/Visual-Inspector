@@ -1,10 +1,26 @@
+# Archivos que NUNCA se suben a GitHub
+
+# Secretos y variables de entorno (contraseñas de base de datos, de usuarios iniciales…)
+.env
+certificados/
+*.pfx
+appsettings.*.local.json
+
+# Registros de la aplicación (pueden contener IDs de usuario e IPs)
+log/
+
+# Claves que firman las sesiones (son secretos)
+claves/
+
+# Compilados y publicaciones
+bin/
+obj/
+publicar/
+
+# Configuración personal de los editores
+.vs/
+*.user
+*.suo
+
 # Estado de la ventana de Obsidian (cambia constantemente)
 .obsidian/workspace.json
-
-# Entornos virtuales y cachés de Python
-.venv/
-venv/
-__pycache__/
-
-# Secretos y variables de entorno
-.env

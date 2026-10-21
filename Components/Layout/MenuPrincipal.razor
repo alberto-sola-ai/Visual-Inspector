@@ -1,0 +1,24 @@
+@* Menú de la cabecera. Ocultar opciones aquí es solo comodidad: cada página y cada servicio
+   comprueban el permiso en el servidor *@
+<nav class="vi-menu">
+    <AuthorizeView>
+        <Authorized>
+            <AuthorizeView Policy="@Permisos.AutocontrolesVer_wys" Context="contextoAutocontroles">
+                <NavLink href="" Match="NavLinkMatch.All">Inicio</NavLink>
+            </AuthorizeView>
+
+            <AuthorizeView Policy="@Permisos.Administracion_wys" Context="contextoAdministracion">
+                <NavLink href="administracion">Administración</NavLink>
+            </AuthorizeView>
+
+            <NavLink href="Account/Manage" title="Mi cuenta">
+                @(context.User.FindFirst(Permisos.TipoClaimNombreCompleto_wys)?.Value ?? context.User.Identity?.Name)
+            </NavLink>
+
+            <form action="Account/Logout" method="post" class="m-0">
+                <AntiforgeryToken />
+                <button type="submit" class="btn btn-outline-primary btn-sm">Cerrar sesión</button>
+            </form>
+        </Authorized>
+    </AuthorizeView>
+</nav>

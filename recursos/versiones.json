@@ -1,0 +1,68 @@
+﻿{
+    "generado":  "2026-10-21T08:34:58",
+    "componentes":  [
+                        {
+                            "nombre":  ".NET",
+                            "descripcion":  "La plataforma sobre la que funciona la aplicación.",
+                            "instalada":  "10.0.12",
+                            "ultima":  "10.0.13",
+                            "recomendacion":  "Recomendada"
+                        },
+                        {
+                            "nombre":  "MariaDB Server",
+                            "descripcion":  "La base de datos. Se usa la rama de soporte largo (LTS).",
+                            "instalada":  "11.4",
+                            "ultima":  "11.4 (rama LTS)",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "Konscious.Security.Cryptography.Argon2",
+                            "descripcion":  "Cifrado de contraseñas (Argon2id).",
+                            "instalada":  "1.3.1",
+                            "ultima":  "1.3.1",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
+                            "descripcion":  "Guarda los usuarios, roles y permisos en la base de datos. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
+                            "instalada":  "9.0.21",
+                            "ultima":  "10.0.13",
+                            "recomendacion":  "Recomendada"
+                        },
+                        {
+                            "nombre":  "Microsoft.EntityFrameworkCore.Design",
+                            "descripcion":  "Herramienta para crear las tablas (migraciones). Solo se usa al programar. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
+                            "instalada":  "9.0.21",
+                            "ultima":  "10.0.13",
+                            "recomendacion":  "Recomendada"
+                        },
+                        {
+                            "nombre":  "Microsoft.EntityFrameworkCore.Relational",
+                            "descripcion":  "Motor de acceso a la base de datos (Entity Framework). Se mantiene en la versión 9 hasta que exista Pomelo 10.",
+                            "instalada":  "9.0.21",
+                            "ultima":  "10.0.13",
+                            "recomendacion":  "Recomendada"
+                        },
+                        {
+                            "nombre":  "Pomelo.EntityFrameworkCore.MySql",
+                            "descripcion":  "Conexión con la base de datos MariaDB.",
+                            "instalada":  "9.0.0",
+                            "ultima":  "9.0.0",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "Serilog.AspNetCore",
+                            "descripcion":  "Escribe los registros de errores y de seguridad en la carpeta log.",
+                            "instalada":  "10.0.0",
+                            "ultima":  "10.0.0",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "Serilog.Expressions",
+                            "descripcion":  "Separa los registros de seguridad de los de errores.",
+                            "instalada":  "5.0.0",
+                            "ultima":  "5.0.0",
+                            "recomendacion":  "Al día"
+                        }
+                    ]
+}

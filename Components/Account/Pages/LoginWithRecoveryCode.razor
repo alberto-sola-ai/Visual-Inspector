@@ -1,0 +1,93 @@
+﻿@page "/Account/LoginWithRecoveryCode"
+@attribute [AllowAnonymous]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<UsuarioAplicacion> SignInManager
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Entrar con código de recuperación</PageTitle>
+
+<h1>Código de recuperación</h1>
+<StatusMessage Message="@message" />
+<p>Escribe uno de los códigos de recuperación que guardaste. Cada código solo sirve una vez.</p>
+<div class="row">
+    <div class="col-4">
+        <EditForm Model="Input" FormName="login-with-recovery-code" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <DataAnnotationsValidator />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.RecoveryCode" id="Input.RecoveryCode" class="form-control" autocomplete="off" placeholder="código" />
+                <label for="Input.RecoveryCode" class="form-label">Código de recuperación</label>
+                <ValidationMessage For="() => Input.RecoveryCode" class="text-danger" />
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Entrar</button>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    private string? message;
+    private UsuarioAplicacion? usuario;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// Comprueba que la persona ya ha pasado por usuario y contraseña; si no, vuelve a la entrada.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        usuario = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (usuario is null)
+        {
+            RedirectManager.RedirectTo("Account/Login");
+        }
+    }
+
+    /// <summary>
+    /// Termina la entrada con un código de recuperación (que queda gastado).
+    /// </summary>
+    private async Task OnValidSubmitAsync()
+    {
+        if (usuario is null)
+        {
+            return;
+        }
+
+        var codigo = Input.RecoveryCode.Replace(" ", string.Empty);
+        var resultado = await SignInManager.TwoFactorRecoveryCodeSignInAsync(codigo);
+
+        if (resultado.Succeeded)
+        {
+            usuario.UltimoAcceso = DateTime.Now;
+            await UserManager.UpdateAsync(usuario);
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.InicioSesion_wys, "Correcto (código de recuperación)", usuario.Id);
+            RedirectManager.RedirectTo(usuario.DebeCambiarPassword ? "Account/Manage/ChangePassword" : ReturnUrl);
+        }
+        else if (resultado.IsLockedOut)
+        {
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.Bloqueo_wys, "Denegado (cuenta bloqueada 15 minutos)", usuario.Id);
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.InicioSesion_wys, "Fallido (código de recuperación)", usuario.Id);
+            message = "Error: El código de recuperación no es correcto.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Escribe el código.")]
+        [DataType(DataType.Text)]
+        public string RecoveryCode { get; set; } = "";
+    }
+}

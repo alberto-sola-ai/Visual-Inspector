@@ -1,0 +1,52 @@
+# ÁMBITO INTERNO WYS · Arranque completo: docker compose up --build
+# La red de WYS gestiona el cifrado de las comunicaciones: la aplicación NO configura TLS ni
+# certificados (chocarían). Solo se publica el puerto de la aplicación; MariaDB no es accesible
+# desde fuera de Docker.
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT}
+      TZ: Europe/Madrid
+      # HTTP en el puerto 8080: el cifrado lo gestiona la red de WYS
+      ASPNETCORE_URLS: "http://+:8080"
+      # Conexión con MariaDB dentro de la red interna de Docker
+      ConnectionStrings__Principal: "Server=mariadb;Port=3306;Database=${MARIADB_DATABASE};User=${MARIADB_USER};Password=${MARIADB_PASSWORD};"
+      UsuariosIniciales__PasswordAdmin: ${PASSWORD_ADMIN}
+      UsuariosIniciales__PasswordPrueba: ${PASSWORD_PRUEBA}
+      UsuariosIniciales__CrearUsuarioPrueba: ${CREAR_USUARIO_PRUEBA}
+      # IA: la aplicación todavía no usa inteligencia artificial. Cuando la use, se añaden aquí
+      # IA__ApiKey y las variables de límites (ver skill wys-seguridad).
+    volumes:
+      - registros-app:/app/log
+      # Claves que firman las sesiones: así reiniciar o actualizar no cierra las sesiones
+      - claves-app:/app/claves
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mariadb:
+    # Rama LTS de MariaDB Server.
+    image: mariadb:11.4
+    environment:
+      TZ: Europe/Madrid
+      MARIADB_DATABASE: ${MARIADB_DATABASE}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_uca1400_spanish_ai_ci"]
+    volumes:
+      - datos-mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  datos-mariadb:
+  registros-app:
+  claves-app:

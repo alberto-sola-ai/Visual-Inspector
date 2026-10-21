@@ -1,0 +1,41 @@
+@inherits ErrorBoundary
+@inject ILogger<LimiteErrores> Registro
+
+@* Envuelve cada pantalla: si algo falla dentro, se muestra un aviso amable con un código
+   en lugar del error técnico *@
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else if (CurrentException is AccesoDenegadoException)
+{
+    <div class="alert alert-warning" role="alert">
+        No tienes permiso para hacer esto. Si lo necesitas, pídeselo al administrador.
+    </div>
+}
+else
+{
+    <div class="alert alert-danger" role="alert">
+        Algo no ha ido bien. Inténtalo de nuevo y, si se repite, avisa a IT indicando este código:
+        <strong>@codigo</strong>.
+    </div>
+    <button class="btn btn-primary" @onclick="Recover">Volver a intentarlo</button>
+}
+
+@code {
+    private string codigo = "";
+
+    /// <summary>
+    /// Cuando algo falla, crea el código del aviso y apunta el detalle técnico en log/err-log.
+    /// Los accesos sin permiso ya se apuntaron en el diario de seguridad, así que no se repiten.
+    /// </summary>
+    protected override Task OnErrorAsync(Exception exception)
+    {
+        if (exception is not AccesoDenegadoException)
+        {
+            codigo = CodigoError.Generar();
+            Registro.LogError(exception, "Error {Codigo} en una pantalla", codigo);
+        }
+        return Task.CompletedTask;
+    }
+}

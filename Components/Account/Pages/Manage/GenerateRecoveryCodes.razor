@@ -1,0 +1,79 @@
+﻿@page "/Account/Manage/GenerateRecoveryCodes"
+
+@using Microsoft.AspNetCore.Identity
+
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject ServicioParametros ServicioParametros
+
+<PageTitle>Generar códigos de recuperación</PageTitle>
+
+@if (codigosRecuperacion is not null)
+{
+    <ShowRecoveryCodes RecoveryCodes="codigosRecuperacion.ToArray()" StatusMessage="@message" />
+}
+else
+{
+    <h2 class="h4">Generar códigos de recuperación</h2>
+    <div class="alert alert-warning" role="alert">
+        <p><strong>Guarda estos códigos en un lugar seguro.</strong></p>
+        <p class="mb-0">
+            Si pierdes el móvil y no tienes los códigos, no podrás entrar. Generar códigos nuevos
+            anula los anteriores, pero no cambia la clave de la aplicación del móvil.
+        </p>
+    </div>
+    <form @formname="generate-recovery-codes" @onsubmit="OnSubmitAsync" method="post">
+        <AntiforgeryToken />
+        <button class="btn btn-danger" type="submit">Generar códigos</button>
+    </form>
+}
+
+@code {
+    private string? message;
+    private UsuarioAplicacion? usuario;
+    private IEnumerable<string>? codigosRecuperacion;
+    private bool estaBloqueada;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    /// <summary>
+    /// Comprueba que la opción está activada y que la persona usa la verificación en dos pasos.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await ServicioParametros.EstaActivoAsync(ServicioParametros.MfaActivo_wys))
+        {
+            estaBloqueada = true;
+            RedirectManager.RedirectToWithStatus("Account/Manage", "Error: La verificación en dos pasos no está activada en esta aplicación.", HttpContext);
+            return;
+        }
+
+        usuario = await UserManager.GetUserAsync(HttpContext.User);
+        if (usuario is null)
+        {
+            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            return;
+        }
+
+        if (!await UserManager.GetTwoFactorEnabledAsync(usuario))
+        {
+            estaBloqueada = true;
+            RedirectManager.RedirectToWithStatus("Account/Manage", "Error: Primero tienes que activar la verificación en dos pasos.", HttpContext);
+        }
+    }
+
+    /// <summary>
+    /// Crea 10 códigos de un solo uso para entrar si no tienes el móvil a mano.
+    /// </summary>
+    private async Task OnSubmitAsync()
+    {
+        if (estaBloqueada || usuario is null)
+        {
+            return;
+        }
+
+        codigosRecuperacion = await UserManager.GenerateNewTwoFactorRecoveryCodesAsync(usuario, 10);
+        message = "Se han generado códigos de recuperación nuevos.";
+    }
+}

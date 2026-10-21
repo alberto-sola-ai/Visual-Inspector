@@ -1,0 +1,43 @@
+﻿@inherits LayoutComponentBase
+
+@* Estructura de pantalla WYS: cabecera con logo y menú, contenido sobre fondo blanco y pie azul *@
+<div class="wys-app d-flex flex-column min-vh-100">
+    <header class="wys-cabecera">
+        <a href="" title="Inicio">
+            <img src="recursos/marca/wys-logo.svg" class="wys-logo" alt="WYS" />
+        </a>
+        <span class="vi-nombre-app"><strong>Visual</strong> Inspector</span>
+        <MenuPrincipal />
+    </header>
+
+    <main class="flex-grow-1 vi-contenido">
+        @* Si la persona tiene que cambiar su contraseña, la lleva a esa pantalla antes que nada *@
+        <ComprobarCambioPassword />
+
+        @* Si una pantalla falla, solo esa parte muestra un aviso amable; el resto sigue funcionando *@
+        <LimiteErrores @ref="limiteErrores">
+            @Body
+        </LimiteErrores>
+    </main>
+
+    <footer class="wys-pie">Witte y Solà, S.A.</footer>
+</div>
+
+@* Aviso de Blazor si se pierde la conexión con el servidor *@
+<div id="blazor-error-ui" data-nosnippet>
+    Algo no ha ido bien y la pantalla ha dejado de responder.
+    <a href="." class="reload">Volver a cargar</a>
+    <span class="dismiss">✕</span>
+</div>
+
+@code {
+    private LimiteErrores? limiteErrores;
+
+    /// <summary>
+    /// Al cambiar de pantalla, se borra el aviso de error de la pantalla anterior.
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        limiteErrores?.Recover();
+    }
+}

@@ -1,0 +1,20 @@
+@inject RegistroSeguridad RegistroSeguridad
+@inject NavigationManager Navegacion
+
+@* Se muestra cuando una persona con sesión intenta abrir una pantalla para la que no tiene permiso *@
+<h1>Sin permiso</h1>
+<p>
+    Todavía no tienes permiso para ver esta pantalla. Pide al administrador de la aplicación
+    que te lo conceda.
+</p>
+
+@code {
+    /// <summary>
+    /// Apunta el intento en el diario de seguridad (qué pantalla se intentó abrir, sin más datos).
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var pantalla = new Uri(Navegacion.Uri).AbsolutePath;
+        await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.AccesoDenegado_wys, $"Denegado (pantalla {pantalla})");
+    }
+}

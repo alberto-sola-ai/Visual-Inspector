@@ -1,0 +1,80 @@
+/* Estilos propios de Visual Inspector.
+   Los colores y la tipografía de la marca están en recursos/tema.css: aquí se usan sus
+   variables (var(--wys-...)) y nunca códigos de color escritos a mano. */
+
+h1:focus {
+    outline: none;
+}
+
+/* Nombre de la aplicación junto al logo, en la cabecera */
+.vi-nombre-app {
+    font-weight: 300;
+    text-transform: uppercase;
+    color: var(--wys-azul-oscuro);
+    letter-spacing: .05em;
+    border-left: 1px solid var(--wys-gris-1);
+    padding-left: 1.5rem;
+}
+
+.vi-nombre-app strong {
+    font-weight: 900;
+}
+
+/* Menú de la cabecera, a la derecha */
+.vi-menu {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.vi-menu a.active {
+    font-weight: 700;
+    color: var(--wys-azul-oscuro);
+}
+
+.vi-contenido {
+    padding: 2rem 3rem;
+}
+
+/* Validación de formularios */
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid var(--wys-gris-azulado);
+}
+
+.invalid {
+    outline: 1px solid var(--wys-rojo);
+}
+
+.validation-message {
+    color: var(--wys-rojo);
+}
+
+.darker-border-checkbox.form-check-input {
+    border-color: var(--wys-gris-azulado);
+}
+
+/* Aviso que aparece si se pierde la conexión con el servidor */
+#blazor-error-ui {
+    background: var(--wys-rojo);
+    color: #fff;
+    bottom: 0;
+    display: none;
+    left: 0;
+    padding: .6rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+#blazor-error-ui a {
+    color: #fff;
+    text-decoration: underline;
+}
+
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: .75rem;
+    top: .5rem;
+}

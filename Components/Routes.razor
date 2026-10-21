@@ -1,0 +1,20 @@
+﻿@using VisualInspector.Components.Account.Shared
+@* Decide qué pantalla se muestra según la dirección y si la persona puede verla *@
+<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                @* Sin sesión: a la pantalla de entrada. Con sesión pero sin permiso: aviso amable *@
+                @if (context.User.Identity?.IsAuthenticated == true)
+                {
+                    <SinPermiso />
+                }
+                else
+                {
+                    <RedirectToLogin />
+                }
+            </NotAuthorized>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+</Router>

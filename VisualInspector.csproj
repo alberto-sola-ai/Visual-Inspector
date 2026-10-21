@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-VisualInspector-23213bcf-9585-46ec-b38e-d7e259954d36</UserSecretsId>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- Necesario para los formatos españoles (fechas, números, euros) -->
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <Version>0.1.1</Version>
+  </PropertyGroup>
+
+  <!-- La carpeta recursos/ (logo, fuentes, iconos, tema.css) viaja con la aplicación;
+       doc/ y log/ no se publican -->
+  <ItemGroup>
+    <None Remove="recursos\**" />
+    <Content Remove="recursos\**" />
+    <Content Include="recursos\**" CopyToPublishDirectory="PreserveNewest" />
+    <Content Remove="doc\**" />
+    <None Remove="doc\**" />
+    <Content Remove="log\**" />
+    <None Remove="log\**" />
+  </ItemGroup>
+
+  <!--
+    Base de datos: el conector Pomelo (MariaDB) aún no tiene versión para Entity Framework 10.
+    Excepción temporal aprobada (21/10/2026): la aplicación usa .NET 10, pero la capa de datos
+    usa Entity Framework 9 + Pomelo 9. Cuando salga Pomelo 10, se suben estos paquetes a la 10.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.21" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.21" PrivateAssets="all" />
+    <PackageReference Include="Konscious.Security.Cryptography.Argon2" Version="1.3.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Expressions" Version="5.0.0" />
+  </ItemGroup>
+
+</Project>

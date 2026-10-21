@@ -1,0 +1,31 @@
+﻿@page "/Account/AccessDenied"
+@attribute [AllowAnonymous]
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Sin permiso</PageTitle>
+
+@* Aquí llega quien intenta abrir una pantalla para la que no tiene permiso *@
+<h1>Sin permiso</h1>
+<p>
+    Todavía no tienes permiso para ver esta pantalla. Pide al administrador de la aplicación
+    que te lo conceda.
+</p>
+
+@code {
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// Apunta en el diario de seguridad qué pantalla se intentó abrir.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        // Solo la ruta, recortada: nunca datos de formularios
+        var pantalla = (ReturnUrl ?? "-").Split('?')[0];
+        if (pantalla.Length > 100)
+        {
+            pantalla = pantalla[..100];
+        }
+        await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.AccesoDenegado_wys, $"Denegado (pantalla {pantalla})");
+    }
+}

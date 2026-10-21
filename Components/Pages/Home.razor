@@ -1,0 +1,23 @@
+﻿@page "/"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+
+<PageTitle>Visual Inspector</PageTitle>
+
+@* Portada: qué hace la aplicación y en qué punto está su desarrollo *@
+<h1>Visual <span class="wys-ligero">Inspector</span></h1>
+<p class="lead">
+    Asistente para el autocontrol visual de la impresión: compara el patrón gráfico aprobado por el
+    cliente (PDF) con las dos muestras escaneadas y resalta las diferencias.
+</p>
+
+<div class="wys-caja wys-caja--gris d-flex align-items-center gap-4 mt-4">
+    <img src="recursos/iconos/color/ordenador_grafico.png" class="wys-icono--grande" alt="" />
+    <div>
+        <span class="wys-etiqueta">En desarrollo</span>
+        <h2 class="h4 mt-2 mb-1">Próximamente: nuevo autocontrol</h2>
+        <p class="mb-0">
+            Podrás indicar la orden de fabricación, cargar el patrón y las dos muestras, y ver dónde
+            hay diferencias. El resultado quedará registrado en el autocontrol.
+        </p>
+    </div>
+</div>

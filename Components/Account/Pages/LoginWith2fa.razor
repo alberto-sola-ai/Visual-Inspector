@@ -1,0 +1,108 @@
+﻿@page "/Account/LoginWith2fa"
+@attribute [AllowAnonymous]
+
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Identity
+
+@inject SignInManager<UsuarioAplicacion> SignInManager
+@inject UserManager<UsuarioAplicacion> UserManager
+@inject IdentityRedirectManager RedirectManager
+@inject RegistroSeguridad RegistroSeguridad
+
+<PageTitle>Verificación en dos pasos</PageTitle>
+
+@* Segundo paso de la entrada: el código de la aplicación del móvil *@
+<h1>Verificación en dos pasos</h1>
+<StatusMessage Message="@message" />
+<p>Escribe el código que muestra tu aplicación de autenticación.</p>
+<div class="row">
+    <div class="col-4">
+        <EditForm Model="Input" FormName="login-with-2fa" OnValidSubmit="OnValidSubmitAsync" method="post">
+            <input type="hidden" name="ReturnUrl" value="@ReturnUrl" />
+            <DataAnnotationsValidator />
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.TwoFactorCode" id="Input.TwoFactorCode" class="form-control" autocomplete="off" placeholder="código" />
+                <label for="Input.TwoFactorCode" class="form-label">Código</label>
+                <ValidationMessage For="() => Input.TwoFactorCode" class="text-danger" />
+            </div>
+            <div class="checkbox mb-3">
+                <label class="form-label">
+                    <InputCheckbox @bind-Value="Input.RememberMachine" class="darker-border-checkbox form-check-input" />
+                    Recordar este equipo
+                </label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Entrar</button>
+        </EditForm>
+    </div>
+</div>
+<p class="mt-3">
+    ¿No tienes el móvil a mano? Puedes
+    <a href="@($"Account/LoginWithRecoveryCode?ReturnUrl={Uri.EscapeDataString(ReturnUrl ?? "")}")">entrar con un código de recuperación</a>.
+</p>
+
+@code {
+    private string? message;
+    private UsuarioAplicacion? usuario;
+
+    [SupplyParameterFromForm]
+    private InputModel Input { get; set; } = default!;
+
+    [SupplyParameterFromQuery]
+    private string? ReturnUrl { get; set; }
+
+    /// <summary>
+    /// Comprueba que la persona ya ha pasado por usuario y contraseña; si no, vuelve a la entrada.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+
+        usuario = await SignInManager.GetTwoFactorAuthenticationUserAsync();
+        if (usuario is null)
+        {
+            RedirectManager.RedirectTo("Account/Login");
+        }
+    }
+
+    /// <summary>
+    /// Comprueba el código del móvil y termina la entrada. Cuenta como intento fallido si no es correcto.
+    /// </summary>
+    private async Task OnValidSubmitAsync()
+    {
+        if (usuario is null)
+        {
+            return;
+        }
+
+        var codigo = Input.TwoFactorCode!.Replace(" ", string.Empty).Replace("-", string.Empty);
+        var resultado = await SignInManager.TwoFactorAuthenticatorSignInAsync(codigo, isPersistent: false, Input.RememberMachine);
+
+        if (resultado.Succeeded)
+        {
+            usuario.UltimoAcceso = DateTime.Now;
+            await UserManager.UpdateAsync(usuario);
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.InicioSesion_wys, "Correcto (dos pasos)", usuario.Id);
+            RedirectManager.RedirectTo(usuario.DebeCambiarPassword ? "Account/Manage/ChangePassword" : ReturnUrl);
+        }
+        else if (resultado.IsLockedOut)
+        {
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.Bloqueo_wys, "Denegado (cuenta bloqueada 15 minutos)", usuario.Id);
+            RedirectManager.RedirectTo("Account/Lockout");
+        }
+        else
+        {
+            await RegistroSeguridad.RegistrarAsync(AccionesSeguridad.InicioSesion_wys, "Fallido (código de dos pasos)", usuario.Id);
+            message = "Error: El código no es correcto.";
+        }
+    }
+
+    private sealed class InputModel
+    {
+        [Required(ErrorMessage = "Escribe el código.")]
+        [StringLength(7, ErrorMessage = "El código tiene 6 cifras.", MinimumLength = 6)]
+        [DataType(DataType.Text)]
+        public string? TwoFactorCode { get; set; }
+
+        public bool RememberMachine { get; set; }
+    }
+}
