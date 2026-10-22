@@ -48,6 +48,15 @@ else
                             <span>@MostrarValor(p)</span>
                             <div class="small text-secondary">@p.MotivoNoEditable</div>
                         }
+                        else if (p.Tipo == TipoParametro.Lista)
+                        {
+                            <select class="form-select" @bind="valores[p.Id]">
+                                @foreach (var opcion in (p.Opciones ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries))
+                                {
+                                    <option value="@opcion">@opcion</option>
+                                }
+                            </select>
+                        }
                         else if (p.Tipo == TipoParametro.SiNo)
                         {
                             <select class="form-select" @bind="valores[p.Id]">

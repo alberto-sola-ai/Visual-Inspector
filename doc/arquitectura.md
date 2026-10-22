@@ -1,6 +1,6 @@
 # Arquitectura de Visual Inspector
 
-Última actualización: 22/10/2026 · Versión 0.4.0
+Última actualización: 22/10/2026 · Versión 0.5.0
 
 ## Resumen
 
@@ -183,6 +183,36 @@ ejemplo la franja blanca inferior con la marca negra) tienen el mismo blanco que
 escáner y pueden quedar fuera del recorte. Una mancha en esa zona sí se detecta, porque se aparta
 del color del fondo.
 
+### Cómo se compara (0.5.0)
+
+1. **Ajuste fino**: tras la localización, en zonas de ~1,4 cm se mide cuánto está corrida la muestra
+   (como mucho 1 mm) y se endereza suavemente (curvatura y estiramientos de la pieza aplanada).
+2. **Tono por tinta**: los colores del patrón se agrupan en 8 "tintas" y se corrige la luminosidad
+   de la muestra tinta por tinta (mediana). Así un negro o un rojo algo distintos no cuentan: no se
+   analiza el color.
+3. **Diferencias con margen**: "de más" si la muestra es más oscura que todo lo que hay alrededor
+   en el patrón; "de menos" si el patrón es más oscuro que todo lo que hay alrededor en la muestra
+   (o la muestra más clara). El margen depende de la tolerancia.
+4. **Descartes**: guías de montaje y marcos del patrón (líneas finas, rectas y de más de 12 mm),
+   pliegues (menos de 0,5 mm de grueso y más de 4 mm de largo) y todo lo que toque el borde de la
+   pieza (franja de 2,5 mm).
+5. **Motivo**: desplazamiento o texto doble si lo de más está pegado a un texto del patrón (o hay
+   de más y de menos juntos); mancha si es de más; falta si es de menos.
+6. **Las dos muestras**: si una diferencia sale en el mismo sitio (±1 mm) en las dos, es una sola,
+   "en las dos muestras" (posible fallo de plancha).
+7. **Evidencia** = superficie × contraste (×1,5 si sale en las dos), para ordenarlas.
+
+| Tolerancia | Superficie mínima | Margen de desajuste | Contraste mínimo |
+|---|---|---|---|
+| Estricta | 0,3 mm² | 2 px (0,17 mm) | 22 |
+| Normal | 1 mm² | 4 px (0,34 mm) | 24 |
+| Amplia | 3 mm² | 7 px (0,6 mm) | 40 |
+
+Con los ejemplos reales (22/10/2026), la tolerancia Normal encuentra las manchas de las dos
+muestras y el texto doble de la muestra 2, con 3 avisos dudosos (bordes entre colores impresos con
+la trama más marcada). Ajustada solo con dos muestras de un cliente: conviene revisarla con más
+ejemplos. Los mismos archivos dan siempre el mismo resultado (semilla fija).
+
 Los porcentajes de similitud son solo indicadores técnicos: no son criterios de aceptación ni de
 rechazo.
 
@@ -209,6 +239,6 @@ En el orden del principio de desarrollo del MVP (cada paso, solo cuando el anter
    del PDF a imagen y visualización de los tres (sin guardar archivos).~~ Hecho (0.3.0).
 4. ~~Lectura de la litografía y la versión del nombre del patrón; recorte de la pieza en cada
    muestra y localización dentro del patrón (giro y corte libres).~~ Hecho (0.4.0).
-5. Comparaciones y lista de posibles diferencias, con su recorte.
+5. ~~Comparaciones y lista de posibles diferencias, con su recorte.~~ Hecho (0.5.0).
 6. Formulario de validación (correcta / incidencia + comentario) y registro del autocontrol.
 7. Finalizar la orden e informe de fabricación (pantalla + PDF con marca WYS).

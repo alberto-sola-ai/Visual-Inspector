@@ -20,6 +20,9 @@ public sealed class ServicioParametros(
     public const string IaLimiteTokensActivo_wys = "IaLimiteTokensActivo";
     public const string IaRegistroConsumoActivo_wys = "IaRegistroConsumoActivo";
 
+    // Tolerancia con la que se abre la comparación de cada autocontrol (el operario puede cambiarla)
+    public const string ToleranciaPorDefecto_wys = "ToleranciaPorDefecto";
+
     public const string ValorSi_wys = "Si";
     public const string ValorNo_wys = "No";
 
@@ -36,6 +39,19 @@ public sealed class ServicioParametros(
             .Select(p => p.Valor)
             .FirstOrDefaultAsync();
         return valor == ValorSi_wys;
+    }
+
+    /// <summary>
+    /// Lee el valor de un parámetro, o el valor indicado si no existe.
+    /// </summary>
+    public async Task<string> ObtenerValorAsync(string clave, string valorSiNoExiste)
+    {
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var valor = await datos.Parametros
+            .Where(p => p.Clave == clave)
+            .Select(p => p.Valor)
+            .FirstOrDefaultAsync();
+        return valor ?? valorSiNoExiste;
     }
 
     /// <summary>
@@ -72,7 +88,7 @@ public sealed class ServicioParametros(
 
         // Zero Trust: el valor se valida aquí aunque la pantalla ya lo haya hecho
         var valor = (nuevoValor ?? "").Trim();
-        var error = Validar(parametro.Tipo, valor);
+        var error = Validar(parametro.Tipo, valor, parametro.Opciones);
         if (error is not null)
         {
             return error;
@@ -110,6 +126,8 @@ public sealed class ServicioParametros(
             new() { Clave = IaRegistroConsumoActivo_wys, Valor = ValorNo_wys, Tipo = TipoParametro.SiNo,
                 Descripcion = "Guarda el consumo de la IA y muestra su pantalla. Actívalo solo después de comprobar que la API de IA usada ofrece esta información de forma sencilla. Consulta doc/seguridad.md, apartado IA.",
                 EsEditable = false, MotivoNoEditable = MotivoSinIa_wys },
+            new() { Clave = ToleranciaPorDefecto_wys, Valor = "Normal", Tipo = TipoParametro.Lista, Opciones = "Estricta|Normal|Amplia",
+                Descripcion = "Tolerancia con la que se abre la comparación de cada autocontrol. Estricta: avisa de más diferencias, también pequeñas o suaves. Normal: equilibrio para un autocontrol rápido. Amplia: solo las diferencias más claras. El operario puede cambiarla en cada autocontrol." },
         };
 
         var existentes = await datos.Parametros.Select(p => p.Clave).ToListAsync();
@@ -124,8 +142,14 @@ public sealed class ServicioParametros(
     /// <summary>
     /// Comprueba que el valor encaja con el tipo del parámetro. Devuelve el error o null.
     /// </summary>
-    private static string? Validar(TipoParametro tipo, string valor)
+    private static string? Validar(TipoParametro tipo, string valor, string? opciones)
     {
+        if (tipo == TipoParametro.Lista)
+        {
+            var permitidos = (opciones ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return permitidos.Contains(valor) ? null : $"El valor debe ser uno de estos: {string.Join(", ", permitidos)}.";
+        }
+
         if (valor.Length > 500)
         {
             return "El valor es demasiado largo (máximo 500 caracteres).";

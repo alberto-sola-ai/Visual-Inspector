@@ -125,9 +125,11 @@
                 </div>
             }
         </div>
-        <p class="small text-secondary mt-3">
-            Siguiente paso: comparar cada muestra con el patrón (disponible en una próxima versión).
-        </p>
+        @* Comparación con el patrón: solo si se ha podido localizar alguna muestra *@
+        @if (resultados.Any(x => x.EsLocalizada))
+        {
+            <ComparacionAutocontrol Patron="patron.Archivo!" Muestra1="muestra1.Archivo!" Muestra2="muestra2.Archivo!" />
+        }
     }
 }
 

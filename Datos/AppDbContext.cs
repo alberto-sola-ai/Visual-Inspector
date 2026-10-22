@@ -45,6 +45,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             parametro.Property(p => p.Valor).HasMaxLength(500);
             parametro.Property(p => p.Descripcion).HasMaxLength(500);
             parametro.Property(p => p.MotivoNoEditable).HasMaxLength(250);
+            parametro.Property(p => p.Opciones).HasMaxLength(250);
             // El tipo se guarda como texto ("SiNo") para que se entienda al mirar la tabla
             parametro.Property(p => p.Tipo).HasConversion<string>().HasMaxLength(20);
             parametro.Property(p => p.CreadoPor).HasMaxLength(256);

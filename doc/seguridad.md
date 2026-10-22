@@ -1,6 +1,6 @@
 # Cómo protege esta aplicación tus datos
 
-Última actualización: 22/10/2026 · Versión: 0.4.0
+Última actualización: 22/10/2026 · Versión: 0.5.0
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.

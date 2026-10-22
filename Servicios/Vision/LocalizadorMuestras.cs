@@ -26,6 +26,95 @@ public sealed record ResultadoLocalizacion(
     byte[]? VistaSuperpuesta, string? Aviso);
 
 /// <summary>
+/// El patrón listo para buscar muestras en él: su imagen a 300 ppp y sus puntos característicos.
+/// Se prepara una sola vez y sirve para las dos muestras.
+/// </summary>
+public sealed class PatronPreparado : IDisposable
+{
+    public Mat Imagen { get; }
+    internal SIFT Buscador { get; }
+    internal KeyPoint[] Puntos { get; }
+    internal Mat Descriptores { get; }
+
+    private PatronPreparado(Mat imagen, SIFT buscador, KeyPoint[] puntos, Mat descriptores)
+    {
+        Imagen = imagen;
+        Buscador = buscador;
+        Puntos = puntos;
+        Descriptores = descriptores;
+    }
+
+    /// <summary>
+    /// Dibuja el PDF a 300 ppp y busca sus puntos característicos (letras, esquinas, dibujos).
+    /// </summary>
+    public static PatronPreparado Crear(byte[] pdf)
+    {
+        var imagen = ServicioArchivosAutocontrol.DibujarPatron(pdf);
+        var buscador = SIFT.Create(LocalizadorMuestras.MaximoPuntos_wys);
+        using var gris = LocalizadorMuestras.CopiaGrisReducida(imagen);
+        var descriptores = new Mat();
+        buscador.DetectAndCompute(gris, null, out var puntos, descriptores);
+        return new PatronPreparado(imagen, buscador, puntos, descriptores);
+    }
+
+    public void Dispose()
+    {
+        Imagen.Dispose();
+        Buscador.Dispose();
+        Descriptores.Dispose();
+    }
+}
+
+/// <summary>
+/// Una muestra ya localizada en el patrón: la pieza recortada y, para cada trozo, cómo girarla y
+/// moverla para colocarla encima del patrón. La usa la comparación (paso 5).
+/// </summary>
+public sealed class MuestraLocalizada : IDisposable
+{
+    public ResultadoLocalizacion Resultado { get; }
+    public Mat Pieza { get; }
+    // Para cada trozo: el giro + desplazamiento a 300 ppp y la zona de la pieza que le corresponde
+    internal List<(Mat Paso, Mat Zona)> Trozos { get; }
+
+    internal MuestraLocalizada(ResultadoLocalizacion resultado, Mat pieza, List<(Mat Paso, Mat Zona)> trozos)
+    {
+        Resultado = resultado;
+        Pieza = pieza;
+        Trozos = trozos;
+    }
+
+    /// <summary>
+    /// Coloca la muestra encima del patrón (girada y movida, trozo a trozo) y devuelve la imagen
+    /// resultante y su máscara: blanco donde hay muestra, negro donde no.
+    /// </summary>
+    public (Mat Imagen, Mat Mascara) ColocarEnPatron(Size tamanoPatron)
+    {
+        var imagen = new Mat(tamanoPatron, MatType.CV_8UC3, Scalar.White);
+        var mascara = new Mat(tamanoPatron, MatType.CV_8UC1, Scalar.Black);
+        foreach (var (paso, zona) in Trozos)
+        {
+            using var piezaEnPatron = new Mat();
+            using var zonaEnPatron = new Mat();
+            Cv2.WarpAffine(Pieza, piezaEnPatron, paso, tamanoPatron, InterpolationFlags.Linear);
+            Cv2.WarpAffine(zona, zonaEnPatron, paso, tamanoPatron, InterpolationFlags.Nearest);
+            piezaEnPatron.CopyTo(imagen, zonaEnPatron);
+            Cv2.BitwiseOr(mascara, zonaEnPatron, mascara);
+        }
+        return (imagen, mascara);
+    }
+
+    public void Dispose()
+    {
+        Pieza.Dispose();
+        foreach (var (paso, zona) in Trozos)
+        {
+            paso.Dispose();
+            zona.Dispose();
+        }
+    }
+}
+
+/// <summary>
 /// Encuentra dónde está cada muestra escaneada dentro de la página del patrón, como quien busca
 /// una pieza en un puzle: mira detalles que coinciden (letras, esquinas, dibujos) y deduce cuánto
 /// está girada y dónde va. La muestra puede venir en cualquier orientación y el tubo abierto por
@@ -35,13 +124,13 @@ public sealed record ResultadoLocalizacion(
 public sealed class LocalizadorMuestras(ServicioAutorizacion autorizacion)
 {
     // Los puntos se buscan a 150 ppp (mitad de resolución): es suficiente y mucho más rápido
-    private const double EscalaBusqueda_wys = 0.5;
-    private const int MaximoPuntos_wys = 20000;
+    internal const double EscalaBusqueda_wys = 0.5;
+    internal const int MaximoPuntos_wys = 20000;
     private const float UmbralParecido_wys = 0.75f;      // prueba del "segundo mejor" de Lowe
     private const int MinimoCoincidencias_wys = 20;
     private const int MaximoTrozos_wys = 3;
     private const double ToleranciaEscala_wys = 0.1;      // ±10 %: ambos deben estar a 300 ppp
-    private const int TiempoMaximoSegundos_wys = 120;
+    internal const int TiempoMaximoSegundos_wys = 120;
     private const int LadoVista_wys = 1100;
 
     /// <summary>
@@ -61,30 +150,26 @@ public sealed class LocalizadorMuestras(ServicioAutorizacion autorizacion)
     /// </summary>
     private static List<ResultadoLocalizacion> LocalizarTodas(byte[] pdf, List<byte[]> muestras)
     {
-        using var patron = ServicioArchivosAutocontrol.DibujarPatron(pdf);
-        using var sift = SIFT.Create(MaximoPuntos_wys);
-
-        // Los puntos se buscan sobre una copia en gris y reducida; lo que se muestra sigue en color
-        using var patronGris = CopiaGrisReducida(patron);
-        using var descPatron = new Mat();
-        sift.DetectAndCompute(patronGris, null, out var puntosPatron, descPatron);
-
+        // Semilla fija: los mismos archivos dan siempre el mismo resultado
+        Cv2.SetTheRNG(20261022);
+        using var patron = PatronPreparado.Crear(pdf);
         var resultados = new List<ResultadoLocalizacion>();
         foreach (var datos in muestras)
         {
             using var muestra = ServicioArchivosAutocontrol.LeerImagen(datos);
-            resultados.Add(LocalizarUna(patron, muestra, sift, puntosPatron, descPatron));
+            using var localizada = Localizar(patron, muestra);
+            resultados.Add(localizada.Resultado);
         }
         return resultados;
     }
 
     /// <summary>
     /// Recorta la pieza de la muestra, busca sus trozos en el patrón y prepara la vista superpuesta.
+    /// Devuelve todo lo necesario para comparar después.
     /// </summary>
-    private static ResultadoLocalizacion LocalizarUna(Mat patron, Mat muestra, SIFT sift, KeyPoint[] puntosPatron, Mat descPatron)
+    public static MuestraLocalizada Localizar(PatronPreparado patron, Mat muestra)
     {
         var (pieza, mascara) = RecortadorPieza.Recortar(muestra);
-        using (pieza)
         using (mascara)
         {
             var anchoMm = pieza.Width * 25.4 / ServicioArchivosAutocontrol.Resolucion_wys;
@@ -94,34 +179,39 @@ public sealed class LocalizadorMuestras(ServicioAutorizacion autorizacion)
             using var mascaraReducida = new Mat();
             Cv2.Resize(mascara, mascaraReducida, piezaGris.Size(), 0, 0, InterpolationFlags.Nearest);
             using var descPieza = new Mat();
-            sift.DetectAndCompute(piezaGris, mascaraReducida, out var puntosPieza, descPieza);
+            patron.Buscador.DetectAndCompute(piezaGris, mascaraReducida, out var puntosPieza, descPieza);
 
-            if (puntosPieza.Length < MinimoCoincidencias_wys || descPatron.Empty())
+            if (puntosPieza.Length < MinimoCoincidencias_wys || patron.Descriptores.Empty())
             {
-                return NoLocalizada(anchoMm, altoMm, "La muestra no tiene suficiente detalle para localizarla. Comprueba que el escaneo es correcto.");
+                return NoLocalizada(pieza, anchoMm, altoMm, "La muestra no tiene suficiente detalle para localizarla. Comprueba que el escaneo es correcto.");
             }
 
             // Para cada punto de la muestra, el más parecido del patrón; solo se aceptan los que
             // se parecen claramente más al primero que al segundo candidato
             using var comparador = new BFMatcher(NormTypes.L2);
-            var buenos = comparador.KnnMatch(descPieza, descPatron, 2)
+            var buenos = comparador.KnnMatch(descPieza, patron.Descriptores, 2)
                 .Where(m => m.Length == 2 && m[0].Distance < UmbralParecido_wys * m[1].Distance)
                 .Select(m => m[0])
                 .ToList();
 
-            var trozos = BuscarTrozos(buenos, puntosPieza, puntosPatron, out var escalaFuera);
+            var trozos = BuscarTrozos(buenos, puntosPieza, patron.Puntos, out var escalaFuera);
             if (trozos.Count == 0)
             {
                 var aviso = escalaFuera
                     ? "La muestra aparece en el patrón, pero a otro tamaño: comprueba que está escaneada a 300 ppp."
                     : "No se ha encontrado la muestra en el patrón. Comprueba que el patrón es el correcto.";
-                return NoLocalizada(anchoMm, altoMm, aviso);
+                return NoLocalizada(pieza, anchoMm, altoMm, aviso);
             }
 
-            var vista = Superponer(patron, pieza, mascara, puntosPieza, trozos);
-            return new ResultadoLocalizacion(true,
+            var zonas = ZonasPorTrozo(mascara, puntosPieza, trozos);
+            var pasos = trozos.Select(t => APasoCompleto(t.Transformacion)).ToList();
+            var colocados = pasos.Zip(zonas).Select(p => (p.First, p.Second)).ToList();
+
+            var vista = Superponer(patron.Imagen, pieza, colocados);
+            var resultado = new ResultadoLocalizacion(true,
                 trozos.Select(t => new TrozoLocalizado(t.GiroGrados, t.Coincidencias.Count)).ToList(),
                 anchoMm, altoMm, vista, null);
+            return new MuestraLocalizada(resultado, pieza, colocados);
         }
     }
 
@@ -183,17 +273,15 @@ public sealed class LocalizadorMuestras(ServicioAutorizacion autorizacion)
     /// Dibuja el patrón con la muestra encima (mitad y mitad, en color) y el contorno de cada trozo,
     /// recortado a la zona del tubo y reducido para la pantalla.
     /// </summary>
-    private static byte[] Superponer(Mat patron, Mat pieza, Mat mascara, KeyPoint[] puntosPieza, List<Trozo> trozos)
+    private static byte[] Superponer(Mat patron, Mat pieza, List<(Mat Paso, Mat Zona)> trozos)
     {
         using var mezcla = patron.Clone();
         var colores = new[] { new Scalar(26, 35, 226), new Scalar(145, 74, 37), new Scalar(0, 160, 0) };   // rojo WYS, azul WYS, verde
         var zonaTotal = new Rect();
 
-        var zonas = ZonasPorTrozo(mascara, puntosPieza, trozos);
         for (var i = 0; i < trozos.Count; i++)
         {
-            using var zona = zonas[i];
-            using var paso = APasoCompleto(trozos[i].Transformacion);
+            var (paso, zona) = trozos[i];
             using var piezaEnPatron = new Mat();
             using var zonaEnPatron = new Mat();
             Cv2.WarpAffine(pieza, piezaEnPatron, paso, patron.Size());
@@ -280,13 +368,13 @@ public sealed class LocalizadorMuestras(ServicioAutorizacion autorizacion)
     /// <summary>
     /// Copia en gris y a mitad de tamaño, solo para buscar puntos (no se muestra nunca).
     /// </summary>
-    private static Mat CopiaGrisReducida(Mat imagen)
+    internal static Mat CopiaGrisReducida(Mat imagen)
     {
         using var reducida = new Mat();
         Cv2.Resize(imagen, reducida, new Size(), EscalaBusqueda_wys, EscalaBusqueda_wys, InterpolationFlags.Area);
         return reducida.CvtColor(ColorConversionCodes.BGR2GRAY);
     }
 
-    private static ResultadoLocalizacion NoLocalizada(double anchoMm, double altoMm, string aviso) =>
-        new(false, [], anchoMm, altoMm, null, aviso);
+    private static MuestraLocalizada NoLocalizada(Mat pieza, double anchoMm, double altoMm, string aviso) =>
+        new(new ResultadoLocalizacion(false, [], anchoMm, altoMm, null, aviso), pieza, []);
 }

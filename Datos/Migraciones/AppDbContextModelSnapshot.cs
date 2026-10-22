@@ -290,6 +290,10 @@ namespace VisualInspector.Datos.Migraciones
                         .HasMaxLength(250)
                         .HasColumnType("varchar(250)");
 
+                    b.Property<string>("Opciones")
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
                     b.Property<string>("Tipo")
                         .IsRequired()
                         .HasMaxLength(20)

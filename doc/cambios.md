@@ -1,5 +1,19 @@
 # Registro de cambios
 
+## 0.5.0 — 2026-10-22
+- Comparación de las dos muestras con el patrón (botón «Comparar con el patrón»): ajuste fino de
+  la colocación por zonas, tono igualado tinta por tinta (no se analiza el color) y búsqueda de
+  diferencias de contenido con un margen de desajuste.
+- Tres motivos: mancha o suciedad, falta elemento o tinta, y desplazamiento o texto doble. Los
+  pliegues, los bordes de la pieza y las guías de montaje del patrón no se tienen en cuenta.
+- Cada diferencia indica si sale en las dos muestras (posible fallo de plancha) o en una, y trae
+  un recorte en color patrón | muestra(s). Se ordenan por evidencia y, de cada motivo, se enseñan
+  abiertas solo las 5 más evidentes.
+- Tolerancia en tres niveles (Estricta, Normal, Amplia) que el operario cambia en cada
+  autocontrol; la inicial la fija el administrador (parámetro nuevo `ToleranciaPorDefecto`).
+- Parámetros de tipo lista (desplegable en Administración → Parámetros).
+- Los mismos archivos dan siempre el mismo resultado (semilla fija en los pasos al azar).
+
 ## 0.4.0 — 2026-10-22
 - La litografía (L + 7 cifras) y la versión (R + cifras) se leen del principio del nombre del
   patrón. Si el nombre no sigue el formato, se avisa y se escriben a mano.

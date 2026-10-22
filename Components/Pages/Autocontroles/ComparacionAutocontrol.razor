@@ -1,0 +1,240 @@
+@using VisualInspector.Servicios.Vision
+@inject ComparadorMuestras Comparador
+@inject ServicioParametros ServicioParametros
+@inject ILogger<ComparacionAutocontrol> Registro
+
+@* Comparación de las dos muestras con el patrón. Pensada para un autocontrol rápido: el operario
+   ve primero las diferencias más evidentes, agrupadas por motivo *@
+<h2 class="h4 mt-5">Comparación con el patrón</h2>
+
+<div class="d-flex flex-wrap gap-3 align-items-center">
+    <div>
+        <span class="me-2">Tolerancia:</span>
+        <div class="btn-group" role="group" aria-label="Tolerancia">
+            @foreach (var nivel in Enum.GetValues<NivelTolerancia>())
+            {
+                <button type="button" class="btn @(tolerancia == nivel ? "btn-primary" : "btn-outline-primary")"
+                        disabled="@estaComparando" @onclick="() => CambiarToleranciaAsync(nivel)">
+                    @nivel
+                </button>
+            }
+        </div>
+    </div>
+    @if (resultado is null)
+    {
+        <button class="btn btn-primary btn-lg" @onclick="CompararAsync" disabled="@estaComparando">
+            Comparar con el patrón
+        </button>
+    }
+    @if (estaComparando)
+    {
+        <span>Comparando… tarda unos segundos.</span>
+    }
+</div>
+<p class="small text-secondary mt-2 mb-0">
+    Estricta: avisa también de diferencias pequeñas o suaves. Normal: equilibrio para un autocontrol
+    rápido. Amplia: solo lo más claro. Se compara el contenido (manchas, faltas, textos corridos);
+    no se analiza el color, ni se tienen en cuenta pliegues ni bordes.
+</p>
+
+@if (error is not null)
+{
+    <div class="alert alert-danger mt-3" role="alert">@error</div>
+}
+
+@if (resultado is { } r)
+{
+    @foreach (var aviso in r.Avisos)
+    {
+        <div class="alert alert-warning mt-3" role="alert">@aviso</div>
+    }
+
+    @* Resumen: diferencias por motivo y parecido orientativo *@
+    <div class="d-flex flex-wrap gap-3 mt-3 align-items-stretch">
+        @if (r.Diferencias.Count == 0)
+        {
+            <div class="wys-caja wys-caja--azul">
+                <strong>Sin diferencias</strong> con tolerancia @r.Tolerancia.
+            </div>
+        }
+        @foreach (var motivo in Enum.GetValues<MotivoDiferencia>())
+        {
+            var cantidad = r.Diferencias.Count(d => d.Motivo == motivo);
+            if (cantidad == 0) continue;
+            <div class="border p-3" style="border-left: 8px solid @ColorCss(motivo) !important">
+                <div class="h3 mb-0">@cantidad</div>
+                <div>@NombreMotivo(motivo)</div>
+            </div>
+        }
+        <div class="border p-3 small">
+            <div><strong>Parecido con el patrón</strong> (orientativo)</div>
+            <div>Muestra 1: @Porcentaje(r.SimilitudMuestra1) · Muestra 2: @Porcentaje(r.SimilitudMuestra2)</div>
+            <div>Entre las dos muestras: @Porcentaje(r.SimilitudEntreMuestras)</div>
+        </div>
+    </div>
+
+    @if (r.Diferencias.Count > 0)
+    {
+        <div class="row g-4 mt-1">
+            @* Vista general: dónde está cada diferencia *@
+            <div class="col-5">
+                @if (r.VistaGeneral is not null)
+                {
+                    <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(r.VistaGeneral)}")"
+                         class="img-fluid border" alt="Patrón con las diferencias numeradas" />
+                    <p class="small text-secondary mt-2">Cada número es una diferencia; el color indica su motivo.</p>
+                }
+            </div>
+
+            @* Diferencias agrupadas por motivo: primero el grupo con la diferencia más evidente *@
+            <div class="col-7">
+                @foreach (var grupo in r.Diferencias.GroupBy(d => d.Motivo).OrderByDescending(g => g.Max(d => d.Evidencia)))
+                {
+                    var estaAbierto = gruposAbiertos.Contains(grupo.Key);
+                    var visibles = estaAbierto ? grupo.ToList() : grupo.Take(MaximoVisibles_wys).ToList();
+                    <div class="mb-4">
+                        <h3 class="h5 ps-2" style="border-left: 6px solid @ColorCss(grupo.Key)">
+                            @NombreMotivo(grupo.Key) <span class="wys-ligero">(@grupo.Count())</span>
+                        </h3>
+                        @foreach (var d in visibles)
+                        {
+                            <div class="d-flex gap-3 align-items-start border-bottom py-2">
+                                <div class="h4 mb-0" style="min-width: 2.5rem; color: @ColorCss(d.Motivo)">@d.Numero</div>
+                                <div>
+                                    <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(d.Recorte)}")"
+                                         class="border" style="max-height: 140px; max-width: 100%" alt="Diferencia @d.Numero" />
+                                    <div class="small mt-1">
+                                        @if (d.EnLasDos)
+                                        {
+                                            <span class="wys-etiqueta">Las dos muestras</span>
+                                            <span class="text-secondary">posible fallo de plancha</span>
+                                        }
+                                        else
+                                        {
+                                            <strong>Solo muestra @(d.EnMuestra1 ? 1 : 2)</strong>
+                                        }
+                                        · zona de @d.AnchoMm.ToString("N0") × @d.AltoMm.ToString("N0") mm
+                                        · @d.AreaMm2.ToString("N1") mm² distintos
+                                    </div>
+                                    <div class="small text-secondary">Patrón a la izquierda; muestra(s) a la derecha.</div>
+                                </div>
+                            </div>
+                        }
+                        @if (grupo.Count() > MaximoVisibles_wys)
+                        {
+                            <button class="btn btn-link px-0" @onclick="() => AlternarGrupo(grupo.Key)">
+                                @(estaAbierto ? "Ver menos" : $"Ver más ({grupo.Count() - MaximoVisibles_wys})")
+                            </button>
+                        }
+                    </div>
+                }
+                <p class="small text-secondary">
+                    Siguiente paso: validar cada diferencia (correcta o incidencia) y registrar el
+                    autocontrol (disponible en una próxima versión).
+                </p>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    // Para un autocontrol rápido, de cada motivo se enseñan solo las más evidentes
+    private const int MaximoVisibles_wys = 5;
+
+    [Parameter, EditorRequired]
+    public ArchivoPreparado Patron { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ArchivoPreparado Muestra1 { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public ArchivoPreparado Muestra2 { get; set; } = default!;
+
+    private NivelTolerancia tolerancia = NivelTolerancia.Normal;
+    private ResultadoComparacion? resultado;
+    private bool estaComparando;
+    private string? error;
+    private readonly HashSet<MotivoDiferencia> gruposAbiertos = [];
+
+    /// <summary>
+    /// Al abrir, la tolerancia es la que ha fijado el administrador (parámetro ToleranciaPorDefecto).
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var valor = await ServicioParametros.ObtenerValorAsync(ServicioParametros.ToleranciaPorDefecto_wys, nameof(NivelTolerancia.Normal));
+        tolerancia = Enum.TryParse<NivelTolerancia>(valor, out var nivel) ? nivel : NivelTolerancia.Normal;
+    }
+
+    /// <summary>
+    /// Cambia la tolerancia; si ya se había comparado, se repite la comparación con la nueva.
+    /// </summary>
+    private async Task CambiarToleranciaAsync(NivelTolerancia nivel)
+    {
+        if (nivel == tolerancia) return;
+        tolerancia = nivel;
+        if (resultado is not null)
+        {
+            await CompararAsync();
+        }
+    }
+
+    /// <summary>
+    /// Compara las dos muestras con el patrón. Si algo falla, mensaje amable y detalle en el diario.
+    /// </summary>
+    private async Task CompararAsync()
+    {
+        estaComparando = true;
+        error = null;
+        try
+        {
+            resultado = await Comparador.CompararAsync(Patron, Muestra1, Muestra2, tolerancia);
+            gruposAbiertos.Clear();
+        }
+        catch (TimeoutException)
+        {
+            error = "La comparación está tardando demasiado. Comprueba los archivos e inténtalo de nuevo.";
+        }
+        catch (ArchivoNoValidoException e)
+        {
+            error = e.Message;
+        }
+        catch (Exception e) when (e is not AccesoDenegadoException)
+        {
+            var codigo = CodigoError.Generar();
+            Registro.LogError(e, "Error {Codigo} al comparar las muestras", codigo);
+            error = $"Algo no ha ido bien al comparar. Si se repite, avisa a IT indicando este código: {codigo}.";
+        }
+        finally
+        {
+            estaComparando = false;
+        }
+    }
+
+    private void AlternarGrupo(MotivoDiferencia motivo)
+    {
+        if (!gruposAbiertos.Remove(motivo))
+        {
+            gruposAbiertos.Add(motivo);
+        }
+    }
+
+    /// <summary>
+    /// Nombre de cada motivo para la pantalla.
+    /// </summary>
+    public static string NombreMotivo(MotivoDiferencia motivo) => motivo switch
+    {
+        MotivoDiferencia.Mancha => "Mancha o suciedad",
+        MotivoDiferencia.Falta => "Falta elemento o tinta",
+        _ => "Desplazamiento o texto doble"
+    };
+
+    // Mismos colores que la vista general: rojo WYS, azul WYS y naranja
+    private static string ColorCss(MotivoDiferencia motivo) => motivo switch
+    {
+        MotivoDiferencia.Mancha => "var(--wys-rojo)",
+        MotivoDiferencia.Falta => "var(--wys-azul-brillante)",
+        _ => "#FF8C00"
+    };
+
+    private static string Porcentaje(double? valor) => valor is null ? "-" : $"{valor.Value:N0} %";
+}

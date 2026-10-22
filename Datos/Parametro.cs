@@ -8,7 +8,8 @@ public enum TipoParametro
     Texto,
     Numero,
     SiNo,
-    Fecha
+    Fecha,
+    Lista
 }
 
 /// <summary>
@@ -29,6 +30,9 @@ public class Parametro : EntidadTrazable
     public string Descripcion { get; set; } = "";
 
     public TipoParametro Tipo { get; set; } = TipoParametro.Texto;
+
+    // Solo para el tipo Lista: los valores permitidos separados por "|" (por ejemplo "Estricta|Normal|Amplia")
+    public string? Opciones { get; set; }
 
     // Algunos parámetros no se pueden cambiar todavía (por ejemplo, los de IA mientras la
     // aplicación no use IA); EsEditable = false los muestra bloqueados con su motivo
