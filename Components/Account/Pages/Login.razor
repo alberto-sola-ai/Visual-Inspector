@@ -25,9 +25,10 @@
                 <label for="Input.Usuario" class="form-label">Usuario</label>
                 <ValidationMessage For="() => Input.Usuario" class="text-danger" />
             </div>
-            <div class="form-floating mb-3">
+            <div class="form-floating mb-3 vi-campo-password">
                 <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="contraseña" />
                 <label for="Input.Password" class="form-label">Contraseña</label>
+                <BotonMostrarPassword IdCampo="Input.Password" />
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Entrar</button>

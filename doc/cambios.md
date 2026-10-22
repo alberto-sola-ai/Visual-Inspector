@@ -1,5 +1,11 @@
 # Registro de cambios
 
+## 0.10.1 — 2026-10-22
+- Botón «ojo» en los campos de contraseña de la pantalla de entrada y de «Cambiar contraseña»:
+  al pulsarlo se ve lo escrito y al volver a pulsarlo se oculta. Al enviar el formulario se
+  oculta siempre. Script propio (`wwwroot/js/mostrar-password.js`): la política de seguridad
+  del navegador (CSP) no cambia.
+
 ## 0.10.0 — 2026-10-22
 - Los autocontroles ya no van por horas fijas: el operario los hace cuando lo considera. Cada uno
   lleva un número dentro de su orden («Control 1 (inicial)», «Control 2»…) y el tiempo real

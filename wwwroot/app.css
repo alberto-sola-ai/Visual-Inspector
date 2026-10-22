@@ -54,6 +54,45 @@ h1:focus {
     border-color: var(--wys-gris-azulado);
 }
 
+/* Campo de contraseña con el botón "ojo" a la derecha, dentro del propio campo */
+.vi-campo-password {
+    position: relative;
+}
+
+.vi-campo-password .form-control {
+    padding-right: 3rem;   /* hueco para que el texto no quede debajo del ojo */
+}
+
+.vi-ojo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 3rem;
+    height: calc(3.5rem + 2px);   /* la altura de un campo con etiqueta flotante */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    color: var(--wys-azul-oscuro);
+    z-index: 5;
+}
+
+.vi-ojo:hover,
+.vi-ojo:focus-visible {
+    color: var(--wys-azul-brillante);
+}
+
+/* Se ve un ojo u otro según si la contraseña está oculta o a la vista */
+.vi-ojo .vi-ojo__tachado,
+.vi-ojo.vi-ojo--visible .vi-ojo__abierto {
+    display: none;
+}
+
+.vi-ojo.vi-ojo--visible .vi-ojo__tachado {
+    display: inline;
+}
+
 /* Aviso que aparece si se pierde la conexión con el servidor */
 #blazor-error-ui {
     background: var(--wys-rojo);

@@ -19,6 +19,8 @@
     <Routes @rendermode="ModoPagina" />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    @* Botón "ojo" de los campos de contraseña (script propio: la CSP no permite otros) *@
+    <script src="@Assets["js/mostrar-password.js"]"></script>
 </body>
 
 </html>
