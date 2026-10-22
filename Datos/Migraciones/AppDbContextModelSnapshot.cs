@@ -169,6 +169,9 @@ namespace VisualInspector.Datos.Migraciones
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<bool>("EsLitografiaDistintaConfirmada")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(30)
@@ -183,12 +186,35 @@ namespace VisualInspector.Datos.Migraciones
                     b.Property<DateTime?>("FechaModificacion")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<DateTime?>("FechaRegistro")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<int>("HorasDesdeInicio")
                         .HasColumnType("int");
+
+                    b.Property<string>("HuellaMuestra1")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("HuellaMuestra2")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("HuellaPatron")
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("Litografia")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)");
 
                     b.Property<string>("ModificadoPor")
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
+
+                    b.Property<string>("NombreArchivoPatron")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Observaciones")
                         .HasMaxLength(500)
@@ -196,6 +222,34 @@ namespace VisualInspector.Datos.Migraciones
 
                     b.Property<int>("OrdenFabricacionId")
                         .HasColumnType("int");
+
+                    b.Property<string>("RegistradoPor")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Resultado")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<decimal?>("SimilitudEntreMuestras")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal?>("SimilitudMuestra1")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<decimal?>("SimilitudMuestra2")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Tolerancia")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("VersionPatron")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
 
                     b.HasKey("Id");
 
@@ -205,6 +259,91 @@ namespace VisualInspector.Datos.Migraciones
                         .IsUnique();
 
                     b.ToTable("Autocontroles", (string)null);
+                });
+
+            modelBuilder.Entity("VisualInspector.Datos.Diferencia", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("AltoMm")
+                        .HasPrecision(7, 1)
+                        .HasColumnType("decimal(7,1)");
+
+                    b.Property<decimal>("AnchoMm")
+                        .HasPrecision(7, 1)
+                        .HasColumnType("decimal(7,1)");
+
+                    b.Property<decimal>("AreaMm2")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<int>("AutocontrolId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
+                    b.Property<string>("CreadoPor")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<bool>("EnMuestra1")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("EnMuestra2")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<decimal>("Evidencia")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaModificacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ModificadoPor")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<int>("Numero")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("Recorte")
+                        .IsRequired()
+                        .HasColumnType("mediumblob");
+
+                    b.Property<string>("Validacion")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<decimal>("XMm")
+                        .HasPrecision(7, 1)
+                        .HasColumnType("decimal(7,1)");
+
+                    b.Property<decimal>("YMm")
+                        .HasPrecision(7, 1)
+                        .HasColumnType("decimal(7,1)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AutocontrolId", "Numero")
+                        .IsUnique();
+
+                    b.ToTable("Diferencias", (string)null);
                 });
 
             modelBuilder.Entity("VisualInspector.Datos.OrdenFabricacion", b =>
@@ -237,6 +376,10 @@ namespace VisualInspector.Datos.Migraciones
 
                     b.Property<DateTime?>("FechaModificacion")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Litografia")
+                        .HasMaxLength(8)
+                        .HasColumnType("varchar(8)");
 
                     b.Property<string>("ModificadoPor")
                         .HasMaxLength(256)
@@ -465,6 +608,22 @@ namespace VisualInspector.Datos.Migraciones
                         .IsRequired();
 
                     b.Navigation("OrdenFabricacion");
+                });
+
+            modelBuilder.Entity("VisualInspector.Datos.Diferencia", b =>
+                {
+                    b.HasOne("VisualInspector.Datos.Autocontrol", "Autocontrol")
+                        .WithMany("Diferencias")
+                        .HasForeignKey("AutocontrolId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Autocontrol");
+                });
+
+            modelBuilder.Entity("VisualInspector.Datos.Autocontrol", b =>
+                {
+                    b.Navigation("Diferencias");
                 });
 
             modelBuilder.Entity("VisualInspector.Datos.OrdenFabricacion", b =>

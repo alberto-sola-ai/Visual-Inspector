@@ -1,0 +1,88 @@
+@using VisualInspector.Servicios.Vision
+
+@* Lo que quedó registrado de un autocontrol. Solo lectura: un registro de fabricación no se cambia *@
+<h2 class="h4 mt-5">Registro del autocontrol</h2>
+
+<div class="d-flex flex-wrap gap-3 align-items-stretch">
+    <div class="wys-caja @(Registro.Resultado == ResultadoAutocontrol.ConIncidencias ? "wys-caja--roja" : "wys-caja--azul")">
+        <div class="small text-uppercase">Resultado</div>
+        <div class="h4 text-white mb-0">@ServicioAutocontroles.NombreResultado(Registro.Resultado)</div>
+    </div>
+    <div class="border p-3 small">
+        <div><strong>Patrón:</strong> @Registro.Litografia @Registro.VersionPatron</div>
+        <div class="text-break text-secondary">@Registro.NombreArchivoPatron</div>
+        @if (Registro.EsLitografiaDistintaConfirmada)
+        {
+            <div class="text-danger">Litografía distinta de la de la orden, confirmada por el operario.</div>
+        }
+    </div>
+    <div class="border p-3 small">
+        <div><strong>Tolerancia:</strong> @Registro.Tolerancia</div>
+        <div><strong>Parecido</strong> (orientativo): muestra 1 @Porcentaje(Registro.SimilitudMuestra1) ·
+            muestra 2 @Porcentaje(Registro.SimilitudMuestra2) · entre muestras @Porcentaje(Registro.SimilitudEntreMuestras)</div>
+    </div>
+    <div class="border p-3 small">
+        <div><strong>Registrado por</strong> @Registro.RegistradoPor</div>
+        <div>el @Registro.FechaRegistro?.ToString("dd/MM/yyyy HH:mm")</div>
+    </div>
+</div>
+
+@if (Registro.Diferencias.Count > 0)
+{
+    @* Diferencias con su validación, agrupadas por motivo *@
+    @foreach (var grupo in Registro.Diferencias.GroupBy(d => d.Motivo))
+    {
+        <h3 class="h5 ps-2 mt-4" style="border-left: 6px solid @ComparacionAutocontrol.ColorCss(grupo.Key)">
+            @ComparacionAutocontrol.NombreMotivo(grupo.Key) <span class="wys-ligero">(@grupo.Count())</span>
+        </h3>
+        <table class="table align-middle">
+            <tbody>
+                @foreach (var d in grupo)
+                {
+                    <tr>
+                        <td style="width: 3rem" class="h5" >@d.Numero</td>
+                        <td style="width: 45%">
+                            <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(d.Recorte)}")"
+                                 class="border" style="max-height: 120px; max-width: 100%" alt="Diferencia @d.Numero" />
+                        </td>
+                        <td class="small">
+                            @if (d.Validacion == ValidacionDiferencia.Incidencia)
+                            {
+                                <span class="wys-etiqueta">Incidencia</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-success">Correcta</span>
+                            }
+                            <span class="ms-2">@(d.EnMuestra1 && d.EnMuestra2 ? "Las dos muestras" : d.EnMuestra1 ? "Muestra 1" : "Muestra 2")</span>
+                            · @d.AnchoMm.ToString("N0") × @d.AltoMm.ToString("N0") mm
+                            @if (!string.IsNullOrEmpty(d.Comentario))
+                            {
+                                @* El comentario se muestra como texto (Blazor lo escapa): nunca como HTML *@
+                                <div class="mt-1" style="white-space: pre-line">@d.Comentario</div>
+                            }
+                            <div class="wys-trazabilidad mt-1">Validada por @d.ValidadoPor el @d.FechaValidacion.ToString("dd/MM/yyyy HH:mm")</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+<details class="small text-secondary mt-3">
+    <summary>Huellas de los archivos usados (SHA-256)</summary>
+    <div class="mt-2">
+        Patrón: <code class="text-break">@Registro.HuellaPatron</code><br />
+        Muestra 1: <code class="text-break">@Registro.HuellaMuestra1</code><br />
+        Muestra 2: <code class="text-break">@Registro.HuellaMuestra2</code>
+    </div>
+    <p class="mt-2 mb-0">Los archivos no se guardan; la huella permite comprobar más adelante si un archivo es exactamente el que se usó.</p>
+</details>
+
+@code {
+    [Parameter, EditorRequired]
+    public DatosRegistro Registro { get; set; } = default!;
+
+    private static string Porcentaje(decimal? valor) => valor is null ? "-" : $"{valor.Value:N0} %";
+}

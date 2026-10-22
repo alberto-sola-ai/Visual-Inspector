@@ -45,10 +45,18 @@ else
         <p style="white-space: pre-line">@ficha.Observaciones</p>
     }
 
-    @* Solo quien puede hacer autocontroles ve la zona de carga; el servicio lo vuelve a comprobar *@
-    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
-        <CargaArchivosAutocontrol />
-    </AuthorizeView>
+    @if (ficha.Registro is not null)
+    {
+        @* Ya registrado: solo se consulta *@
+        <RegistroAutocontrol Registro="ficha.Registro" />
+    }
+    else
+    {
+        @* Solo quien puede hacer autocontroles ve la zona de carga; el servicio lo vuelve a comprobar *@
+        <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
+            <CargaArchivosAutocontrol AutocontrolId="ficha.Id" LitografiaOrden="@ficha.LitografiaOrden" OnRegistrado="RecargarAsync" />
+        </AuthorizeView>
+    }
 
     @* Quién y cuándo creó o modificó este autocontrol *@
     <p class="wys-trazabilidad">
@@ -71,6 +79,14 @@ else
     /// Carga la ficha del autocontrol indicado en la dirección.
     /// </summary>
     protected override async Task OnParametersSetAsync()
+    {
+        await RecargarAsync();
+    }
+
+    /// <summary>
+    /// Vuelve a leer la ficha; se usa al abrir y justo después de registrar el autocontrol.
+    /// </summary>
+    private async Task RecargarAsync()
     {
         ficha = await ServicioAutocontroles.ObtenerAsync(Id);
         noExiste = ficha is null;

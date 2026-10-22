@@ -1,6 +1,6 @@
 # Cómo protege esta aplicación tus datos
 
-Última actualización: 22/10/2026 · Versión: 0.5.0
+Última actualización: 22/10/2026 · Versión: 0.6.0
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.
@@ -46,7 +46,13 @@ ni de la extensión), no deja pasar archivos de más de 50 MB ni imágenes gigan
 12.000 × 12.000 píxeles), corta cualquier proceso que tarde más de 2 minutos, y solo
 quien tiene permiso para hacer autocontroles puede cargarlos. Los archivos no se guardan: se
 revisan en memoria y se olvidan al salir de la pantalla. Solo se apunta su "huella" (SHA-256),
-como la huella dactilar de un documento, para poder demostrar después cuál se usó.
+como la huella dactilar de un documento, para poder demostrar después cuál se usó. De cada
+diferencia se guarda solo un recorte pequeño, como foto de prueba para el informe.
+
+## Un registro que no se puede retocar
+Cuando el operario registra un autocontrol, queda guardado tal cual: quién lo validó, cuándo, qué
+decidió en cada diferencia y con qué comentario. Después ya no se puede cambiar, ni siquiera desde
+la pantalla: el servidor lo rechaza. Como una hoja firmada del cuaderno de fabricación.
 
 ## Nada de secretos a la vista
 Las claves y contraseñas internas no están escritas en el programa: se guardan

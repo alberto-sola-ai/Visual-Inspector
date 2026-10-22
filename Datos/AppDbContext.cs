@@ -20,6 +20,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
     public DbSet<Parametro> Parametros => Set<Parametro>();
     public DbSet<OrdenFabricacion> OrdenesFabricacion => Set<OrdenFabricacion>();
     public DbSet<Autocontrol> Autocontroles => Set<Autocontrol>();
+    public DbSet<Diferencia> Diferencias => Set<Diferencia>();
 
     /// <summary>
     /// Dibuja el plano de las tablas: nombres, longitudes y qué valores no se pueden repetir.
@@ -58,6 +59,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             orden.HasIndex(o => o.Codigo).IsUnique();
             orden.Property(o => o.Codigo).HasMaxLength(10);
             orden.Property(o => o.Descripcion).HasMaxLength(200);
+            orden.Property(o => o.Litografia).HasMaxLength(8);
             orden.Property(o => o.CreadoPor).HasMaxLength(256);
             orden.Property(o => o.ModificadoPor).HasMaxLength(256);
         });
@@ -77,6 +79,44 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             autocontrol.Property(a => a.Observaciones).HasMaxLength(500);
             autocontrol.Property(a => a.CreadoPor).HasMaxLength(256);
             autocontrol.Property(a => a.ModificadoPor).HasMaxLength(256);
+
+            // Datos del registro
+            autocontrol.Property(a => a.NombreArchivoPatron).HasMaxLength(255);
+            autocontrol.Property(a => a.Litografia).HasMaxLength(8);
+            autocontrol.Property(a => a.VersionPatron).HasMaxLength(10);
+            autocontrol.Property(a => a.HuellaPatron).HasMaxLength(64);
+            autocontrol.Property(a => a.HuellaMuestra1).HasMaxLength(64);
+            autocontrol.Property(a => a.HuellaMuestra2).HasMaxLength(64);
+            autocontrol.Property(a => a.Tolerancia).HasMaxLength(20);
+            autocontrol.Property(a => a.SimilitudMuestra1).HasPrecision(5, 2);
+            autocontrol.Property(a => a.SimilitudMuestra2).HasPrecision(5, 2);
+            autocontrol.Property(a => a.SimilitudEntreMuestras).HasPrecision(5, 2);
+            autocontrol.Property(a => a.Resultado).HasConversion<string>().HasMaxLength(30);
+            autocontrol.Property(a => a.RegistradoPor).HasMaxLength(256);
+        });
+
+        builder.Entity<Diferencia>(diferencia =>
+        {
+            diferencia.ToTable("Diferencias");
+            diferencia.HasIndex(d => new { d.AutocontrolId, d.Numero }).IsUnique();
+            // Las diferencias van con su autocontrol, que nunca se borra
+            diferencia.HasOne(d => d.Autocontrol)
+                .WithMany(a => a.Diferencias)
+                .HasForeignKey(d => d.AutocontrolId)
+                .OnDelete(DeleteBehavior.Restrict);
+            // Motivo y validación como texto, para que se entiendan al mirar la tabla
+            diferencia.Property(d => d.Motivo).HasConversion<string>().HasMaxLength(30);
+            diferencia.Property(d => d.Validacion).HasConversion<string>().HasMaxLength(20);
+            diferencia.Property(d => d.XMm).HasPrecision(7, 1);
+            diferencia.Property(d => d.YMm).HasPrecision(7, 1);
+            diferencia.Property(d => d.AnchoMm).HasPrecision(7, 1);
+            diferencia.Property(d => d.AltoMm).HasPrecision(7, 1);
+            diferencia.Property(d => d.AreaMm2).HasPrecision(9, 2);
+            diferencia.Property(d => d.Evidencia).HasPrecision(9, 2);
+            diferencia.Property(d => d.Recorte).HasColumnType("mediumblob");   // hasta 16 MB; los recortes ocupan ~30 KB
+            diferencia.Property(d => d.Comentario).HasMaxLength(500);
+            diferencia.Property(d => d.CreadoPor).HasMaxLength(256);
+            diferencia.Property(d => d.ModificadoPor).HasMaxLength(256);
         });
     }
 

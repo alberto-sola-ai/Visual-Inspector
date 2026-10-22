@@ -1,5 +1,20 @@
 # Registro de cambios
 
+## 0.6.0 — 2026-10-22
+- Formulario de validación: cada diferencia se marca como Correcta o Incidencia (comentario
+  obligatorio en las incidencias); «Marcar pendientes como correctas» valida un grupo entero de un
+  clic, también las diferencias plegadas. Hay que validar todas para poder registrar.
+- Botón «Registrar autocontrol»: guarda en una sola operación el patrón (archivo, litografía y
+  versión), las huellas SHA-256 de los tres archivos, la tolerancia, las similitudes, el resultado
+  (sin diferencias / diferencias correctas / con incidencias) y cada diferencia con su recorte y su
+  validación. Después ya no se puede cambiar.
+- Si la litografía del patrón no coincide con la de la orden, se avisa y hay que confirmar que el
+  patrón es el correcto (queda registrado). La orden toma la litografía de su primer autocontrol.
+- No se deja registrar si alguna muestra no se ha podido comparar.
+- Ficha de solo lectura de los autocontroles registrados y columna «Resultado» en el listado.
+- Base de datos: tabla `Diferencias` y columnas nuevas en `Autocontroles` y `OrdenesFabricacion`
+  (migración AnadeRegistroAutocontrol).
+
 ## 0.5.0 — 2026-10-22
 - Comparación de las dos muestras con el patrón (botón «Comparar con el patrón»): ajuste fino de
   la colocación por zonas, tono igualado tinta por tinta (no se analiza el color) y búsqueda de

@@ -39,6 +39,7 @@ else
                 <th>Fecha y hora</th>
                 <th>Tipo</th>
                 <th>Estado</th>
+                <th>Resultado</th>
                 <th>Realizado por</th>
             </tr>
         </thead>
@@ -50,6 +51,16 @@ else
                     <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@ServicioAutocontroles.NombreTipo(a.HorasDesdeInicio)</td>
                     <td>@ServicioAutocontroles.NombreEstado(a.Estado)</td>
+                    <td>
+                        @if (a.Resultado == ResultadoAutocontrol.ConIncidencias)
+                        {
+                            <span class="wys-etiqueta">@ServicioAutocontroles.NombreResultado(a.Resultado)</span>
+                        }
+                        else
+                        {
+                            @ServicioAutocontroles.NombreResultado(a.Resultado)
+                        }
+                    </td>
                     <td>@a.CreadoPor</td>
                 </tr>
             }

@@ -1,6 +1,6 @@
 # Arquitectura de Visual Inspector
 
-Última actualización: 22/10/2026 · Versión 0.5.0
+Última actualización: 22/10/2026 · Versión 0.6.0
 
 ## Resumen
 
@@ -80,8 +80,9 @@ Detalle completo en [seguridad.md](seguridad.md).
 | `AspNetRoles`, `AspNetUserRoles` | Roles `Administrador` y `Usuario` |
 | `AspNetUserClaims` | Permisos concedidos (tipo `permiso`) |
 | `Parametros` | Ajustes de la aplicación (`MfaActivo`, `IaActiva`…) |
-| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción y si está activa |
-| `Autocontroles` | Orden, fecha y hora (las pone el servidor), `HorasDesdeInicio` (0 = Inicial, 4, 8…), estado y observaciones. Índice único orden + horas: una orden no puede tener dos controles del mismo tipo |
+| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción, litografía (la del primer autocontrol registrado) y si está activa |
+| `Autocontroles` | Orden, fecha y hora (las pone el servidor), `HorasDesdeInicio` (0 = Inicial, 4, 8…), estado (pendiente de archivos / registrado) y observaciones. Al registrar: archivo, litografía y versión del patrón, huellas SHA-256 de los tres archivos, tolerancia, similitudes (%), resultado (sin diferencias / diferencias correctas / con incidencias), si se confirmó una litografía distinta, quién y cuándo registró. Índice único orden + horas |
+| `Diferencias` | Una fila por diferencia registrada: número, motivo (mancha / falta / desplazamiento), en qué muestra(s), zona y superficie en mm, evidencia, recorte JPEG en color (~30 KB, `mediumblob`), validación (correcta / incidencia), comentario (obligatorio en incidencias) y trazabilidad (quién validó y cuándo) |
 
 Todas las tablas propias guardan quién y cuándo creó y modificó cada registro (`CreadoPor`,
 `FechaCreacion`, `ModificadoPor`, `FechaModificacion`), en hora de Madrid. Juego de caracteres
@@ -125,10 +126,7 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
 
 | Tabla | Contenido |
 |---|---|
-| `OrdenesFabricacion` (ampliación) | Litografía (la del primer patrón cargado), estado (en fabricación / finalizada), fecha de fin y quién la finalizó |
-| `Autocontroles` (ampliación) | Nombre del archivo del patrón, litografía, versión, huella SHA-256 del patrón y de cada muestra, resultado global (sin diferencias / diferencias correctas / con incidencias), quién y cuándo validó |
-| `ResultadosComparacion` | Una fila por comparación (patrón ↔ muestra 1, patrón ↔ muestra 2, muestra 1 ↔ muestra 2): similitud y número de diferencias |
-| `Diferencias` | Motivo (mancha, falta, sobra, desplazamiento, pliegue o borde) para agruparlas, zona en mm sobre el patrón, tamaño, en qué muestra(s) aparece, **recorte pequeño** (patrón y muestra lado a lado, unos 20-50 KB), validación (pendiente / correcta / incidencia), comentario, quién y cuándo |
+| `OrdenesFabricacion` (ampliación) | Ya tiene la litografía (la del primer autocontrol registrado). Falta: estado (en fabricación / finalizada), fecha de fin y quién la finalizó |
 
 **Los archivos completos no se guardan** (decisión de Alberto, 22/10/2026): el patrón y las
 muestras se cargan desde el PC, se procesan en memoria y se descartan al terminar. Solo se guarda
@@ -240,5 +238,5 @@ En el orden del principio de desarrollo del MVP (cada paso, solo cuando el anter
 4. ~~Lectura de la litografía y la versión del nombre del patrón; recorte de la pieza en cada
    muestra y localización dentro del patrón (giro y corte libres).~~ Hecho (0.4.0).
 5. ~~Comparaciones y lista de posibles diferencias, con su recorte.~~ Hecho (0.5.0).
-6. Formulario de validación (correcta / incidencia + comentario) y registro del autocontrol.
+6. ~~Formulario de validación (correcta / incidencia + comentario) y registro del autocontrol.~~ Hecho (0.6.0).
 7. Finalizar la orden e informe de fabricación (pantalla + PDF con marca WYS).

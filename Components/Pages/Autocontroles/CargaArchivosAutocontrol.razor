@@ -65,6 +65,14 @@
             {
                 <div class="text-danger small">El formato no es correcto: L seguida de 7 cifras.</div>
             }
+            else if (LitografiaOrden is not null && ServicioArchivosAutocontrol.EsLitografiaValida(Litografia)
+                     && !string.Equals(LitografiaOrden, Litografia.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                @* Aviso temprano: la orden ya tiene otra litografía (posible patrón equivocado) *@
+                <div class="text-danger small">
+                    Esta orden usa la litografía <strong>@LitografiaOrden</strong>. Comprueba que el patrón es el correcto.
+                </div>
+            }
         </div>
         <div class="col-3">
             <label class="form-label" for="version">Versión del patrón</label>
@@ -128,7 +136,9 @@
         @* Comparación con el patrón: solo si se ha podido localizar alguna muestra *@
         @if (resultados.Any(x => x.EsLocalizada))
         {
-            <ComparacionAutocontrol Patron="patron.Archivo!" Muestra1="muestra1.Archivo!" Muestra2="muestra2.Archivo!" />
+            <ComparacionAutocontrol AutocontrolId="AutocontrolId" Patron="patron.Archivo!" Muestra1="muestra1.Archivo!" Muestra2="muestra2.Archivo!"
+                                    Litografia="@Litografia.Trim().ToUpperInvariant()" VersionPatron="@VersionPatron.Trim().ToUpperInvariant()"
+                                    LitografiaOrden="@LitografiaOrden" OnRegistrado="OnRegistrado" />
         }
     }
 }
@@ -146,6 +156,14 @@
 
     public string Litografia { get; set; } = "";
     public string VersionPatron { get; set; } = "";
+
+    [Parameter, EditorRequired] public int AutocontrolId { get; set; }
+
+    // Litografía que ya tiene la orden (la de su primer autocontrol registrado), o null
+    [Parameter] public string? LitografiaOrden { get; set; }
+
+    // Aviso a la ficha para que se recargue cuando el autocontrol queda registrado
+    [Parameter] public EventCallback OnRegistrado { get; set; }
 
     private bool EstanTodosCargados =>
         huecos.All(h => h.Archivo is not null)

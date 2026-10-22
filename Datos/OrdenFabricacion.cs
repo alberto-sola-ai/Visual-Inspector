@@ -13,6 +13,10 @@ public class OrdenFabricacion : EntidadTrazable
 
     public string? Descripcion { get; set; }
 
+    // Litografía del diseño (L + 7 cifras): la del primer autocontrol registrado de la orden.
+    // Si un autocontrol posterior usa otra, se avisa (posible patrón equivocado).
+    public string? Litografia { get; set; }
+
     // Las órdenes no se borran (perderíamos el rastro de sus autocontroles): se desactivan
     public bool Activa { get; set; } = true;
 
