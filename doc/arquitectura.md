@@ -80,8 +80,8 @@ Detalle completo en [seguridad.md](seguridad.md).
 | `AspNetRoles`, `AspNetUserRoles` | Roles `Administrador` y `Usuario` |
 | `AspNetUserClaims` | Permisos concedidos (tipo `permiso`) |
 | `Parametros` | Ajustes de la aplicación (`MfaActivo`, `IaActiva`…) |
-| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción, litografía (la del primer autocontrol registrado) y si está activa |
-| `Autocontroles` | Orden, fecha y hora (las pone el servidor), `HorasDesdeInicio` (0 = Inicial, 4, 8…), estado (pendiente de archivos / registrado) y observaciones. Al registrar: archivo, litografía y versión del patrón, huellas SHA-256 de los tres archivos, tolerancia, similitudes (%), resultado (sin diferencias / diferencias correctas / con incidencias), si se confirmó una litografía distinta, quién y cuándo registró. Índice único orden + horas |
+| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción, litografía (la del primer autocontrol registrado), estado (en fabricación / finalizada), fecha de fin y quién la finalizó |
+| `Autocontroles` | Orden, fecha y hora (las pone el servidor), `NumeroControl` (1 = inicial, 2, 3…; el operario decide cuándo, se recomienda cada 4 horas), estado (pendiente de archivos / registrado) y observaciones. Al registrar: archivo, litografía y versión del patrón, huellas SHA-256 de los tres archivos, tolerancia, similitudes (%), resultado (sin diferencias / diferencias correctas / con incidencias), si se confirmó una litografía distinta, quién y cuándo registró. Anulación: si está anulado, motivo, quién y cuándo. Índice único orden + número (el siguiente es el último + 1) |
 | `Diferencias` | Una fila por diferencia registrada: número, motivo (mancha / falta / desplazamiento), en qué muestra(s), zona y superficie en mm, evidencia, recorte JPEG en color (~30 KB, `mediumblob`), validación (correcta / incidencia), comentario (obligatorio en incidencias) y trazabilidad (quién validó y cuándo) |
 
 Todas las tablas propias guardan quién y cuándo creó y modificó cada registro (`CreadoPor`,
@@ -97,7 +97,7 @@ corregir**, con un comentario. Todo queda registrado. Al **finalizar la fabricac
 orden: autocontroles, diferencias, validaciones e incidencias.
 
 ```
-AUTOCONTROL (Inicial, +4 h, +8 h…)
+AUTOCONTROL (Control 1 (inicial), Control 2… cuando lo decide el operario; se recomienda cada 4 h)
   Cargar patrón + 2 muestras ─► comparar ─► lista de posibles diferencias
                                                 │
                      FORMULARIO DE VALIDACIÓN (diferencias agrupadas por motivo)
@@ -122,11 +122,24 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
 - La comparación muestra 1 ↔ muestra 2 indica si una diferencia aparece **en los dos tubos**
   (posible fallo de plancha, se repetirá) o **en uno solo** (mancha puntual).
 
-### Previsto para el MVP
+### Finalización e informe de fabricación (0.7.0)
 
-| Tabla | Contenido |
-|---|---|
-| `OrdenesFabricacion` (ampliación) | Ya tiene la litografía (la del primer autocontrol registrado). Falta: estado (en fabricación / finalizada), fecha de fin y quién la finalizó |
+- Finaliza la orden quien puede hacer autocontroles (`Autocontroles.Realizar`), y solo si tiene
+  autocontroles y todos están registrados. Después no admite autocontroles nuevos.
+- Solo el administrador (`Administracion`) puede **reabrirla** (0.8.0): vuelve a «En
+  fabricación», se borran la fecha de fin y quién la finalizó, y el informe vuelve a ser
+  provisional. Quién y cuándo la reabrió queda en `ModificadoPor`/`FechaModificacion` y en
+  `Log-Wys-Seg`. No se guarda motivo ni historial de reaperturas.
+- El administrador puede **anular** un autocontrol (0.9.0): queda en la orden con su motivo,
+  pero no cuenta en las cifras, al finalizar ni en el informe (donde sale en gris con el
+  motivo). O puede **eliminarlo**: se borra con sus diferencias. Desde la 0.10.0 las dos
+  acciones se pueden hacer también con la orden finalizada, sin reabrirla, y el informe se
+  actualiza solo. Las dos se apuntan en `Log-Wys-Seg`.
+- El informe se puede ver antes de finalizar, marcado como **PROVISIONAL**.
+- Pantalla: `/ordenes/{id}/informe`. PDF: `/ordenes/{id}/informe.pdf`, que exige
+  `Autocontroles.Ver` y vuelve a comprobarlo en el servicio.
+- El PDF lo genera `Servicios/Informes/GeneradorInformePdf.cs` con PDFsharp-MigraDoc 6.2.4 (MIT),
+  con el logo y las fuentes Lato de `recursos/`. Comprobado en Windows y en Linux (Docker).
 
 **Los archivos completos no se guardan** (decisión de Alberto, 22/10/2026): el patrón y las
 muestras se cargan desde el PC, se procesan en memoria y se descartan al terminar. Solo se guarda
@@ -223,7 +236,10 @@ rechazo.
 | Sin TLS en la aplicación | Ámbito Interno WYS: lo gestiona la red de la empresa |
 | No se guardan los archivos completos | Decisión de Alberto (22/10/2026): se procesan en memoria; queda el registro, la huella SHA-256 de cada archivo y un recorte pequeño de cada diferencia |
 | Validación humana de cada diferencia | Decisión de Alberto (22/10/2026): la aplicación propone, la persona decide (correcta / incidencia). Las incidencias solo se registran |
-| Informe de fabricación en pantalla y PDF WYS | Decisión de Alberto (22/10/2026) |
+| Informe de fabricación en pantalla y PDF WYS | Decisión de Alberto (22/10/2026). PDF con PDFsharp-MigraDoc 6.2.4, la última con licencia MIT: no actualizar (desde la 6.5.0 es AGPL) |
+| Finalizar la orden | Decisión de Alberto (22/10/2026): la finaliza quien hace autocontroles, nunca con autocontroles sin registrar; antes, el informe es provisional |
+| Reabrir la orden | Decisión de Alberto (22/10/2026): solo el administrador, sin motivo ni tabla de historial de momento |
+| Anular o eliminar autocontroles | Decisión de Alberto (22/10/2026): solo el administrador. Anular deja rastro con motivo; eliminar lo borra de la orden y del informe, y solo queda apuntado en el diario de seguridad |
 | Colores mantenidos, color no analizado | Decisión de Alberto (22/10/2026): todo se ve y se guarda en color; no se mide el tono. Por dentro, la localización de puntos puede usar una copia en gris que no se muestra |
 | Diferencias agrupadas por motivo | Decisión de Alberto (22/10/2026): si hay muchas, se agrupan (manchas, faltan, sobran, desplazamientos, pliegues o bordes) y se pueden validar por grupo o una a una |
 
@@ -239,4 +255,4 @@ En el orden del principio de desarrollo del MVP (cada paso, solo cuando el anter
    muestra y localización dentro del patrón (giro y corte libres).~~ Hecho (0.4.0).
 5. ~~Comparaciones y lista de posibles diferencias, con su recorte.~~ Hecho (0.5.0).
 6. ~~Formulario de validación (correcta / incidencia + comentario) y registro del autocontrol.~~ Hecho (0.6.0).
-7. Finalizar la orden e informe de fabricación (pantalla + PDF con marca WYS).
+7. ~~Finalizar la orden e informe de fabricación (pantalla + PDF con marca WYS).~~ Hecho (0.7.0).

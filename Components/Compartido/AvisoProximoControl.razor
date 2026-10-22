@@ -1,0 +1,19 @@
+@* Recuerda cuánto ha pasado desde el último autocontrol de la orden y que se recomienda uno cada
+   4 horas. Es solo un aviso: el operario decide cuándo hacerlo *@
+@if (FechaUltimo is not null)
+{
+    var transcurrido = DateTime.Now - FechaUltimo.Value;
+    var esRecomendable = transcurrido.TotalHours >= ServicioAutocontroles.HorasRecomendadasEntreControles_wys;
+    <div class="alert @(esRecomendable ? "alert-warning" : "alert-light border") py-2 mb-3" role="status">
+        Último autocontrol hace @ServicioAutocontroles.FormatearDuracion(transcurrido < TimeSpan.Zero ? TimeSpan.Zero : transcurrido).
+        Se recomienda uno cada @ServicioAutocontroles.HorasRecomendadasEntreControles_wys horas@(esRecomendable ? ": ya toca hacer el siguiente." : ".")
+    </div>
+}
+
+@code {
+    /// <summary>
+    /// Fecha y hora del último autocontrol de la orden; si no hay ninguno, no se enseña nada.
+    /// </summary>
+    [Parameter]
+    public DateTime? FechaUltimo { get; set; }
+}

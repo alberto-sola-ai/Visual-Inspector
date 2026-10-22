@@ -19,6 +19,7 @@ publicar/
 
 # Configuración personal de los editores
 .vs/
+.vscode/
 *.user
 *.suo
 

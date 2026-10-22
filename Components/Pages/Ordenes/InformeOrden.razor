@@ -1,0 +1,158 @@
+@page "/ordenes/{Id:int}/informe"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@using VisualInspector.Servicios.Vision
+@using VisualInspector.Components.Pages.Autocontroles
+@inject ServicioOrdenes ServicioOrdenes
+
+<PageTitle>Informe de fabricación · Visual Inspector</PageTitle>
+
+@* Informe de fabricación de una orden: lo mismo que el PDF, en pantalla *@
+@if (noExiste)
+{
+    <h1>Informe de fabricación</h1>
+    <p>Esta orden no existe.</p>
+}
+else if (informe is null)
+{
+    <h1>Informe de fabricación</h1>
+    <p>Cargando…</p>
+}
+else
+{
+    var o = informe.Orden;
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1 class="mb-1">Informe de fabricación</h1>
+            <p class="mb-1"><a href="ordenes">Órdenes</a> › <a href="@($"ordenes/{o.Id}")">@o.Codigo</a> › Informe</p>
+            @if (informe.EsProvisional)
+            {
+                <span class="wys-etiqueta">Provisional · la orden aún no está finalizada</span>
+            }
+        </div>
+        @* La descarga va a una dirección propia que vuelve a comprobar el permiso *@
+        <a class="btn btn-primary btn-lg" href="@($"ordenes/{o.Id}/informe.pdf")" download data-enhance-nav="false">
+            Descargar PDF
+        </a>
+    </div>
+
+    <h2 class="h4 mt-4">Datos de la orden</h2>
+    <table class="table table-sm" style="max-width: 48rem">
+        <tbody>
+            <tr><th style="width: 14rem">Orden de fabricación</th><td>@o.Codigo</td></tr>
+            <tr><th>Litografía</th><td>@(o.Litografia ?? "-")</td></tr>
+            <tr><th>Versiones del patrón</th><td>@(informe.VersionesPatron.Count > 0 ? string.Join(", ", informe.VersionesPatron) : "-")</td></tr>
+            <tr><th>Primer autocontrol</th><td>@(o.Autocontroles.FirstOrDefault()?.FechaControl.ToString("dd/MM/yyyy HH:mm") ?? "-")</td></tr>
+            <tr><th>Último autocontrol</th><td>@(o.Autocontroles.LastOrDefault()?.FechaControl.ToString("dd/MM/yyyy HH:mm") ?? "-")</td></tr>
+            <tr><th>Estado</th><td>@ServicioOrdenes.NombreEstado(o.Estado)</td></tr>
+            <tr><th>Finalizada</th><td>@(o.FechaFin is null ? "-" : $"{o.FechaFin:dd/MM/yyyy HH:mm} por {o.FinalizadaPor}")</td></tr>
+        </tbody>
+    </table>
+
+    @* Resumen en cajas WYS *@
+    <h2 class="h4 mt-4">Resumen</h2>
+    <div class="d-flex flex-wrap gap-3">
+        <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@o.Autocontroles.Count(a => a.EsRegistradoValido)</div>autocontroles registrados</div>
+        <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@o.Autocontroles.Count(a => a.Cuenta && a.Resultado == ResultadoAutocontrol.ConIncidencias)</div>autocontroles con incidencias</div>
+        <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@informe.DiferenciasTotales</div>diferencias revisadas</div>
+        <div class="wys-caja @(informe.Incidencias > 0 ? "wys-caja--roja" : "wys-caja--azul")"><div class="h3 text-white mb-0">@informe.Incidencias</div>incidencias</div>
+    </div>
+    @if (informe.Incidencias > 0)
+    {
+        <p class="mt-2">
+            Por motivo:
+            @string.Join(" · ", informe.IncidenciasPorMotivo.Where(m => m.Value > 0).Select(m => $"{ComparacionAutocontrol.NombreMotivo(m.Key)}: {m.Value}"))
+            · En las dos muestras (posible fallo de plancha): @informe.IncidenciasEnLasDos
+        </p>
+    }
+
+    <h2 class="h4 mt-4">Autocontroles</h2>
+    <table class="table table-sm align-middle">
+        <thead>
+            <tr>
+                <th>Control</th><th>Fecha y hora</th><th>Versión</th><th>Resultado</th><th>Diferencias</th><th>Incidencias</th><th>Registrado por</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var a in o.Autocontroles)
+            {
+                @if (a.Anulacion is not null)
+                {
+                    @* Anulado: se ve en gris, con su motivo debajo, y no cuenta en el resto del informe *@
+                    <tr class="text-secondary">
+                        <td><a href="@($"autocontroles/{a.Id}")">@ServicioAutocontroles.NombreControl(a.NumeroControl)</a> <span class="small text-secondary">@ServicioAutocontroles.TiempoDesdeInicio(a.FechaControl, o.FechaInicio)</span></td>
+                        <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(a.VersionPatron ?? "-")</td>
+                        <td><strong>Anulado</strong></td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>@(a.RegistradoPor ?? "-")</td>
+                    </tr>
+                    <tr class="text-secondary small">
+                        <td colspan="7" style="white-space: pre-line">
+                            <strong>Motivo de la anulación:</strong> @a.Anulacion.Motivo
+                            (anulado por @a.Anulacion.AnuladoPor el @a.Anulacion.Fecha.ToString("dd/MM/yyyy HH:mm"))
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    <tr>
+                        <td><a href="@($"autocontroles/{a.Id}")">@ServicioAutocontroles.NombreControl(a.NumeroControl)</a> <span class="small text-secondary">@ServicioAutocontroles.TiempoDesdeInicio(a.FechaControl, o.FechaInicio)</span></td>
+                        <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(a.VersionPatron ?? "-")</td>
+                        <td>@(a.Estado == EstadoAutocontrol.Registrado ? ServicioAutocontroles.NombreResultado(a.Resultado) : "Sin registrar")</td>
+                        <td>@a.Diferencias</td>
+                        <td>@a.Incidencias</td>
+                        <td>@(a.RegistradoPor ?? "-")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+
+    <h2 class="h4 mt-4">Incidencias</h2>
+    @if (informe.DetalleIncidencias.Count == 0)
+    {
+        <p>No hubo incidencias en esta orden.</p>
+    }
+    else
+    {
+        @foreach (var i in informe.DetalleIncidencias)
+        {
+            <div class="border-bottom py-3">
+                <h3 class="h6">
+                    @ServicioAutocontroles.NombreControlConTiempo(i.NumeroControl, i.FechaControl, o.FechaInicio) (@i.FechaControl.ToString("dd/MM/yyyy HH:mm")) · diferencia n.º @i.Numero
+                </h3>
+                <p class="mb-1">
+                    <strong>@ComparacionAutocontrol.NombreMotivo(i.Motivo)</strong>
+                    · @(i.EnMuestra1 && i.EnMuestra2 ? "en las dos muestras (posible fallo de plancha)" : $"solo en la muestra {(i.EnMuestra1 ? 1 : 2)}")
+                    · zona de @i.AnchoMm.ToString("N0") × @i.AltoMm.ToString("N0") mm
+                </p>
+                @* El comentario se muestra como texto (Blazor lo escapa): nunca como HTML *@
+                <p class="mb-1" style="white-space: pre-line"><strong>Comentario:</strong> @i.Comentario</p>
+                <p class="wys-trazabilidad mt-0">Validada por @i.ValidadoPor el @i.FechaValidacion.ToString("dd/MM/yyyy HH:mm")</p>
+                <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(i.Recorte)}")" class="border" style="max-width: 100%; max-height: 220px"
+                     alt="Incidencia @i.Numero" />
+            </div>
+        }
+    }
+
+    <p class="wys-trazabilidad mt-3">Informe generado el @informe.Generado.ToString("dd/MM/yyyy HH:mm") por @informe.GeneradoPor</p>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private InformeFabricacion? informe;
+    private bool noExiste;
+
+    /// <summary>
+    /// Prepara el informe de la orden indicada en la dirección.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        informe = await ServicioOrdenes.ObtenerInformeAsync(Id);
+        noExiste = informe is null;
+    }
+}

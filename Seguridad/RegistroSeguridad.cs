@@ -22,6 +22,9 @@ public static class AccionesSeguridad
     public const string CambioParametro_wys = "CambioParametro";
     public const string ActivacionMfa_wys = "ActivacionMfa";
     public const string DesactivacionMfa_wys = "DesactivacionMfa";
+    public const string ReaperturaOrden_wys = "ReaperturaOrden";
+    public const string AnulacionAutocontrol_wys = "AnulacionAutocontrol";
+    public const string EliminacionAutocontrol_wys = "EliminacionAutocontrol";
 }
 
 /// <summary>

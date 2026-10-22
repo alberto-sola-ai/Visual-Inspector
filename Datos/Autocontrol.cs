@@ -21,8 +21,10 @@ public enum ResultadoAutocontrol
 
 /// <summary>
 /// Un autocontrol visual de impresión: la comprobación que se hace al inicio de la orden y
-/// cada 4 horas, comparando el patrón aprobado con dos tubos de la misma plancha.
-/// Forma parte del registro de fabricación, así que nunca se borra ni se cambia una vez registrado.
+/// después cuando el operario lo considera (se recomienda cada 4 horas), comparando el patrón
+/// aprobado con dos tubos de la misma plancha.
+/// Forma parte del registro de fabricación: una vez registrado no se cambia. Solo el administrador
+/// puede anularlo (queda en la orden, marcado y con su motivo) o eliminarlo si es erróneo.
 /// </summary>
 public class Autocontrol : EntidadTrazable
 {
@@ -34,9 +36,9 @@ public class Autocontrol : EntidadTrazable
     // Momento del control, puesto por el servidor (hora de Madrid); no lo escribe nadie a mano
     public DateTime FechaControl { get; set; }
 
-    // 0 = control inicial; 4, 8, 12… = control periódico a esas horas del inicio.
-    // Se calcula solo según los autocontroles que ya tenga la orden.
-    public int HorasDesdeInicio { get; set; }
+    // Número del control dentro de la orden: 1 = inicial, 2, 3… Lo hace el operario cuando lo
+    // considera (se recomienda cada 4 horas); se calcula solo: el último de la orden más 1.
+    public int NumeroControl { get; set; }
 
     public EstadoAutocontrol Estado { get; set; } = EstadoAutocontrol.PendienteArchivos;
 
@@ -70,6 +72,12 @@ public class Autocontrol : EntidadTrazable
     // Quién y cuándo validó y registró el autocontrol
     public string? RegistradoPor { get; set; }
     public DateTime? FechaRegistro { get; set; }
+
+    // --- Anulación (solo el administrador): el autocontrol sigue en la orden pero no cuenta ---
+    public bool EstaAnulado { get; set; }
+    public string? MotivoAnulacion { get; set; }
+    public string? AnuladoPor { get; set; }
+    public DateTime? FechaAnulacion { get; set; }
 
     public List<Diferencia> Diferencias { get; set; } = [];
 }

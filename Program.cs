@@ -136,6 +136,8 @@ builder.Services.AddScoped<ServicioParametros>();
 builder.Services.AddScoped<ServicioUsuarios>();
 builder.Services.AddScoped<ServicioVersiones>();
 builder.Services.AddScoped<ServicioAutocontroles>();
+builder.Services.AddScoped<ServicioOrdenes>();
+builder.Services.AddScoped<VisualInspector.Servicios.Informes.GeneradorInformePdf>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ServicioArchivosAutocontrol>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.LocalizadorMuestras>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ComparadorMuestras>();
@@ -198,6 +200,27 @@ app.MapRazorComponents<App>()
 
 // Rutas adicionales del sistema de usuarios (cerrar sesión)
 app.MapAdditionalIdentityEndpoints();
+
+// Descarga del informe de fabricación en PDF. Exige el permiso de ver autocontroles, aquí y
+// otra vez dentro del servicio
+app.MapGet("/ordenes/{id:int}/informe.pdf", async (int id, ServicioOrdenes ordenes, VisualInspector.Servicios.Informes.GeneradorInformePdf generador) =>
+{
+    try
+    {
+        var informe = await ordenes.ObtenerInformeAsync(id);
+        if (informe is null)
+        {
+            return Results.NotFound();
+        }
+        var pdf = generador.Generar(informe);
+        var nombre = $"Informe-fabricacion-{informe.Orden.Codigo}{(informe.EsProvisional ? "-PROVISIONAL" : "")}.pdf";
+        return Results.File(pdf, "application/pdf", nombre);
+    }
+    catch (AccesoDenegadoException)
+    {
+        return Results.Forbid();
+    }
+}).RequireAuthorization(Permisos.AutocontrolesVer_wys);
 
 try
 {

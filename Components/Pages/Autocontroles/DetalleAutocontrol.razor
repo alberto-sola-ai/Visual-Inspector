@@ -1,13 +1,19 @@
 @page "/autocontroles/{Id:int}"
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
 @inject ServicioAutocontroles ServicioAutocontroles
+@inject NavigationManager Navegacion
 
 <PageTitle>Autocontrol · Visual Inspector</PageTitle>
 
-@* Ficha de un autocontrol. De momento solo los datos; en los siguientes pasos se añadirán
-   el patrón, las muestras y las comparaciones *@
+@* Ficha de un autocontrol: sus datos, la carga y comparación de archivos mientras está pendiente,
+   lo registrado cuando ya está registrado, y la anulación o eliminación por el administrador *@
 <h1>Autocontrol</h1>
 <p><a href="autocontroles">Autocontroles</a> › @ficha?.CodigoOrden</p>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @(esError ? "alert-danger" : "alert-success")" role="alert">@mensaje</div>
+}
 
 @if (noExiste)
 {
@@ -19,14 +25,14 @@ else if (ficha is null)
 }
 else
 {
-    <div class="wys-caja wys-caja--azul d-flex gap-5 align-items-center">
+    <div class="wys-caja @(ficha.Anulacion is null ? "wys-caja--azul" : "wys-caja--gris") d-flex gap-5 align-items-center">
         <div>
             <div class="small text-uppercase">Orden de fabricación</div>
-            <div class="h3 text-white mb-0">@ficha.CodigoOrden</div>
+            <div class="h3 text-white mb-0"><a class="text-white" href="@($"ordenes/{ficha.OrdenId}")">@ficha.CodigoOrden</a></div>
         </div>
         <div>
-            <div class="small text-uppercase">Tipo</div>
-            <div class="h3 text-white mb-0">@ServicioAutocontroles.NombreTipo(ficha.HorasDesdeInicio)</div>
+            <div class="small text-uppercase">Control</div>
+            <div class="h3 text-white mb-0">@ServicioAutocontroles.NombreControlConTiempo(ficha.NumeroControl, ficha.FechaControl, ficha.FechaInicioOrden)</div>
         </div>
         <div>
             <div class="small text-uppercase">Fecha y hora</div>
@@ -34,9 +40,71 @@ else
         </div>
         <div>
             <div class="small text-uppercase">Estado</div>
-            <span class="wys-etiqueta">@ServicioAutocontroles.NombreEstado(ficha.Estado)</span>
+            <span class="wys-etiqueta">@(ficha.Anulacion is null ? ServicioAutocontroles.NombreEstado(ficha.Estado) : "Anulado")</span>
         </div>
     </div>
+
+    @if (ficha.Anulacion is not null)
+    {
+        @* Autocontrol anulado: se ve, pero no cuenta para la orden *@
+        <div class="alert alert-secondary mt-3" role="alert">
+            <strong>Autocontrol anulado.</strong> No cuenta en la orden ni en el informe de fabricación.
+            <div class="mt-1" style="white-space: pre-line"><strong>Motivo:</strong> @ficha.Anulacion.Motivo</div>
+            <div class="wys-trazabilidad mt-1">Anulado por @ficha.Anulacion.AnuladoPor el @ficha.Anulacion.Fecha.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    }
+
+    @* Acciones del administrador, también con la orden finalizada (su informe se actualiza solo).
+       El servicio vuelve a comprobar el permiso *@
+    <AuthorizeView Policy="@Permisos.Administracion_wys">
+        <div class="d-flex gap-2 mt-3">
+            @if (ficha.Anulacion is null)
+            {
+                <button class="btn btn-outline-primary" @onclick="PedirAnulacion" disabled="@estaTrabajando">Anular autocontrol</button>
+            }
+            <button class="btn btn-outline-danger" @onclick="PedirEliminacion" disabled="@estaTrabajando">Eliminar autocontrol</button>
+        </div>
+    </AuthorizeView>
+
+    @if (esPidiendoAnulacion)
+    {
+        @* Anular pide un motivo, que queda guardado con el autocontrol *@
+        <div class="alert alert-warning mt-3" role="alert" style="max-width: 48rem">
+            El autocontrol seguirá en la orden marcado como anulado, pero dejará de contar en el informe.
+            @if (ficha.EstadoOrden == EstadoOrden.Finalizada)
+            {
+                <span>La orden está finalizada: su informe se actualizará.</span>
+            }
+            <div class="mt-2">
+                <label class="form-label" for="motivoAnulacion">Motivo de la anulación</label>
+                <textarea id="motivoAnulacion" class="form-control" rows="3" maxlength="@ServicioAutocontroles.LongitudMaximaMotivoAnulacion_wys"
+                          @bind="motivoAnulacion" @bind:event="oninput"></textarea>
+                <div class="form-text">Obligatorio. Explica por qué no vale este autocontrol (máximo @ServicioAutocontroles.LongitudMaximaMotivoAnulacion_wys caracteres).</div>
+            </div>
+            <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-primary btn-sm" @onclick="AnularAsync"
+                        disabled="@(estaTrabajando || string.IsNullOrWhiteSpace(motivoAnulacion))">Anular</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="() => esPidiendoAnulacion = false">Cancelar</button>
+            </div>
+        </div>
+    }
+
+    @if (esConfirmandoEliminacion)
+    {
+        @* Eliminar no se puede deshacer: se pide confirmación *@
+        <div class="alert alert-danger mt-3" role="alert" style="max-width: 48rem">
+            Se borrará el autocontrol con todas sus diferencias y no aparecerá en la orden ni en el informe.
+            @if (ficha.EstadoOrden == EstadoOrden.Finalizada)
+            {
+                <span>La orden está finalizada: su informe se actualizará.</span>
+            }
+            <strong>No se puede deshacer.</strong> ¿Eliminar el @ServicioAutocontroles.NombreControl(ficha.NumeroControl) de la orden @ficha.CodigoOrden?
+            <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-danger btn-sm" @onclick="EliminarAsync" disabled="@estaTrabajando">Sí, eliminar</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="() => esConfirmandoEliminacion = false">Cancelar</button>
+            </div>
+        </div>
+    }
 
     @if (!string.IsNullOrEmpty(ficha.Observaciones))
     {
@@ -50,7 +118,7 @@ else
         @* Ya registrado: solo se consulta *@
         <RegistroAutocontrol Registro="ficha.Registro" />
     }
-    else
+    else if (ficha.Anulacion is null)
     {
         @* Solo quien puede hacer autocontroles ve la zona de carga; el servicio lo vuelve a comprobar *@
         <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
@@ -74,6 +142,12 @@ else
 
     private FichaAutocontrol? ficha;
     private bool noExiste;
+    private bool esPidiendoAnulacion;
+    private bool esConfirmandoEliminacion;
+    private bool estaTrabajando;
+    private string motivoAnulacion = "";
+    private string? mensaje;
+    private bool esError;
 
     /// <summary>
     /// Carga la ficha del autocontrol indicado en la dirección.
@@ -84,11 +158,64 @@ else
     }
 
     /// <summary>
-    /// Vuelve a leer la ficha; se usa al abrir y justo después de registrar el autocontrol.
+    /// Vuelve a leer la ficha; se usa al abrir, después de registrar y después de anular.
     /// </summary>
     private async Task RecargarAsync()
     {
         ficha = await ServicioAutocontroles.ObtenerAsync(Id);
         noExiste = ficha is null;
+    }
+
+    private void PedirAnulacion()
+    {
+        mensaje = null;
+        esConfirmandoEliminacion = false;
+        motivoAnulacion = "";
+        esPidiendoAnulacion = true;
+    }
+
+    private void PedirEliminacion()
+    {
+        mensaje = null;
+        esPidiendoAnulacion = false;
+        esConfirmandoEliminacion = true;
+    }
+
+    /// <summary>
+    /// Anula el autocontrol con el motivo escrito. El servicio comprueba que quien lo pide es
+    /// administrador y que la orden sigue en fabricación.
+    /// </summary>
+    private async Task AnularAsync()
+    {
+        estaTrabajando = true;
+        var error = await ServicioAutocontroles.AnularAsync(Id, motivoAnulacion);
+        estaTrabajando = false;
+        esError = error is not null;
+        mensaje = error ?? "Autocontrol anulado. Ya no cuenta en la orden.";
+        if (!esError)
+        {
+            esPidiendoAnulacion = false;
+            await RecargarAsync();
+        }
+    }
+
+    /// <summary>
+    /// Elimina el autocontrol y vuelve a la ficha de su orden. El servicio comprueba que quien lo
+    /// pide es administrador y que la orden sigue en fabricación.
+    /// </summary>
+    private async Task EliminarAsync()
+    {
+        var idOrden = ficha!.OrdenId;
+        estaTrabajando = true;
+        var error = await ServicioAutocontroles.EliminarAsync(Id);
+        estaTrabajando = false;
+        esConfirmandoEliminacion = false;
+        if (error is null)
+        {
+            Navegacion.NavigateTo($"ordenes/{idOrden}");
+            return;
+        }
+        esError = true;
+        mensaje = error;
     }
 }

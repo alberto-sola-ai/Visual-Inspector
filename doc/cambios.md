@@ -1,5 +1,56 @@
 # Registro de cambios
 
+## 0.10.0 — 2026-10-22
+- Los autocontroles ya no van por horas fijas: el operario los hace cuando lo considera. Cada uno
+  lleva un número dentro de su orden («Control 1 (inicial)», «Control 2»…) y el tiempo real
+  que pasó desde el primero («+3 h 50 min»), en pantallas, listados e informe.
+- La recomendación de un autocontrol cada 4 horas es solo un aviso, al crear un autocontrol y
+  en la ficha de la orden: «Último autocontrol hace…». Si ya han pasado 4 horas, sale destacado.
+- El administrador puede anular o eliminar autocontroles también con la orden finalizada, sin
+  reabrirla: el informe se actualiza solo.
+- Base de datos: la columna `HorasDesdeInicio` pasa a `NumeroControl` y los controles ya
+  hechos se convierten (0 h → 1, 4 h → 2…) (migración RenombraHorasANumeroControl).
+
+## 0.9.0 — 2026-10-22
+- El administrador puede **anular** un autocontrol (con motivo obligatorio): sigue en la orden
+  marcado «Anulado», con el motivo, quién y cuándo, pero no cuenta en las cifras de la orden, al
+  finalizarla ni en el informe. En el informe (pantalla y PDF) aparece en gris con su motivo.
+  Un autocontrol anulado ya no se puede registrar.
+- El administrador puede **eliminar** un autocontrol erróneo: se borra con todas sus diferencias
+  y desaparece de la orden y del informe.
+- Las dos acciones están en la ficha del autocontrol, piden confirmación y solo se pueden hacer
+  con la orden en fabricación (si está finalizada, primero hay que reabrirla). Las dos se apuntan
+  en el diario de seguridad (`AnulacionAutocontrol`, `EliminacionAutocontrol`).
+- El tipo del siguiente autocontrol es ahora el último de la orden + 4 h (antes se contaban, y
+  tras eliminar uno del medio el siguiente habría chocado con uno existente).
+- Base de datos: `EstaAnulado`, `MotivoAnulacion`, `AnuladoPor` y `FechaAnulacion` en
+  `Autocontroles` (migración AnadeAnulacionAutocontrol).
+
+## 0.8.0 — 2026-10-22
+- El administrador puede reabrir una orden finalizada (botón «Reabrir orden» en la ficha, con
+  confirmación) para añadirle más autocontroles. Los nuevos siguen la secuencia de la orden
+  (+12 h, +16 h…) y el informe vuelve a ser provisional hasta que se finalice otra vez.
+- Quién y cuándo la reabrió queda en la trazabilidad de la orden y en el diario de seguridad
+  (evento `ReaperturaOrden`). Sin motivo ni historial aparte (decisión de Alberto, 22/10/2026).
+- Si se intenta crear un autocontrol en una orden finalizada, el aviso indica que hay que pedir
+  al administrador que la reabra.
+
+## 0.7.0 — 2026-10-22
+- Pantalla «Órdenes» (menú): listado con litografía, autocontroles registrados y pendientes, los
+  que tienen incidencias, primer y último control y estado. Búsqueda por orden o litografía.
+- Ficha de la orden con sus autocontroles en orden de tiempo y botón «Finalizar orden» (con
+  confirmación), para quien puede hacer autocontroles. No se puede finalizar si la orden no tiene
+  autocontroles o queda alguno sin registrar. Una orden finalizada ya no admite autocontroles nuevos.
+- Informe de fabricación en pantalla y en PDF con la marca WYS (logo, Lato, colores y pie
+  corporativo): datos de la orden, resumen, autocontroles e incidencias con su comentario, quién
+  las validó y su recorte. Antes de finalizar la orden se puede ver, marcado como PROVISIONAL.
+- El PDF se descarga desde una dirección propia que vuelve a comprobar el permiso.
+- Biblioteca nueva: PDFsharp-MigraDoc 6.2.4 (MIT). Se queda en esa versión: desde la 6.5.0 la
+  licencia es AGPL. Se fuerza System.Security.Cryptography.Pkcs 10.0.13 porque la que trae tiene
+  fallos de seguridad conocidos.
+- Base de datos: estado, fecha de fin y quién finalizó en `OrdenesFabricacion`
+  (migración AnadeFinalizacionOrden).
+
 ## 0.6.0 — 2026-10-22
 - Formulario de validación: cada diferencia se marca como Correcta o Incidencia (comentario
   obligatorio en las incidencias); «Marcar pendientes como correctas» valida un grupo entero de un

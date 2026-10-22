@@ -19,6 +19,7 @@ public sealed class AccesoDenegadoException(string permiso)
 /// </summary>
 public sealed class ServicioAutorizacion(
     AuthenticationStateProvider estadoSesion,
+    IHttpContextAccessor accesoPeticion,
     IAuthorizationService autorizacion,
     RegistroSeguridad registroSeguridad)
 {
@@ -27,13 +28,30 @@ public sealed class ServicioAutorizacion(
     /// </summary>
     public async Task<bool> TienePermisoAsync(string permiso)
     {
-        var persona = (await estadoSesion.GetAuthenticationStateAsync()).User;
-        if (persona.Identity?.IsAuthenticated != true)
+        var persona = await PersonaConectadaAsync();
+        if (persona?.Identity?.IsAuthenticated != true)
         {
             return false;
         }
 
         return (await autorizacion.AuthorizeAsync(persona, null, new RequisitoPermiso(permiso))).Succeeded;
+    }
+
+    /// <summary>
+    /// Quién está conectado: en las pantallas Blazor se pregunta a Blazor; en una descarga
+    /// (por ejemplo el PDF del informe), a la petición web.
+    /// </summary>
+    private async Task<System.Security.Claims.ClaimsPrincipal?> PersonaConectadaAsync()
+    {
+        try
+        {
+            return (await estadoSesion.GetAuthenticationStateAsync()).User;
+        }
+        catch (InvalidOperationException)
+        {
+            // Fuera de una pantalla Blazor el proveedor no tiene datos: se usa la petición web
+            return accesoPeticion.HttpContext?.User;
+        }
     }
 
     /// <summary>

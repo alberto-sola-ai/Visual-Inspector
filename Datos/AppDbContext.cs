@@ -60,6 +60,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             orden.Property(o => o.Codigo).HasMaxLength(10);
             orden.Property(o => o.Descripcion).HasMaxLength(200);
             orden.Property(o => o.Litografia).HasMaxLength(8);
+            orden.Property(o => o.Estado).HasConversion<string>().HasMaxLength(20);
+            orden.Property(o => o.FinalizadaPor).HasMaxLength(256);
+            orden.HasIndex(o => o.Litografia);
             orden.Property(o => o.CreadoPor).HasMaxLength(256);
             orden.Property(o => o.ModificadoPor).HasMaxLength(256);
         });
@@ -67,8 +70,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
         builder.Entity<Autocontrol>(autocontrol =>
         {
             autocontrol.ToTable("Autocontroles");
-            // Una orden no puede tener dos controles de la misma hora (dos "Inicial" o dos "+4 h")
-            autocontrol.HasIndex(a => new { a.OrdenFabricacionId, a.HorasDesdeInicio }).IsUnique();
+            // Una orden no puede tener dos controles con el mismo número (dos "Control 2")
+            autocontrol.HasIndex(a => new { a.OrdenFabricacionId, a.NumeroControl }).IsUnique();
             autocontrol.HasIndex(a => a.FechaControl);
             // Restrict: no se puede borrar una orden que tenga autocontroles (son registro de fabricación)
             autocontrol.HasOne(a => a.OrdenFabricacion)
@@ -77,6 +80,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
                 .OnDelete(DeleteBehavior.Restrict);
             autocontrol.Property(a => a.Estado).HasConversion<string>().HasMaxLength(30);
             autocontrol.Property(a => a.Observaciones).HasMaxLength(500);
+            autocontrol.Property(a => a.MotivoAnulacion).HasMaxLength(500);
+            autocontrol.Property(a => a.AnuladoPor).HasMaxLength(256);
             autocontrol.Property(a => a.CreadoPor).HasMaxLength(256);
             autocontrol.Property(a => a.ModificadoPor).HasMaxLength(256);
 

@@ -1,0 +1,221 @@
+@page "/ordenes/{Id:int}"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject ServicioOrdenes ServicioOrdenes
+
+<PageTitle>Orden de fabricación · Visual Inspector</PageTitle>
+
+@* Ficha de la orden: sus autocontroles en orden de tiempo, el informe y la finalización *@
+<h1>Orden de fabricación</h1>
+<p><a href="ordenes">Órdenes</a> › @ficha?.Codigo</p>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert @(esError ? "alert-danger" : "alert-success")" role="alert">@mensaje</div>
+}
+
+@if (noExiste)
+{
+    <p>Esta orden no existe.</p>
+}
+else if (ficha is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <div class="wys-caja wys-caja--azul d-flex gap-5 align-items-center">
+        <div>
+            <div class="small text-uppercase">Orden de fabricación</div>
+            <div class="h3 text-white mb-0">@ficha.Codigo</div>
+        </div>
+        <div>
+            <div class="small text-uppercase">Litografía</div>
+            <div class="h3 text-white mb-0">@(ficha.Litografia ?? "-")</div>
+        </div>
+        <div>
+            <div class="small text-uppercase">Estado</div>
+            <div class="h3 text-white mb-0">@ServicioOrdenes.NombreEstado(ficha.Estado)</div>
+        </div>
+        @if (ficha.FechaFin is not null)
+        {
+            <div>
+                <div class="small text-uppercase">Finalizada</div>
+                <div class="text-white">@ficha.FechaFin?.ToString("dd/MM/yyyy HH:mm") por @ficha.FinalizadaPor</div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-3 mt-3">
+        <a href="@($"ordenes/{ficha.Id}/informe")" class="btn btn-primary">
+            Ver informe de fabricación@(ficha.Estado == EstadoOrden.Finalizada ? "" : " (provisional)")
+        </a>
+        @if (ficha.Estado == EstadoOrden.EnFabricacion)
+        {
+            <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
+                <button class="btn btn-danger" @onclick="PedirConfirmacion" disabled="@estaFinalizando">Finalizar orden</button>
+            </AuthorizeView>
+        }
+        else
+        {
+            @* Solo el administrador puede reabrir una orden finalizada *@
+            <AuthorizeView Policy="@Permisos.Administracion_wys">
+                <button class="btn btn-outline-primary" @onclick="PedirConfirmacionReabrir" disabled="@estaReabriendo">Reabrir orden</button>
+            </AuthorizeView>
+        }
+    </div>
+
+    @if (esConfirmandoReabrir)
+    {
+        @* Confirmación antes de reabrir: el informe vuelve a ser provisional *@
+        <div class="alert alert-warning mt-3" role="alert">
+            Al reabrir la orden se podrán hacer autocontroles nuevos en ella y el informe volverá a ser
+            provisional hasta que se finalice otra vez. ¿Reabrir la orden @ficha.Codigo?
+            <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-primary btn-sm" @onclick="ReabrirAsync" disabled="@estaReabriendo">Sí, reabrir</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="() => esConfirmandoReabrir = false">Cancelar</button>
+            </div>
+        </div>
+    }
+
+    @if (esConfirmando)
+    {
+        @* Confirmación antes de finalizar: es un paso que no se puede deshacer *@
+        <div class="alert alert-warning mt-3" role="alert">
+            Al finalizar la orden ya no se podrán hacer autocontroles nuevos en ella y el informe dejará de ser
+            provisional. ¿Finalizar la orden @ficha.Codigo?
+            <div class="mt-2 d-flex gap-2">
+                <button class="btn btn-danger btn-sm" @onclick="FinalizarAsync" disabled="@estaFinalizando">Sí, finalizar</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="() => esConfirmando = false">Cancelar</button>
+            </div>
+        </div>
+    }
+
+    <h2 class="h4 mt-5">Autocontroles</h2>
+    @if (ficha.Estado == EstadoOrden.EnFabricacion)
+    {
+        <AvisoProximoControl FechaUltimo="ficha.FechaUltimoControl" />
+    }
+    @if (ficha.Autocontroles.Count == 0)
+    {
+        <p>Esta orden aún no tiene autocontroles.</p>
+    }
+    else
+    {
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Control</th>
+                    <th>Fecha y hora</th>
+                    <th>Versión del patrón</th>
+                    <th>Resultado</th>
+                    <th>Diferencias</th>
+                    <th>Incidencias</th>
+                    <th>Registrado por</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in ficha.Autocontroles)
+                {
+                    <tr>
+                        <td><a href="@($"autocontroles/{a.Id}")">@ServicioAutocontroles.NombreControl(a.NumeroControl)</a> <span class="small text-secondary">@ServicioAutocontroles.TiempoDesdeInicio(a.FechaControl, ficha.FechaInicio)</span></td>
+                        <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(a.VersionPatron ?? "-")</td>
+                        <td>
+                            @if (a.Anulacion is not null)
+                            {
+                                <span class="text-secondary" title="@a.Anulacion.Motivo">Anulado</span>
+                            }
+                            else if (a.Estado != EstadoAutocontrol.Registrado)
+                            {
+                                <span class="text-secondary">Sin registrar</span>
+                            }
+                            else if (a.Resultado == ResultadoAutocontrol.ConIncidencias)
+                            {
+                                <span class="wys-etiqueta">@ServicioAutocontroles.NombreResultado(a.Resultado)</span>
+                            }
+                            else
+                            {
+                                @ServicioAutocontroles.NombreResultado(a.Resultado)
+                            }
+                        </td>
+                        <td>@a.Diferencias</td>
+                        <td>@a.Incidencias</td>
+                        <td>@(a.RegistradoPor ?? "-")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <p class="wys-trazabilidad">Creada por @ficha.CreadoPor el @ficha.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</p>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private FichaOrden? ficha;
+    private bool noExiste;
+    private bool esConfirmando;
+    private bool estaFinalizando;
+    private bool esConfirmandoReabrir;
+    private bool estaReabriendo;
+    private string? mensaje;
+    private bool esError;
+
+    /// <summary>
+    /// Carga la ficha de la orden indicada en la dirección.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        ficha = await ServicioOrdenes.ObtenerAsync(Id);
+        noExiste = ficha is null;
+    }
+
+    private void PedirConfirmacion()
+    {
+        mensaje = null;
+        esConfirmando = true;
+    }
+
+    /// <summary>
+    /// Finaliza la orden. El servicio comprueba que no quedan autocontroles sin registrar.
+    /// </summary>
+    private async Task FinalizarAsync()
+    {
+        estaFinalizando = true;
+        var error = await ServicioOrdenes.FinalizarAsync(Id);
+        estaFinalizando = false;
+        esConfirmando = false;
+        esError = error is not null;
+        mensaje = error ?? "Orden finalizada. El informe de fabricación ya es definitivo.";
+        if (!esError)
+        {
+            ficha = await ServicioOrdenes.ObtenerAsync(Id);
+        }
+    }
+
+    private void PedirConfirmacionReabrir()
+    {
+        mensaje = null;
+        esConfirmandoReabrir = true;
+    }
+
+    /// <summary>
+    /// Reabre la orden para poder añadirle autocontroles. El servicio comprueba que quien lo pide
+    /// es administrador.
+    /// </summary>
+    private async Task ReabrirAsync()
+    {
+        estaReabriendo = true;
+        var error = await ServicioOrdenes.ReabrirAsync(Id);
+        estaReabriendo = false;
+        esConfirmandoReabrir = false;
+        esError = error is not null;
+        mensaje = error ?? "Orden reabierta. Ya se le pueden añadir autocontroles.";
+        if (!esError)
+        {
+            ficha = await ServicioOrdenes.ObtenerAsync(Id);
+        }
+    }
+}

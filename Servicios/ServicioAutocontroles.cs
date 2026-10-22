@@ -9,20 +9,28 @@ namespace VisualInspector.Servicios;
 /// <summary>
 /// Una fila del listado de autocontroles.
 /// </summary>
+/// <param name="FechaInicioOrden">Fecha del primer control de la orden, para calcular el tiempo transcurrido.</param>
 public sealed record FilaAutocontrol(
-    int Id, string CodigoOrden, DateTime FechaControl, int HorasDesdeInicio,
-    EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado, string CreadoPor);
+    int Id, string CodigoOrden, DateTime FechaControl, int NumeroControl, DateTime FechaInicioOrden,
+    EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado, string CreadoPor, bool EstaAnulado);
+
+/// <summary>
+/// Por qué, quién y cuándo se anuló un autocontrol.
+/// </summary>
+public sealed record DatosAnulacion(string Motivo, string AnuladoPor, DateTime Fecha);
 
 /// <summary>
 /// Todo lo que se ve en la ficha de un autocontrol, incluido quién y cuándo lo creó o cambió.
 /// </summary>
 /// <param name="LitografiaOrden">Litografía de la orden (la del primer autocontrol registrado).</param>
 /// <param name="Registro">Datos del registro, o null si aún no se ha registrado.</param>
+/// <param name="Anulacion">Datos de la anulación, o null si no está anulado.</param>
+/// <param name="FechaInicioOrden">Fecha del primer control de la orden, para calcular el tiempo transcurrido.</param>
 public sealed record FichaAutocontrol(
-    int Id, string CodigoOrden, DateTime FechaControl, int HorasDesdeInicio,
+    int Id, int OrdenId, string CodigoOrden, EstadoOrden EstadoOrden, DateTime FechaControl, int NumeroControl, DateTime FechaInicioOrden,
     EstadoAutocontrol Estado, string? Observaciones,
     string CreadoPor, DateTime FechaCreacion, string? ModificadoPor, DateTime? FechaModificacion,
-    string? LitografiaOrden, DatosRegistro? Registro);
+    string? LitografiaOrden, DatosRegistro? Registro, DatosAnulacion? Anulacion);
 
 /// <summary>
 /// Lo que quedó registrado de un autocontrol: patrón, huellas, tolerancia, resultado y diferencias.
@@ -57,22 +65,31 @@ public sealed record SolicitudRegistro(
     IReadOnlyList<DiferenciaValidada> Diferencias, bool EsLitografiaDistintaConfirmada);
 
 /// <summary>
+/// Lo que se enseña antes de crear un autocontrol: qué control será y cuándo se hizo el último.
+/// </summary>
+/// <param name="FechaUltimo">Fecha del último control de la orden, o null si será el inicial.</param>
+public sealed record PrevisionControl(string Nombre, DateTime? FechaUltimo);
+
+/// <summary>
 /// Resultado de crear un autocontrol: su número si ha ido bien, o el error para el usuario.
 /// </summary>
 public sealed record ResultadoCreacion(int? Id, string? Error);
 
 /// <summary>
-/// Gestiona los autocontroles: crearlos, listarlos y ver su ficha.
-/// Ver exige el permiso Autocontroles.Ver y crear exige Autocontroles.Realizar,
-/// comprobados aquí en el servidor aunque la pantalla ya lo haya hecho.
+/// Gestiona los autocontroles: crearlos, listarlos, ver su ficha, registrarlos, y anularlos o
+/// eliminarlos. Ver exige el permiso Autocontroles.Ver, crear y registrar Autocontroles.Realizar,
+/// y anular o eliminar Administracion, comprobados aquí en el servidor aunque la pantalla ya lo
+/// haya hecho.
 /// </summary>
 public sealed partial class ServicioAutocontroles(
     IDbContextFactory<AppDbContext> fabricaDatos,
     ServicioAutorizacion autorizacion,
-    IUsuarioActual usuarioActual)
+    IUsuarioActual usuarioActual,
+    RegistroSeguridad registroSeguridad)
 {
-    // Cada cuántas horas se repite el autocontrol durante una orden de fabricación
-    public const int HorasEntreControles_wys = 4;
+    // Cada cuántas horas se recomienda hacer un autocontrol. Es solo un aviso: el operario
+    // decide cuándo hacerlo (decisión de Alberto, 22/10/2026)
+    public const int HorasRecomendadasEntreControles_wys = 4;
     public const int LongitudMaximaObservaciones_wys = 500;
     private const int MaximoFilasListado_wys = 200;
 
@@ -81,10 +98,37 @@ public sealed partial class ServicioAutocontroles(
     private static partial Regex FormatoOrden();
 
     /// <summary>
-    /// Dice cómo se llama un control según sus horas: "Inicial", "+4 h", "+8 h"…
+    /// Dice cómo se llama un control según su número: "Control 1 (inicial)", "Control 2"…
     /// </summary>
-    public static string NombreTipo(int horasDesdeInicio) =>
-        horasDesdeInicio == 0 ? "Inicial" : $"+{horasDesdeInicio} h";
+    public static string NombreControl(int numeroControl) =>
+        numeroControl == 1 ? "Control 1 (inicial)" : $"Control {numeroControl}";
+
+    /// <summary>
+    /// Nombre del control con el tiempo que pasó de verdad desde el primero de la orden, por
+    /// ejemplo "Control 2 · +3 h 50 min". El primero se queda solo con su nombre.
+    /// </summary>
+    public static string NombreControlConTiempo(int numeroControl, DateTime fechaControl, DateTime fechaInicioOrden) =>
+        fechaControl > fechaInicioOrden
+            ? $"{NombreControl(numeroControl)} · {TiempoDesdeInicio(fechaControl, fechaInicioOrden)}"
+            : NombreControl(numeroControl);
+
+    /// <summary>
+    /// Tiempo que pasó desde el primer control de la orden, por ejemplo "+3 h 50 min".
+    /// Vacío para el primero.
+    /// </summary>
+    public static string TiempoDesdeInicio(DateTime fechaControl, DateTime fechaInicioOrden) =>
+        fechaControl > fechaInicioOrden ? $"+{FormatearDuracion(fechaControl - fechaInicioOrden)}" : "";
+
+    /// <summary>
+    /// Escribe un tiempo de forma sencilla: "45 min", "3 h 50 min", "26 h".
+    /// </summary>
+    public static string FormatearDuracion(TimeSpan duracion)
+    {
+        var horas = (int)duracion.TotalHours;
+        var minutos = duracion.Minutes;
+        if (horas == 0) return $"{minutos} min";
+        return minutos == 0 ? $"{horas} h" : $"{horas} h {minutos} min";
+    }
 
     /// <summary>
     /// Explica el estado en palabras sencillas para la pantalla.
@@ -108,6 +152,7 @@ public sealed partial class ServicioAutocontroles(
     };
 
     public const int LongitudMaximaComentario_wys = 500;
+    public const int LongitudMaximaMotivoAnulacion_wys = 500;
 
     // Versión del patrón: R seguida de cifras (por ejemplo R002)
     [GeneratedRegex("^R[0-9]{1,9}$")]
@@ -139,7 +184,8 @@ public sealed partial class ServicioAutocontroles(
             .OrderByDescending(a => a.FechaControl)
             .Take(MaximoFilasListado_wys)
             .Select(a => new FilaAutocontrol(a.Id, a.OrdenFabricacion.Codigo, a.FechaControl,
-                a.HorasDesdeInicio, a.Estado, a.Resultado, a.CreadoPor))
+                a.NumeroControl, a.OrdenFabricacion.Autocontroles.Min(x => x.FechaControl),
+                a.Estado, a.Resultado, a.CreadoPor, a.EstaAnulado))
             .ToListAsync();
     }
 
@@ -170,10 +216,101 @@ public sealed partial class ServicioAutocontroles(
             a.Diferencias.Select(d => new DiferenciaRegistrada(d.Numero, d.Motivo, d.EnMuestra1, d.EnMuestra2,
                 d.AnchoMm, d.AltoMm, d.AreaMm2, d.Validacion, d.Comentario, d.Recorte, d.CreadoPor, d.FechaCreacion)).ToList());
 
-        return new FichaAutocontrol(a.Id, a.OrdenFabricacion.Codigo, a.FechaControl,
-            a.HorasDesdeInicio, a.Estado, a.Observaciones,
+        var anulacion = !a.EstaAnulado ? null
+            : new DatosAnulacion(a.MotivoAnulacion ?? "", a.AnuladoPor ?? "", a.FechaAnulacion ?? a.FechaModificacion ?? a.FechaCreacion);
+        var fechaInicioOrden = await datos.Autocontroles.Where(x => x.OrdenFabricacionId == a.OrdenFabricacionId).MinAsync(x => x.FechaControl);
+
+        return new FichaAutocontrol(a.Id, a.OrdenFabricacionId, a.OrdenFabricacion.Codigo, a.OrdenFabricacion.Estado, a.FechaControl,
+            a.NumeroControl, fechaInicioOrden, a.Estado, a.Observaciones,
             a.CreadoPor, a.FechaCreacion, a.ModificadoPor, a.FechaModificacion,
-            a.OrdenFabricacion.Litografia, registro);
+            a.OrdenFabricacion.Litografia, registro, anulacion);
+    }
+
+    /// <summary>
+    /// Anula un autocontrol, como quien tacha una hoja del cuaderno sin arrancarla: sigue en la
+    /// orden con su motivo, pero ya no cuenta en el informe. Solo el administrador. Se puede hacer
+    /// aunque la orden esté finalizada, sin reabrirla: su informe se actualiza solo
+    /// (decisión de Alberto, 22/10/2026). Devuelve un mensaje de error para el usuario, o null si va bien.
+    /// </summary>
+    public async Task<string?> AnularAsync(int id, string? motivo)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.Administracion_wys);
+
+        // Zero Trust: el motivo se vuelve a comprobar aquí
+        var textoMotivo = (motivo ?? "").Trim();
+        if (textoMotivo.Length == 0)
+            return "Escribe el motivo de la anulación.";
+        if (textoMotivo.Length > LongitudMaximaMotivoAnulacion_wys)
+            return $"El motivo no puede pasar de {LongitudMaximaMotivoAnulacion_wys} caracteres.";
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var autocontrol = await datos.Autocontroles.Include(a => a.OrdenFabricacion).FirstOrDefaultAsync(a => a.Id == id);
+        if (autocontrol is null)
+            return "El autocontrol ya no existe.";
+        if (autocontrol.EstaAnulado)
+            return "Este autocontrol ya está anulado.";
+
+        autocontrol.EstaAnulado = true;
+        autocontrol.MotivoAnulacion = textoMotivo;
+        autocontrol.AnuladoPor = await usuarioActual.ObtenerNombreAsync();
+        autocontrol.FechaAnulacion = DateTime.Now;
+        await datos.SaveChangesAsync();
+
+        // En el diario no se copia el motivo: puede ser largo y ya queda en la base de datos
+        await registroSeguridad.RegistrarAsync(AccionesSeguridad.AnulacionAutocontrol_wys,
+            $"Correcto: orden {autocontrol.OrdenFabricacion.Codigo}, {NombreControl(autocontrol.NumeroControl)} del {autocontrol.FechaControl:dd/MM/yyyy HH:mm}");
+        return null;
+    }
+
+    /// <summary>
+    /// Elimina un autocontrol erróneo con todas sus diferencias, como quien arranca una hoja mal
+    /// hecha: desaparece de la orden y del informe. Solo el administrador; se puede hacer aunque la
+    /// orden esté finalizada, sin reabrirla, y su informe se actualiza solo. Queda apuntado en el
+    /// diario de seguridad (decisiones de Alberto, 22/10/2026).
+    /// Devuelve un mensaje de error para el usuario, o null si va bien.
+    /// </summary>
+    public async Task<string?> EliminarAsync(int id)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.Administracion_wys);
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var autocontrol = await datos.Autocontroles
+            .Include(a => a.OrdenFabricacion)
+            .Include(a => a.Diferencias)
+            .FirstOrDefaultAsync(a => a.Id == id);
+        if (autocontrol is null)
+            return "El autocontrol ya no existe.";
+
+        // Lo que se apunta en el diario se prepara antes de borrar
+        var descripcion = $"orden {autocontrol.OrdenFabricacion.Codigo} ({NombreEstadoOrden(autocontrol.OrdenFabricacion.Estado)}), " +
+            $"{NombreControl(autocontrol.NumeroControl)} " +
+            $"del {autocontrol.FechaControl:dd/MM/yyyy HH:mm}, " +
+            $"{(autocontrol.EstaAnulado ? "anulado" : autocontrol.Estado == EstadoAutocontrol.Registrado ? NombreResultado(autocontrol.Resultado).ToLowerInvariant() : "sin registrar")}, " +
+            $"{autocontrol.Diferencias.Count} diferencia(s)";
+
+        // Una sola operación: se borran las diferencias (con sus recortes) y el autocontrol
+        datos.Diferencias.RemoveRange(autocontrol.Diferencias);
+        datos.Autocontroles.Remove(autocontrol);
+        await datos.SaveChangesAsync();
+
+        await registroSeguridad.RegistrarAsync(AccionesSeguridad.EliminacionAutocontrol_wys, $"Correcto: {descripcion}");
+        return null;
+    }
+
+    private static string NombreEstadoOrden(EstadoOrden estado) =>
+        estado == EstadoOrden.Finalizada ? "finalizada" : "en fabricación";
+
+    /// <summary>
+    /// Calcula el número del siguiente control de una orden: el último que tenga más 1, o 1
+    /// (inicial) si no tiene ninguno. Así, aunque se haya eliminado uno del medio, el siguiente
+    /// nunca coincide con uno que ya existe.
+    /// </summary>
+    private static async Task<int> CalcularNumeroSiguienteAsync(AppDbContext datos, int idOrden)
+    {
+        var ultimo = await datos.Autocontroles
+            .Where(a => a.OrdenFabricacionId == idOrden)
+            .MaxAsync(a => (int?)a.NumeroControl);
+        return (ultimo ?? 0) + 1;
     }
 
     /// <summary>
@@ -212,6 +349,8 @@ public sealed partial class ServicioAutocontroles(
             return "El autocontrol ya no existe.";
         if (autocontrol.Estado == EstadoAutocontrol.Registrado)
             return "Este autocontrol ya está registrado y no se puede cambiar.";
+        if (autocontrol.EstaAnulado)
+            return "Este autocontrol está anulado y ya no se puede registrar.";
 
         // La litografía debe ser la de la orden, salvo que el operario confirme que el patrón es correcto
         var litografiaOrden = autocontrol.OrdenFabricacion.Litografia;
@@ -268,11 +407,11 @@ public sealed partial class ServicioAutocontroles(
         valor is null ? null : Math.Round((decimal)Math.Clamp(valor.Value, 0, 100), 2);
 
     /// <summary>
-    /// Dice qué tipo de control tocaría ahora para una orden ("Inicial" si es nueva,
-    /// "+4 h" si ya tiene el inicial…), para enseñarlo antes de crearlo.
-    /// Devuelve null si el código no es válido.
+    /// Dice qué control tocaría ahora para una orden ("Control 1 (inicial)" si es nueva,
+    /// "Control 2" si ya tiene el inicial…) y cuándo se hizo el último, para enseñarlo antes de
+    /// crearlo. Devuelve null si el código no es válido.
     /// </summary>
-    public async Task<string?> PrevisualizarTipoAsync(string? codigoOrden)
+    public async Task<PrevisionControl?> PrevisualizarControlAsync(string? codigoOrden)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
 
@@ -283,14 +422,20 @@ public sealed partial class ServicioAutocontroles(
         }
 
         await using var datos = await fabricaDatos.CreateDbContextAsync();
-        var cantidad = await datos.Autocontroles.CountAsync(a => a.OrdenFabricacion.Codigo == codigo);
-        return NombreTipo(cantidad * HorasEntreControles_wys);
+        var idOrden = await datos.OrdenesFabricacion.Where(o => o.Codigo == codigo).Select(o => (int?)o.Id).FirstOrDefaultAsync();
+        if (idOrden is null)
+        {
+            return new PrevisionControl(NombreControl(1), null);
+        }
+
+        var ultimo = await datos.Autocontroles.Where(a => a.OrdenFabricacionId == idOrden).MaxAsync(a => (DateTime?)a.FechaControl);
+        return new PrevisionControl(NombreControl(await CalcularNumeroSiguienteAsync(datos, idOrden.Value)), ultimo);
     }
 
     /// <summary>
     /// Crea un autocontrol nuevo para una orden de fabricación, como quien abre una hoja nueva
     /// en el cuaderno de la orden. Si la orden aún no existe, la crea. La fecha y hora las pone
-    /// el servidor, y el tipo (Inicial, +4 h, +8 h…) se calcula solo.
+    /// el servidor, y el número (1 = inicial, 2, 3…) se calcula solo.
     /// </summary>
     public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? observaciones)
     {
@@ -310,7 +455,7 @@ public sealed partial class ServicioAutocontroles(
         }
 
         // Si dos personas crean a la vez un control de la misma orden, la base de datos rechaza
-        // el duplicado (índice único) y se vuelve a intentar con el tipo siguiente
+        // el duplicado (índice único) y se vuelve a intentar con el número siguiente
         for (var intento = 1; intento <= 3; intento++)
         {
             await using var datos = await fabricaDatos.CreateDbContextAsync();
@@ -326,13 +471,17 @@ public sealed partial class ServicioAutocontroles(
                 {
                     return new(null, "Esa orden de fabricación está desactivada.");
                 }
+                else if (orden.Estado == EstadoOrden.Finalizada)
+                {
+                    return new(null, "Esa orden de fabricación está finalizada. Para añadirle autocontroles, pide al administrador que la reabra.");
+                }
 
-                var cantidad = orden.Id == 0 ? 0 : await datos.Autocontroles.CountAsync(a => a.OrdenFabricacionId == orden.Id);
+                var numero = orden.Id == 0 ? 1 : await CalcularNumeroSiguienteAsync(datos, orden.Id);
                 var autocontrol = new Autocontrol
                 {
                     OrdenFabricacion = orden,
                     FechaControl = DateTime.Now,
-                    HorasDesdeInicio = cantidad * HorasEntreControles_wys,
+                    NumeroControl = numero,
                     Estado = EstadoAutocontrol.PendienteArchivos,
                     Observaciones = textoObservaciones
                 };

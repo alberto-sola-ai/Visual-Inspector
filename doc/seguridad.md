@@ -1,6 +1,6 @@
-# Cómo protege esta aplicación tus datos
+﻿# Cómo protege esta aplicación tus datos
 
-Última actualización: 22/10/2026 · Versión: 0.6.0
+Última actualización: 22/10/2026 · Versión: 0.10.0
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.
@@ -53,6 +53,14 @@ diferencia se guarda solo un recorte pequeño, como foto de prueba para el infor
 Cuando el operario registra un autocontrol, queda guardado tal cual: quién lo validó, cuándo, qué
 decidió en cada diferencia y con qué comentario. Después ya no se puede cambiar, ni siquiera desde
 la pantalla: el servidor lo rechaza. Como una hoja firmada del cuaderno de fabricación.
+Lo mismo pasa al finalizar una orden: queda apuntado quién y cuándo, y ya no admite autocontroles
+nuevos. Solo el administrador puede reabrirla, y eso también queda apuntado en la orden y en el
+diario de seguridad. El informe en PDF solo se descarga con permiso para ver autocontroles, y el servidor lo
+vuelve a comprobar en cada descarga.
+
+Si un autocontrol está mal, solo el administrador puede tacharlo (anularlo, con el motivo escrito)
+o arrancar la hoja (eliminarlo), aunque la orden ya esté cerrada. Las dos cosas se apuntan
+en el diario de seguridad: quién, cuándo y qué autocontrol era.
 
 ## Nada de secretos a la vista
 Las claves y contraseñas internas no están escritas en el programa: se guardan

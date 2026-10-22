@@ -16,16 +16,17 @@ y [master/02-definicion-mvp.md](master/02-definicion-mvp.md).
 ## Quién la usa
 
 - Personal de producción y calidad que hace el autocontrol de impresión (al inicio de la orden
-  y cada 4 horas).
+  y después cuando lo considera; se recomienda cada 4 horas).
 - Administradores de la aplicación, que gestionan usuarios, permisos y parámetros.
 
 ## Qué datos maneja
 
 - Usuarios de la aplicación (usuario, nombre completo, rol, permisos, último acceso).
 - Parámetros de la aplicación.
-- Órdenes de fabricación (código de 10 cifras) y sus autocontroles (fecha y hora, tipo:
-  Inicial, +4 h, +8 h…, estado y observaciones).
-- Próximamente: patrones PDF, imágenes de las muestras y resultados de las comparaciones.
+- Órdenes de fabricación (código de 10 cifras) y sus autocontroles (fecha y hora, número:
+  Control 1 (inicial), Control 2…, estado, observaciones, resultado y diferencias validadas).
+- Del patrón y las muestras solo se guarda su huella SHA-256 y un recorte de cada diferencia:
+  los archivos no se guardan.
 
 No contiene datos personales más allá del nombre de los usuarios.
 

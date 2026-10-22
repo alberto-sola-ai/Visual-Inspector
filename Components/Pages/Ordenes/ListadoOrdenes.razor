@@ -1,0 +1,105 @@
+@page "/ordenes"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject ServicioOrdenes ServicioOrdenes
+
+<PageTitle>Órdenes de fabricación · Visual Inspector</PageTitle>
+
+@* Listado de órdenes de fabricación, con su litografía, autocontroles e incidencias *@
+<h1>Órdenes de fabricación</h1>
+
+<div class="d-flex gap-2 align-items-end my-3" style="max-width: 48rem">
+    <div class="flex-grow-1">
+        <label class="form-label" for="filtroOrden">Orden de fabricación</label>
+        <input id="filtroOrden" class="form-control" inputmode="numeric" maxlength="10"
+               @bind="filtroOrden" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" />
+    </div>
+    <div class="flex-grow-1">
+        <label class="form-label" for="filtroLitografia">Litografía</label>
+        <input id="filtroLitografia" class="form-control" maxlength="8"
+               @bind="filtroLitografia" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" />
+    </div>
+    <button class="btn btn-primary" @onclick="BuscarAsync">Buscar</button>
+</div>
+<p class="form-text mt-0">Todo o parte del número de orden o de la litografía (L + 7 cifras).</p>
+
+@if (filas is null)
+{
+    <p>Cargando…</p>
+}
+else if (filas.Count == 0)
+{
+    <p>No hay órdenes que cumplan la búsqueda.</p>
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Orden</th>
+                <th>Litografía</th>
+                <th>Autocontroles</th>
+                <th>Con incidencias</th>
+                <th>Primer control</th>
+                <th>Último control</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in filas)
+            {
+                <tr>
+                    <td><a href="@($"ordenes/{o.Id}")">@o.Codigo</a></td>
+                    <td>@(o.Litografia ?? "-")</td>
+                    <td>@o.Registrados registrados@(o.Autocontroles > o.Registrados ? $" · {o.Autocontroles - o.Registrados} pendientes" : "")</td>
+                    <td>
+                        @if (o.ConIncidencias > 0)
+                        {
+                            <span class="wys-etiqueta">@o.ConIncidencias</span>
+                        }
+                        else
+                        {
+                            <span>0</span>
+                        }
+                    </td>
+                    <td>@(o.PrimerControl?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                    <td>@(o.UltimoControl?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                    <td>@ServicioOrdenes.NombreEstado(o.Estado)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="small text-secondary">Se muestran como máximo las 200 más recientes. Usa la búsqueda para encontrar las anteriores.</p>
+}
+
+@code {
+    private List<FilaOrden>? filas;
+    private string filtroOrden = "";
+    private string filtroLitografia = "";
+
+    /// <summary>
+    /// Carga las órdenes más recientes al abrir la pantalla.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await BuscarAsync();
+    }
+
+    /// <summary>
+    /// Vuelve a cargar la lista con los filtros escritos.
+    /// </summary>
+    private async Task BuscarAsync()
+    {
+        filas = await ServicioOrdenes.ListarAsync(filtroOrden, filtroLitografia);
+    }
+
+    /// <summary>
+    /// Pulsar Intro en un filtro es lo mismo que pulsar Buscar.
+    /// </summary>
+    private async Task AlPulsarTeclaAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BuscarAsync();
+        }
+    }
+}

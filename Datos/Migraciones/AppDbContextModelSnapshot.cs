@@ -164,6 +164,10 @@ namespace VisualInspector.Datos.Migraciones
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AnuladoPor")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
+
                     b.Property<string>("CreadoPor")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -172,10 +176,16 @@ namespace VisualInspector.Datos.Migraciones
                     b.Property<bool>("EsLitografiaDistintaConfirmada")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("EstaAnulado")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)");
+
+                    b.Property<DateTime?>("FechaAnulacion")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("FechaControl")
                         .HasColumnType("datetime(6)");
@@ -188,9 +198,6 @@ namespace VisualInspector.Datos.Migraciones
 
                     b.Property<DateTime?>("FechaRegistro")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<int>("HorasDesdeInicio")
-                        .HasColumnType("int");
 
                     b.Property<string>("HuellaMuestra1")
                         .HasMaxLength(64)
@@ -212,9 +219,16 @@ namespace VisualInspector.Datos.Migraciones
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<string>("MotivoAnulacion")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
+
                     b.Property<string>("NombreArchivoPatron")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
+
+                    b.Property<int>("NumeroControl")
+                        .HasColumnType("int");
 
                     b.Property<string>("Observaciones")
                         .HasMaxLength(500)
@@ -255,7 +269,7 @@ namespace VisualInspector.Datos.Migraciones
 
                     b.HasIndex("FechaControl");
 
-                    b.HasIndex("OrdenFabricacionId", "HorasDesdeInicio")
+                    b.HasIndex("OrdenFabricacionId", "NumeroControl")
                         .IsUnique();
 
                     b.ToTable("Autocontroles", (string)null);
@@ -371,11 +385,23 @@ namespace VisualInspector.Datos.Migraciones
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
                     b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaFin")
                         .HasColumnType("datetime(6)");
 
                     b.Property<DateTime?>("FechaModificacion")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("FinalizadaPor")
+                        .HasMaxLength(256)
+                        .HasColumnType("varchar(256)");
 
                     b.Property<string>("Litografia")
                         .HasMaxLength(8)
@@ -389,6 +415,8 @@ namespace VisualInspector.Datos.Migraciones
 
                     b.HasIndex("Codigo")
                         .IsUnique();
+
+                    b.HasIndex("Litografia");
 
                     b.ToTable("OrdenesFabricacion", (string)null);
                 });

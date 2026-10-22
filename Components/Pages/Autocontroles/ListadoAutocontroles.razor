@@ -37,7 +37,7 @@ else
             <tr>
                 <th>Orden de fabricación</th>
                 <th>Fecha y hora</th>
-                <th>Tipo</th>
+                <th>Control</th>
                 <th>Estado</th>
                 <th>Resultado</th>
                 <th>Realizado por</th>
@@ -49,10 +49,17 @@ else
                 <tr>
                     <td><a href="@($"autocontroles/{a.Id}")">@a.CodigoOrden</a></td>
                     <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@ServicioAutocontroles.NombreTipo(a.HorasDesdeInicio)</td>
-                    <td>@ServicioAutocontroles.NombreEstado(a.Estado)</td>
                     <td>
-                        @if (a.Resultado == ResultadoAutocontrol.ConIncidencias)
+                        @ServicioAutocontroles.NombreControl(a.NumeroControl)
+                        <span class="small text-secondary">@ServicioAutocontroles.TiempoDesdeInicio(a.FechaControl, a.FechaInicioOrden)</span>
+                    </td>
+                    <td>@(a.EstaAnulado ? "Anulado" : ServicioAutocontroles.NombreEstado(a.Estado))</td>
+                    <td>
+                        @if (a.EstaAnulado)
+                        {
+                            <span class="text-secondary">No cuenta</span>
+                        }
+                        else if (a.Resultado == ResultadoAutocontrol.ConIncidencias)
                         {
                             <span class="wys-etiqueta">@ServicioAutocontroles.NombreResultado(a.Resultado)</span>
                         }
