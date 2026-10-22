@@ -1,0 +1,248 @@
+@using VisualInspector.Servicios.Vision
+@inject ServicioArchivosAutocontrol ServicioArchivos
+@inject LocalizadorMuestras Localizador
+@inject ILogger<CargaArchivosAutocontrol> Registro
+
+@* Carga del patrón y las dos muestras desde el PC y localización de cada muestra en el patrón.
+   Nada se guarda: los archivos viven solo en memoria mientras esta pantalla está abierta *@
+<h2 class="h4 mt-5">Patrón y muestras</h2>
+<p class="text-secondary small">
+    Elige los archivos desde tu PC. No se guardan en la aplicación: se descartan al salir de esta pantalla.
+    Patrón en PDF; muestras en JPG, PNG o TIFF escaneadas a 300 ppp, en cualquier orientación. Máximo 50 MB por archivo.
+</p>
+
+<div class="row g-4">
+    @foreach (var hueco in huecos)
+    {
+        <div class="col-4">
+            <div class="border p-3 h-100">
+                <h3 class="h6">@hueco.Titulo</h3>
+                <InputFile class="form-control form-control-sm" accept="@hueco.Aceptar"
+                           OnChange="e => CargarAsync(hueco, e)" disabled="@(hueco.EstaCargando || estaLocalizando)" />
+
+                @if (hueco.EstaCargando)
+                {
+                    <p class="mt-3 mb-0">Revisando el archivo…</p>
+                }
+                else if (hueco.Error is not null)
+                {
+                    <div class="alert alert-danger mt-3 mb-0" role="alert">@hueco.Error</div>
+                }
+                else if (hueco.Archivo is { } a)
+                {
+                    <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(a.VistaJpeg)}")"
+                         class="img-fluid border mt-3" alt="@hueco.Titulo" />
+                    <dl class="small mt-2 mb-0">
+                        <dt>Archivo</dt>
+                        <dd class="text-break">@a.NombreArchivo (@((a.Bytes / 1024d / 1024d).ToString("N1")) MB)</dd>
+                        <dt>Tamaño a 300 ppp</dt>
+                        <dd>@a.AnchoPixeles × @a.AltoPixeles píxeles (@a.AnchoMilimetros.ToString("N0") × @a.AltoMilimetros.ToString("N0") mm)</dd>
+                        <dt>Huella</dt>
+                        <dd><code title="@a.Huella">@a.Huella[..16]…</code></dd>
+                    </dl>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (patron.Archivo is not null)
+{
+    @* Litografía y versión: se leen del nombre del archivo del patrón; si no, se escriben a mano *@
+    @if (!esNombreLeido)
+    {
+        <div class="alert alert-warning mt-3" role="alert">
+            No se han podido leer la litografía y la versión del nombre del archivo (debe empezar por
+            «L» + 7 cifras y «R» + cifras, por ejemplo L2201989R002). Escríbelas a mano.
+        </div>
+    }
+    <div class="row mt-3 g-3">
+        <div class="col-3">
+            <label class="form-label" for="litografia">Litografía</label>
+            <input id="litografia" class="form-control" maxlength="8" @bind="Litografia" @bind:event="oninput" />
+            <div class="form-text">L seguida de 7 cifras.</div>
+            @if (!string.IsNullOrEmpty(Litografia) && !ServicioArchivosAutocontrol.EsLitografiaValida(Litografia))
+            {
+                <div class="text-danger small">El formato no es correcto: L seguida de 7 cifras.</div>
+            }
+        </div>
+        <div class="col-3">
+            <label class="form-label" for="version">Versión del patrón</label>
+            <input id="version" class="form-control" maxlength="10" @bind="VersionPatron" @bind:event="oninput" />
+            <div class="form-text">R seguida de cifras.</div>
+        </div>
+    </div>
+}
+
+@if (EstanTodosCargados)
+{
+    <div class="mt-4 d-flex gap-3 align-items-center">
+        <button class="btn btn-primary btn-lg" @onclick="LocalizarAsync" disabled="@estaLocalizando">
+            Localizar muestras en el patrón
+        </button>
+        @if (estaLocalizando)
+        {
+            <span>Buscando cada muestra en el patrón… puede tardar unos segundos.</span>
+        }
+    </div>
+
+    @if (errorLocalizacion is not null)
+    {
+        <div class="alert alert-danger mt-3" role="alert">@errorLocalizacion</div>
+    }
+
+    @if (resultados is not null)
+    {
+        @* Resultado de la localización: giro, trozos y la muestra superpuesta al patrón, en color *@
+        <div class="row g-4 mt-1">
+            @for (var i = 0; i < resultados.Count; i++)
+            {
+                var r = resultados[i];
+                <div class="col-6">
+                    <div class="border p-3 h-100">
+                        <h3 class="h6">Muestra @(i + 1)</h3>
+                        @if (r.EsLocalizada)
+                        {
+                            <p class="mb-2">
+                                <span class="badge text-bg-success">Localizada</span>
+                                Girada @r.Trozos[0].GiroGrados.ToString("N1")° ·
+                                @(r.Trozos.Count == 1 ? "1 trozo" : $"{r.Trozos.Count} trozos (tubo abierto por otro punto)") ·
+                                @r.Trozos.Sum(t => t.Coincidencias).ToString("N0") coincidencias ·
+                                pieza de @r.AnchoPiezaMm.ToString("N0") × @r.AltoPiezaMm.ToString("N0") mm
+                            </p>
+                            <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(r.VistaSuperpuesta!)}")"
+                                 class="img-fluid border" alt="Muestra @(i + 1) superpuesta al patrón" />
+                            <p class="small text-secondary mt-2 mb-0">
+                                Patrón y muestra mezclados a partes iguales: si los textos se ven nítidos y no
+                                dobles, la muestra está bien colocada. Cada color marca un trozo.
+                            </p>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mb-0" role="alert">@r.Aviso</div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+        <p class="small text-secondary mt-3">
+            Siguiente paso: comparar cada muestra con el patrón (disponible en una próxima versión).
+        </p>
+    }
+}
+
+@code {
+    private readonly Hueco patron = new("Patrón (PDF)", ".pdf,application/pdf", esPatron: true);
+    private readonly Hueco muestra1 = new("Muestra 1", ".jpg,.jpeg,.png,.tif,.tiff,image/jpeg,image/png,image/tiff", esPatron: false);
+    private readonly Hueco muestra2 = new("Muestra 2", ".jpg,.jpeg,.png,.tif,.tiff,image/jpeg,image/png,image/tiff", esPatron: false);
+    private Hueco[] huecos => [patron, muestra1, muestra2];
+
+    private bool esNombreLeido = true;
+    private bool estaLocalizando;
+    private IReadOnlyList<ResultadoLocalizacion>? resultados;
+    private string? errorLocalizacion;
+
+    public string Litografia { get; set; } = "";
+    public string VersionPatron { get; set; } = "";
+
+    private bool EstanTodosCargados =>
+        huecos.All(h => h.Archivo is not null)
+        && ServicioArchivosAutocontrol.EsLitografiaValida(Litografia)
+        && !string.IsNullOrWhiteSpace(VersionPatron);
+
+    /// <summary>
+    /// Recibe el archivo elegido, lo manda revisar al servidor y enseña su vista o el motivo
+    /// por el que no vale. Si cambia algún archivo, la localización anterior deja de valer.
+    /// </summary>
+    private async Task CargarAsync(Hueco hueco, InputFileChangeEventArgs e)
+    {
+        hueco.Archivo = null;
+        hueco.Error = null;
+        resultados = null;
+        errorLocalizacion = null;
+
+        if (e.File.Size > ServicioArchivosAutocontrol.TamanoMaximoBytes_wys)
+        {
+            hueco.Error = "El archivo pasa de 50 MB.";
+            return;
+        }
+
+        hueco.EstaCargando = true;
+        try
+        {
+            await using var contenido = e.File.OpenReadStream(ServicioArchivosAutocontrol.TamanoMaximoBytes_wys);
+            hueco.Archivo = hueco.EsPatron
+                ? await ServicioArchivos.PrepararPatronAsync(contenido, e.File.Name)
+                : await ServicioArchivos.PrepararMuestraAsync(contenido, e.File.Name);
+
+            if (hueco.EsPatron)
+            {
+                var datos = ServicioArchivosAutocontrol.LeerNombrePatron(hueco.Archivo.NombreArchivo);
+                esNombreLeido = datos.Litografia is not null;
+                Litografia = datos.Litografia ?? "";
+                VersionPatron = datos.Version ?? "";
+            }
+        }
+        catch (ArchivoNoValidoException error)
+        {
+            hueco.Error = error.Message;
+        }
+        catch (IOException error)
+        {
+            // Lectura interrumpida (conexión cortada o archivo cambiado mientras se subía)
+            var codigo = CodigoError.Generar();
+            Registro.LogWarning(error, "Error {Codigo} al subir un archivo", codigo);
+            hueco.Error = $"No se ha podido leer el archivo. Inténtalo de nuevo (código {codigo}).";
+        }
+        finally
+        {
+            hueco.EstaCargando = false;
+        }
+    }
+
+    /// <summary>
+    /// Busca cada muestra dentro del patrón y enseña el resultado. Si algo falla, se ve un
+    /// mensaje amable y el detalle técnico va al diario de errores.
+    /// </summary>
+    private async Task LocalizarAsync()
+    {
+        estaLocalizando = true;
+        errorLocalizacion = null;
+        resultados = null;
+        try
+        {
+            resultados = await Localizador.LocalizarAsync(patron.Archivo!, [muestra1.Archivo!, muestra2.Archivo!]);
+        }
+        catch (TimeoutException)
+        {
+            errorLocalizacion = "La localización está tardando demasiado. Comprueba los archivos e inténtalo de nuevo.";
+        }
+        catch (ArchivoNoValidoException error)
+        {
+            errorLocalizacion = error.Message;
+        }
+        catch (Exception error) when (error is not AccesoDenegadoException)
+        {
+            var codigo = CodigoError.Generar();
+            Registro.LogError(error, "Error {Codigo} al localizar las muestras", codigo);
+            errorLocalizacion = $"Algo no ha ido bien al localizar las muestras. Si se repite, avisa a IT indicando este código: {codigo}.";
+        }
+        finally
+        {
+            estaLocalizando = false;
+        }
+    }
+
+    /// <summary>
+    /// Cada uno de los tres huecos de carga: el patrón y las dos muestras.
+    /// </summary>
+    private sealed class Hueco(string titulo, string aceptar, bool esPatron)
+    {
+        public string Titulo { get; } = titulo;
+        public string Aceptar { get; } = aceptar;
+        public bool EsPatron { get; } = esPatron;
+        public ArchivoPreparado? Archivo { get; set; }
+        public string? Error { get; set; }
+        public bool EstaCargando { get; set; }
+    }
+}

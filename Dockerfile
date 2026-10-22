@@ -2,16 +2,23 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS compilacion
 WORKDIR /src
 COPY *.csproj ./
-# Primera descarga de paquetes solo con el .csproj: se guarda en caché y acelera las siguientes compilaciones
-RUN dotnet restore
+# Primera descarga de paquetes solo con el .csproj: se guarda en caché y acelera las siguientes compilaciones.
+# Solo para Linux (linux-x64): así no se copian a la imagen las bibliotecas nativas de Windows.
+RUN dotnet restore -r linux-x64
 COPY . .
 # Sin --no-restore: con las pantallas .razor ya copiadas, .NET 10 añade el paquete que trae el
 # programa de Blazor (_framework/blazor.web.js). Con --no-restore faltaba y los botones no funcionaban.
-RUN dotnet publish -c Release -o /app
+RUN dotnet publish -c Release -r linux-x64 --self-contained false -o /app
 
-# Fase 2: imagen final, solo con lo necesario para ejecutar (imagen estándar Debian:
-# incluye los datos de idioma y zona horaria que necesitan los formatos españoles)
+# Fase 2: imagen final, solo con lo necesario para ejecutar. La imagen de .NET 10 es Ubuntu 24.04:
+# incluye los datos de idioma y zona horaria que necesitan los formatos españoles
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
+# Bibliotecas del sistema que necesita OpenCV (visión artificial) en Linux. Se instalan antes de
+# copiar la aplicación para que Docker las guarde en caché y no las descargue en cada versión.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       libgtk-3-0t64 libfreetype6 libharfbuzz0b libdrm2 libatomic1 libx11-6 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=compilacion /app .
 # Carpetas de registros y de claves de sesión, con permiso de escritura para el usuario que ejecuta la aplicación

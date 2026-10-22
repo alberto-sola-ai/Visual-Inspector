@@ -6,15 +6,20 @@
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-# Explicación sencilla de cada pieza, para que el administrador sepa para qué sirve
+# Para qué se usa cada pieza en Visual Inspector y su licencia (todas gratuitas, también para
+# uso comercial). Al añadir una biblioteca nueva al proyecto, se añade aquí su línea.
 $descripciones = @{
-    'Pomelo.EntityFrameworkCore.MySql'                  = 'Conexión con la base de datos MariaDB.'
-    'Microsoft.AspNetCore.Identity.EntityFrameworkCore' = 'Guarda los usuarios, roles y permisos en la base de datos.'
-    'Microsoft.EntityFrameworkCore.Relational'          = 'Motor de acceso a la base de datos (Entity Framework).'
-    'Microsoft.EntityFrameworkCore.Design'              = 'Herramienta para crear las tablas (migraciones). Solo se usa al programar.'
-    'Konscious.Security.Cryptography.Argon2'            = 'Cifrado de contraseñas (Argon2id).'
-    'Serilog.AspNetCore'                                = 'Escribe los registros de errores y de seguridad en la carpeta log.'
-    'Serilog.Expressions'                               = 'Separa los registros de seguridad de los de errores.'
+    'Pomelo.EntityFrameworkCore.MySql'                  = 'Conecta la aplicación con la base de datos MariaDB, donde se guardan usuarios, autocontroles y resultados. Licencia MIT.'
+    'Microsoft.AspNetCore.Identity.EntityFrameworkCore' = 'Guarda en la base de datos los usuarios, sus roles y sus permisos. Licencia MIT.'
+    'Microsoft.EntityFrameworkCore.Relational'          = 'Motor de acceso a la base de datos (Entity Framework): lee y guarda los datos sin escribir SQL a mano, lo que evita inyecciones. Licencia MIT.'
+    'Microsoft.EntityFrameworkCore.Design'              = 'Herramienta para crear y cambiar las tablas (migraciones). Solo se usa al programar, no en el servidor. Licencia MIT.'
+    'Konscious.Security.Cryptography.Argon2'            = 'Cifra las contraseñas con Argon2id, el método que pide la norma de seguridad WYS: nadie puede leerlas. Licencia MIT.'
+    'Serilog.AspNetCore'                                = 'Escribe los registros de la carpeta log: errores (err-log) y seguridad (Log-Wys-Seg). Licencia Apache 2.0.'
+    'Serilog.Expressions'                               = 'Separa los registros de seguridad de los de errores, cada uno en su fichero. Licencia Apache 2.0.'
+    'PDFtoImage'                                        = 'Convierte el patrón PDF en imagen a 300 ppp y en color para compararlo con las muestras. Usa por dentro PDFium (el lector de PDF de Chrome) y SkiaSharp. Licencia MIT.'
+    'OpenCvSharp4'                                      = 'Visión artificial (OpenCV): lee las muestras escaneadas, recorta la pieza del fondo del escáner y localiza cada muestra dentro del patrón con cualquier giro. Licencia Apache 2.0.'
+    'OpenCvSharp4.runtime.win'                          = 'Parte nativa de OpenCV para Windows. Solo se usa en el equipo de desarrollo. Licencia Apache 2.0.'
+    'OpenCvSharp4.official.runtime.linux-x64'           = 'Parte nativa de OpenCV para Linux: la que usa el servidor (Docker). Licencia Apache 2.0.'
 }
 
 # Paquetes que no se pueden actualizar todavía, y por qué
@@ -55,14 +60,14 @@ try {
 } catch { Write-Host 'No se pudo consultar la última versión de .NET.' }
 $recomendacionNet = if ($ultimaNet -ne '-' -and [version]$ultimaNet -gt [version]$runtime) { 'Recomendada' } else { 'Al día' }
 $componentes += [ordered]@{
-    nombre = '.NET'; descripcion = 'La plataforma sobre la que funciona la aplicación.'
+    nombre = '.NET'; descripcion = 'La plataforma sobre la que funciona toda la aplicación (pantallas Blazor, servicios y seguridad). Licencia MIT.'
     instalada = $runtime; ultima = $ultimaNet; recomendacion = $recomendacionNet
 }
 
 # MariaDB (la versión la fija docker-compose.yml)
 $imagen = (Select-String -Path docker-compose.yml -Pattern 'image:\s*mariadb:(\S+)').Matches[0].Groups[1].Value
 $componentes += [ordered]@{
-    nombre = 'MariaDB Server'; descripcion = 'La base de datos. Se usa la rama de soporte largo (LTS).'
+    nombre = 'MariaDB Server'; descripcion = 'La base de datos donde se guardan usuarios, parámetros, órdenes y autocontroles. Rama de soporte largo (LTS). Licencia GPL v2, gratuita; funciona como servicio aparte.'
     instalada = $imagen; ultima = "$imagen (rama LTS)"; recomendacion = 'Al día'
 }
 

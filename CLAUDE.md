@@ -9,6 +9,9 @@ Este proyecto sigue las normas de desarrollo de Witte y Solá.
 - Comentarios y documentación en castellano, en lenguaje sencillo.
 - Anota cada cambio relevante en `doc/cambios.md`.
 - Git y GitHub se gestionan a mano: no ejecutes comandos de Git salvo que Alberto lo pida.
+- Cada biblioteca nueva se añade a `generar-versiones.ps1` con una descripción sencilla de para
+  qué se usa en el proyecto y su licencia (solo bibliotecas gratuitas). Después se regenera
+  `recursos/versiones.json` (panel Administración → Versiones y actualizaciones).
 
 ## Sobre este proyecto
 

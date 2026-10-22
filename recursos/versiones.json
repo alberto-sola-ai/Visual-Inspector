@@ -1,65 +1,93 @@
 ﻿{
-    "generado":  "2026-10-21T08:34:58",
+    "generado":  "2026-10-22T13:18:07",
     "componentes":  [
                         {
                             "nombre":  ".NET",
-                            "descripcion":  "La plataforma sobre la que funciona la aplicación.",
+                            "descripcion":  "La plataforma sobre la que funciona toda la aplicación (pantallas Blazor, servicios y seguridad). Licencia MIT.",
                             "instalada":  "10.0.12",
                             "ultima":  "10.0.13",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "MariaDB Server",
-                            "descripcion":  "La base de datos. Se usa la rama de soporte largo (LTS).",
+                            "descripcion":  "La base de datos donde se guardan usuarios, parámetros, órdenes y autocontroles. Rama de soporte largo (LTS). Licencia GPL v2, gratuita; funciona como servicio aparte.",
                             "instalada":  "11.4",
                             "ultima":  "11.4 (rama LTS)",
                             "recomendacion":  "Al día"
                         },
                         {
                             "nombre":  "Konscious.Security.Cryptography.Argon2",
-                            "descripcion":  "Cifrado de contraseñas (Argon2id).",
+                            "descripcion":  "Cifra las contraseñas con Argon2id, el método que pide la norma de seguridad WYS: nadie puede leerlas. Licencia MIT.",
                             "instalada":  "1.3.1",
                             "ultima":  "1.3.1",
                             "recomendacion":  "Al día"
                         },
                         {
                             "nombre":  "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
-                            "descripcion":  "Guarda los usuarios, roles y permisos en la base de datos. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
+                            "descripcion":  "Guarda en la base de datos los usuarios, sus roles y sus permisos. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
                             "ultima":  "10.0.13",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.EntityFrameworkCore.Design",
-                            "descripcion":  "Herramienta para crear las tablas (migraciones). Solo se usa al programar. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
+                            "descripcion":  "Herramienta para crear y cambiar las tablas (migraciones). Solo se usa al programar, no en el servidor. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
                             "ultima":  "10.0.13",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.EntityFrameworkCore.Relational",
-                            "descripcion":  "Motor de acceso a la base de datos (Entity Framework). Se mantiene en la versión 9 hasta que exista Pomelo 10.",
+                            "descripcion":  "Motor de acceso a la base de datos (Entity Framework): lee y guarda los datos sin escribir SQL a mano, lo que evita inyecciones. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
                             "ultima":  "10.0.13",
                             "recomendacion":  "Recomendada"
                         },
                         {
+                            "nombre":  "OpenCvSharp4",
+                            "descripcion":  "Visión artificial (OpenCV): lee las muestras escaneadas, recorta la pieza del fondo del escáner y localiza cada muestra dentro del patrón con cualquier giro. Licencia Apache 2.0.",
+                            "instalada":  "4.13.0.20260627",
+                            "ultima":  "4.13.0.20260627",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "OpenCvSharp4.official.runtime.linux-x64",
+                            "descripcion":  "Parte nativa de OpenCV para Linux: la que usa el servidor (Docker). Licencia Apache 2.0.",
+                            "instalada":  "4.13.0.20260627",
+                            "ultima":  "4.13.0.20260627",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "OpenCvSharp4.runtime.win",
+                            "descripcion":  "Parte nativa de OpenCV para Windows. Solo se usa en el equipo de desarrollo. Licencia Apache 2.0.",
+                            "instalada":  "4.13.0.20260627",
+                            "ultima":  "4.13.0.20260627",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "PDFtoImage",
+                            "descripcion":  "Convierte el patrón PDF en imagen a 300 ppp y en color para compararlo con las muestras. Usa por dentro PDFium (el lector de PDF de Chrome) y SkiaSharp. Licencia MIT.",
+                            "instalada":  "5.4.0",
+                            "ultima":  "5.4.0",
+                            "recomendacion":  "Al día"
+                        },
+                        {
                             "nombre":  "Pomelo.EntityFrameworkCore.MySql",
-                            "descripcion":  "Conexión con la base de datos MariaDB.",
+                            "descripcion":  "Conecta la aplicación con la base de datos MariaDB, donde se guardan usuarios, autocontroles y resultados. Licencia MIT.",
                             "instalada":  "9.0.0",
                             "ultima":  "9.0.0",
                             "recomendacion":  "Al día"
                         },
                         {
                             "nombre":  "Serilog.AspNetCore",
-                            "descripcion":  "Escribe los registros de errores y de seguridad en la carpeta log.",
+                            "descripcion":  "Escribe los registros de la carpeta log: errores (err-log) y seguridad (Log-Wys-Seg). Licencia Apache 2.0.",
                             "instalada":  "10.0.0",
                             "ultima":  "10.0.0",
                             "recomendacion":  "Al día"
                         },
                         {
                             "nombre":  "Serilog.Expressions",
-                            "descripcion":  "Separa los registros de seguridad de los de errores.",
+                            "descripcion":  "Separa los registros de seguridad de los de errores, cada uno en su fichero. Licencia Apache 2.0.",
                             "instalada":  "5.0.0",
                             "ultima":  "5.0.0",
                             "recomendacion":  "Al día"

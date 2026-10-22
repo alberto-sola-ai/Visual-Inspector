@@ -1,6 +1,6 @@
 # Cómo protege esta aplicación tus datos
 
-Última actualización: 21/10/2026 · Versión: 0.1.1
+Última actualización: 22/10/2026 · Versión: 0.4.0
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.
@@ -39,6 +39,14 @@ desde fuera: solo habla con la aplicación, dentro de Docker.
 ## El navegador también ayuda
 La aplicación le dice al navegador que no cargue nada de fuera, que no deje meterla dentro de
 otra web y que no "adivine" el tipo de los archivos. Así es más difícil engañar a quien la usa.
+
+## Los archivos, revisados en la puerta y sin guardar
+Cuando cargas el patrón y las muestras, la aplicación mira qué son de verdad (no se fía del nombre
+ni de la extensión), no deja pasar archivos de más de 50 MB ni imágenes gigantes (más de unos
+12.000 × 12.000 píxeles), corta cualquier proceso que tarde más de 2 minutos, y solo
+quien tiene permiso para hacer autocontroles puede cargarlos. Los archivos no se guardan: se
+revisan en memoria y se olvidan al salir de la pantalla. Solo se apunta su "huella" (SHA-256),
+como la huella dactilar de un documento, para poder demostrar después cuál se usó.
 
 ## Nada de secretos a la vista
 Las claves y contraseñas internas no están escritas en el programa: se guardan

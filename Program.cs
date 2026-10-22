@@ -20,6 +20,9 @@ var culturaEspana = new CultureInfo("es-ES");
 CultureInfo.DefaultThreadCurrentCulture = culturaEspana;
 CultureInfo.DefaultThreadCurrentUICulture = culturaEspana;
 
+// Ajustes de la visión artificial (OpenCV) antes de usarla por primera vez
+VisualInspector.Servicios.Vision.ConfiguracionVision.Aplicar();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Registros en log/: errores en err-log-AAAAMMDD.log y seguridad en Log-Wys-Seg-AAAAMMDD.log
@@ -133,6 +136,8 @@ builder.Services.AddScoped<ServicioParametros>();
 builder.Services.AddScoped<ServicioUsuarios>();
 builder.Services.AddScoped<ServicioVersiones>();
 builder.Services.AddScoped<ServicioAutocontroles>();
+builder.Services.AddScoped<VisualInspector.Servicios.Vision.ServicioArchivosAutocontrol>();
+builder.Services.AddScoped<VisualInspector.Servicios.Vision.LocalizadorMuestras>();
 
 // Si la red de WYS publica la aplicación a través de un proxy, esto permite conocer la IP real
 // del usuario para el diario de seguridad. Desactivado salvo que se active en la configuración.

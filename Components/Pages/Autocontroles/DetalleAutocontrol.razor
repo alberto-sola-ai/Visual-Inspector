@@ -45,13 +45,10 @@ else
         <p style="white-space: pre-line">@ficha.Observaciones</p>
     }
 
-    <div class="alert alert-secondary mt-4 d-flex gap-3 align-items-center">
-        <img src="recursos/iconos/color/notas.png" class="wys-icono" alt="" />
-        <span>
-            <strong>Siguiente paso:</strong> cargar el patrón PDF y las dos muestras escaneadas
-            (disponible en una próxima versión).
-        </span>
-    </div>
+    @* Solo quien puede hacer autocontroles ve la zona de carga; el servicio lo vuelve a comprobar *@
+    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
+        <CargaArchivosAutocontrol />
+    </AuthorizeView>
 
     @* Quién y cuándo creó o modificó este autocontrol *@
     <p class="wys-trazabilidad">

@@ -24,3 +24,7 @@ publicar/
 
 # Estado de la ventana de Obsidian (cambia constantemente)
 .obsidian/workspace.json
+
+# Archivos de prueba con diseños de clientes: NUNCA se suben (se borran al terminar las pruebas)
+muestras-prueba/
+patrones/

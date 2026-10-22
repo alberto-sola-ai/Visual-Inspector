@@ -1,5 +1,26 @@
 # Registro de cambios
 
+## 0.4.0 — 2026-10-22
+- La litografía (L + 7 cifras) y la versión (R + cifras) se leen del principio del nombre del
+  patrón. Si el nombre no sigue el formato, se avisa y se escriben a mano.
+- Botón «Localizar muestras en el patrón»: recorta cada pieza del fondo del escáner y la encuentra
+  en la página del patrón con cualquier giro, aunque el tubo se haya abierto por otro punto
+  (dos trozos). Muestra el giro, los trozos y el patrón con la muestra superpuesta, en color.
+- Las muestras pueden ser también TIFF.
+- Visión artificial con OpenCvSharp 4.13 (Apache 2.0). La imagen de Docker instala las bibliotecas
+  del sistema que necesita y solo lleva lo de Linux.
+- En Windows (equipo de desarrollo) OpenCV trabaja con un solo hilo: con varios se cerraba de golpe.
+- Panel de versiones: cada pieza (bibliotecas, .NET y MariaDB) explica para qué se usa en el
+  proyecto y cuál es su licencia.
+
+## 0.3.0 — 2026-10-22
+- Ficha del autocontrol: carga desde el PC del patrón (PDF) y de las dos muestras (JPG o PNG a
+  300 ppp, en cualquier orientación), con su vista en pantalla, tamaño en milímetros y huella SHA-256.
+- El PDF se convierte en imagen a 300 ppp (biblioteca PDFtoImage). Se propone la versión del
+  patrón si el nombre del archivo la incluye (por ejemplo R002).
+- Los archivos no se guardan: se revisan en memoria y se descartan al salir de la pantalla.
+- Carpetas locales `muestras-prueba/` y `patrones/` para pruebas, excluidas de Git y de Docker.
+
 ## Sin versión — 2026-10-21
 - Puerto de acceso desde fuera de Docker cambiado del 8080 al 8082 (`docker-compose.yml`). Dentro
   del contenedor la aplicación sigue en el 8080. Ahora se abre <http://localhost:8082>.
