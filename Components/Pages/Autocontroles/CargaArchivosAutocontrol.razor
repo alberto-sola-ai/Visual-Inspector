@@ -15,9 +15,12 @@
     @foreach (var hueco in huecos)
     {
         <div class="col-4">
-            <div class="border p-3 h-100">
+            <div class="vi-panel h-100">
                 <h3 class="h6">@hueco.Titulo</h3>
+                @* data-carpeta-recordada: wwwroot/js/elegir-archivo.js abre el explorador en la última
+                   carpeta de patrones o de muestras usada (la primera vez, «Mis documentos») *@
                 <InputFile class="form-control form-control-sm" accept="@hueco.Aceptar"
+                           data-carpeta-recordada="@(hueco.EsPatron ? "patrones" : "muestras")"
                            OnChange="e => CargarAsync(hueco, e)" disabled="@(hueco.EstaCargando || estaLocalizando)" />
 
                 @if (hueco.EstaCargando)
@@ -107,7 +110,7 @@
             {
                 var r = resultados[i];
                 <div class="col-6">
-                    <div class="border p-3 h-100">
+                    <div class="vi-panel h-100">
                         <h3 class="h6">Muestra @(i + 1)</h3>
                         @if (r.EsLocalizada)
                         {
@@ -264,5 +267,6 @@
         public ArchivoPreparado? Archivo { get; set; }
         public string? Error { get; set; }
         public bool EstaCargando { get; set; }
+
     }
 }

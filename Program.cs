@@ -143,6 +143,7 @@ builder.Services.AddScoped<ServicioAutocontroles>();
 builder.Services.AddScoped<ServicioOrdenes>();
 builder.Services.AddScoped<VisualInspector.Servicios.Informes.GeneradorInformePdf>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ServicioArchivosAutocontrol>();
+builder.Services.AddScoped<ServicioRegistros>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.LocalizadorMuestras>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ComparadorMuestras>();
 

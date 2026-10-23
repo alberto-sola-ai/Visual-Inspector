@@ -1,4 +1,4 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
 
 @* Estructura de pantalla WYS: cabecera con logo y menú, contenido sobre fondo blanco y pie azul.
    A la izquierda, el logo de WYS (la empresa); a su lado, el símbolo y el nombre de la aplicación *@
@@ -14,7 +14,7 @@
 
         @* Fecha, hora de Madrid y turno; los rellena wwwroot/js/reloj-turno.js cada segundo *@
         <span class="vi-reloj" hidden>
-            <span class="vi-reloj__fecha"></span>
+            <span><span class="vi-reloj__dia"></span> <span class="vi-reloj__fecha"></span></span>
             <strong class="vi-reloj__hora"></strong>
             <span class="vi-reloj__turno"></span>
         </span>

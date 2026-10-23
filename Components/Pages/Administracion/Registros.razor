@@ -1,0 +1,122 @@
+@page "/administracion/registros"
+@inject ServicioRegistros ServicioRegistros
+
+<PageTitle>Registros · Administración</PageTitle>
+
+@* Lectura de los diarios de la aplicación (log/) para investigar errores. Solo lectura *@
+<h1>Registros</h1>
+<p><a href="administracion">Administración</a> › Registros</p>
+
+<p style="max-width: 52rem">
+    Consulta los diarios que guarda la aplicación. El de <strong>errores</strong> sirve para
+    investigar un fallo a partir del código que vio el usuario (por ejemplo ERR-…). El de
+    <strong>seguridad</strong> recoge entradas, bloqueos y cambios de usuarios, permisos y
+    parámetros. Contiene datos personales (usuario e IP): cada consulta queda apuntada.
+</p>
+
+<div class="vi-panel d-flex flex-wrap gap-3 align-items-end" style="max-width: 60rem">
+    <div>
+        <span class="form-label d-block">Diario</span>
+        <div class="btn-group" role="group" aria-label="Diario">
+            <button class="btn @(tipo == TipoRegistro.Errores ? "btn-primary" : "btn-outline-primary")"
+                    @onclick="() => CambiarTipoAsync(TipoRegistro.Errores)">Errores</button>
+            <button class="btn @(tipo == TipoRegistro.Seguridad ? "btn-primary" : "btn-outline-primary")"
+                    @onclick="() => CambiarTipoAsync(TipoRegistro.Seguridad)">Seguridad</button>
+        </div>
+    </div>
+    <div>
+        <label class="form-label" for="dia">Día</label>
+        <select id="dia" class="form-select" @bind="diaElegido" disabled="@(dias.Count == 0)">
+            @foreach (var d in dias)
+            {
+                <option value="@d.ToString("yyyy-MM-dd")">@d.ToString("dd/MM/yyyy")</option>
+            }
+        </select>
+    </div>
+    <div class="flex-grow-1">
+        <label class="form-label" for="buscar">Buscar texto</label>
+        <input id="buscar" class="form-control" maxlength="100" @bind="texto" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" />
+    </div>
+    <button class="btn btn-primary" @onclick="LeerAsync" disabled="@(dias.Count == 0 || estaLeyendo)">Ver</button>
+</div>
+<div class="form-text">Por ejemplo, el código de error que te pasen o el nombre de un usuario. Vacío para verlo todo.</div>
+
+@if (dias.Count == 0)
+{
+    <p class="mt-4">No hay ningún día guardado en este diario.</p>
+}
+else if (lectura is not null)
+{
+    <p class="mt-4 mb-2">
+        @(lectura.Total == 0 ? "No hay apuntes que cumplan la búsqueda." : $"{lectura.Total:N0} apuntes, del más reciente al más antiguo.")
+        @if (lectura.EstaRecortado)
+        {
+            <span class="text-secondary">Se enseñan los @ServicioRegistros.MaximoApuntes_wys.ToString("N0") más recientes: usa la búsqueda para afinar.</span>
+        }
+    </p>
+    @* Cada apunte se muestra como texto (Blazor lo escapa): nunca como HTML *@
+    <div class="vi-registro">
+        @foreach (var apunte in lectura.Apuntes)
+        {
+            <div class="vi-registro__apunte @(apunte.Contains("[ERR]") || apunte.Contains("[FTL]") ? "vi-registro__apunte--error" : "")">@apunte</div>
+        }
+    </div>
+}
+
+@code {
+    private TipoRegistro tipo = TipoRegistro.Errores;
+    private IReadOnlyList<DateOnly> dias = [];
+    private string diaElegido = "";
+    private string texto = "";
+    private LecturaRegistro? lectura;
+    private bool estaLeyendo;
+
+    /// <summary>
+    /// Al abrir la pantalla carga los días del diario de errores (sin leerlo todavía).
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDiasAsync();
+    }
+
+    /// <summary>
+    /// Cambia de diario: carga sus días y borra lo que se estaba viendo.
+    /// </summary>
+    private async Task CambiarTipoAsync(TipoRegistro nuevo)
+    {
+        tipo = nuevo;
+        lectura = null;
+        await CargarDiasAsync();
+    }
+
+    private async Task CargarDiasAsync()
+    {
+        dias = await ServicioRegistros.ListarDiasAsync(tipo);
+        diaElegido = dias.Count > 0 ? dias[0].ToString("yyyy-MM-dd") : "";
+    }
+
+    /// <summary>
+    /// Lee los apuntes del día elegido. El servicio comprueba que es el administrador y apunta la consulta.
+    /// </summary>
+    private async Task LeerAsync()
+    {
+        if (!DateOnly.TryParse(diaElegido, out var dia))
+        {
+            return;
+        }
+        estaLeyendo = true;
+        lectura = await ServicioRegistros.LeerAsync(tipo, dia, texto);
+        estaLeyendo = false;
+    }
+
+    /// <summary>
+    /// Pulsar Intro en la búsqueda es lo mismo que pulsar Ver.
+    /// </summary>
+    private async Task AlPulsarTeclaAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await LeerAsync();
+        }
+    }
+}

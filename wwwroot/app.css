@@ -157,7 +157,20 @@ h1:focus {
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: .85rem;
+}
+
+/* Cabecera algo más compacta que la de serie de WYS: con el reloj y los menús, el espacio es
+   justo en pantallas de 1280 px (el mínimo WYS) */
+.wys-app .wys-cabecera {
+    gap: 1.1rem;
+}
+
+/* En pantallas de menos de 1400 px el reloj no enseña el día de la semana, para que quepa todo */
+@media (max-width: 1400px) {
+    .vi-reloj__dia {
+        display: none;
+    }
 }
 
 /* En la cabecera nada se parte en dos líneas: con el reloj, el espacio es justo en pantallas de 1280 px */
@@ -167,11 +180,157 @@ h1:focus {
     white-space: nowrap;
 }
 
-/* El nombre de la persona se corta con "…" si es muy largo (completo al pasar el ratón: "Mi cuenta") */
-.vi-menu__usuario {
-    max-width: 9rem;
+/* Menús desplegables de la cabecera: un botón con una flecha que despliega sus opciones.
+   El de la persona conectada lleva su nombre y borde; el de Administración va como un enlace */
+.vi-desplegable {
+    position: relative;
+}
+
+.vi-desplegable__boton {
+    list-style: none;   /* sin el triángulo que el navegador pone de serie */
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .3rem .75rem;
+    border: 1px solid var(--wys-azul-oscuro);
+    border-radius: .375rem;
+    color: var(--wys-azul-oscuro);
+    font-size: .9rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.vi-desplegable__boton::-webkit-details-marker {
+    display: none;
+}
+
+/* Flecha hacia abajo; mira hacia arriba con el menú abierto */
+.vi-desplegable__boton::after {
+    content: "";
+    width: .45rem;
+    height: .45rem;
+    border-right: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+    transform: translateY(-2px) rotate(45deg);
+}
+
+.vi-desplegable[open] .vi-desplegable__boton::after {
+    transform: translateY(2px) rotate(-135deg);
+}
+
+.vi-desplegable__boton:hover,
+.vi-desplegable[open] .vi-desplegable__boton {
+    background: var(--wys-azul-oscuro);
+    color: #fff;
+}
+
+/* El nombre se corta con "…" si es muy largo */
+.vi-desplegable__nombre {
+    max-width: 8.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vi-desplegable__opciones {
+    position: absolute;
+    right: 0;
+    top: calc(100% + .4rem);
+    min-width: 13rem;
+    padding: .4rem 0;
+    background: var(--wys-fondo);
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .375rem;
+    z-index: 1000;
+}
+
+.vi-desplegable__opciones a,
+.vi-desplegable__opciones button {
+    display: block;
+    width: 100%;
+    padding: .45rem 1rem;
+    border: 0;
+    background: none;
+    text-align: left;
+    text-decoration: none;
+    color: var(--wys-azul-oscuro);
+    font-size: .95rem;
+}
+
+.vi-desplegable__opciones a:hover,
+.vi-desplegable__opciones button:hover {
+    background: var(--wys-gris-1);
+}
+
+.vi-desplegable__opciones hr {
+    margin: .35rem 0;
+    border-color: var(--wys-gris-1);
+    opacity: 1;
+}
+
+/* Variante sin borde (Administración): se ve como un enlace más del menú, con su flecha */
+.vi-desplegable--claro .vi-desplegable__boton {
+    border-color: transparent;
+    padding-left: .4rem;
+    padding-right: .4rem;
+    font-size: 1rem;
+}
+
+.vi-desplegable--claro .vi-desplegable__boton:hover,
+.vi-desplegable--claro[open] .vi-desplegable__boton {
+    background: var(--wys-gris-1);
+    color: var(--wys-azul-oscuro);
+}
+
+/* Recuadro blanco para agrupar campos sobre el fondo de la aplicación */
+.vi-panel {
+    background: var(--wys-fondo);
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .375rem;
+    padding: 1.25rem;
+}
+
+/* Registros: cada apunte del diario en letra de ancho fijo, tal cual, sobre blanco */
+.vi-registro {
+    background: var(--wys-fondo);
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .375rem;
+    max-height: 60vh;
+    overflow: auto;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: .8rem;
+}
+
+.vi-registro__apunte {
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: .35rem .75rem;
+    border-bottom: 1px solid var(--wys-gris-1);
+}
+
+.vi-registro__apunte--error {
+    border-left: 3px solid var(--wys-rojo);
+}
+
+/* Inicio: los accesos uno debajo de otro, en una columna a la izquierda */
+.vi-accesos {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    max-width: 40rem;
+}
+
+/* Inicio: presentación discreta de la aplicación, abajo a la derecha, encima del pie */
+.vi-presentacion {
+    position: fixed;
+    right: 3rem;
+    bottom: 3.75rem;
+    max-width: 28rem;
+    margin: 0;
+    text-align: right;
+    font-size: .95rem;
+    font-weight: 300;
+    color: var(--wys-azul-oscuro);
 }
 
 .vi-menu a.active {

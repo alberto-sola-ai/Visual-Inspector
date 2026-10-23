@@ -8,7 +8,7 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- Necesario para los formatos españoles (fechas, números, euros) -->
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.10.7</Version>
+    <Version>0.11.5</Version>
   </PropertyGroup>
 
   <!-- La carpeta recursos/ (logo, fuentes, iconos, tema.css) viaja con la aplicación;

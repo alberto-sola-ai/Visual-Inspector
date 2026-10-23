@@ -1,6 +1,6 @@
 # Pruebas de seguridad
 
-Última ejecución: 23/10/2026 · Versión: 0.10.7 · Resultado: **62 de 62 correctas**
+Última ejecución: 23/10/2026 · Versión: 0.11.5 · Resultado: **65 de 65 correctas**
 
 ## Qué es esto
 
@@ -20,12 +20,13 @@ aplicación.
 | Contraseña temporal | Quien aún no ha cambiado su contraseña temporal no puede hacer nada, ni siendo administrador | Bien |
 | El servidor vigila (1.2) | Aunque alguien se salte la pantalla, el servidor vuelve a mirar el permiso, para la operación y lo apunta en el diario de seguridad | Bien |
 | No fiarse de lo que llega | Un archivo disfrazado (un programa con nombre de PDF), uno de más de 50 MB o un texto con trucos (inyección) se rechazan | Bien |
+| Registros (logs) | Solo el administrador los lee, del más reciente al más antiguo, y cada consulta queda apuntada en el diario de seguridad | Bien |
 | Sin secretos (3.1) | La configuración no lleva contraseñas, y `.env`, `log/`, las claves y los archivos de clientes no se suben a GitHub | Bien |
 | Sin pistas (4.1) | El servidor no dice qué programa usa | Bien |
 | Cabeceras del navegador (4.2) | El navegador solo carga lo de la propia aplicación y no deja meterla dentro de otra web | Bien |
 | Sin registro público | No hay pantalla para crearse una cuenta ni para recuperar la contraseña por correo | Bien |
 | IA y segundo candado (6.1) | La IA y la verificación en dos pasos empiezan apagadas | Bien |
-| Aplicación en marcha | Sin entrar, todo manda a la pantalla de entrada (también el PDF). Un formulario falso desde otra web se rechaza. Un usuario que no existe recibe un mensaje genérico. Los errores solo enseñan un código. La base de datos no se alcanza desde fuera | Bien |
+| Aplicación en marcha | Sin entrar, todo manda a la pantalla de entrada (también el PDF y las pantallas de Administración). Un formulario falso desde otra web se rechaza. Un usuario que no existe recibe un mensaje genérico. Los errores solo enseñan un código. La base de datos no se alcanza desde fuera | Bien |
 | Bloqueo tras 3 fallos | No se prueba de forma automática, para no bloquear cuentas reales. **Ya está comprobado a mano** | Bien |
 
 ## Avisos encontrados y corregidos (0.10.7)

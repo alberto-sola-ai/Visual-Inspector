@@ -9,18 +9,37 @@
                 <NavLink href="ordenes">Órdenes</NavLink>
             </AuthorizeView>
 
+            @* Menú de Administración, solo para el administrador. Los menús desplegables los abre y
+               cierra el navegador; wwwroot/js/menu-desplegable.js los cierra al pulsar fuera, al
+               elegir una opción o con la tecla Escape *@
             <AuthorizeView Policy="@Permisos.Administracion_wys" Context="contextoAdministracion">
-                <NavLink href="administracion">Administración</NavLink>
+                <details class="vi-desplegable vi-desplegable--claro">
+                    <summary class="vi-desplegable__boton">Administración</summary>
+                    <div class="vi-desplegable__opciones">
+                        @foreach (var opcion in OpcionesAdministracion.Lista_wys)
+                        {
+                            <a href="@opcion.Direccion">@opcion.Titulo</a>
+                        }
+                    </div>
+                </details>
             </AuthorizeView>
 
-            <NavLink href="Account/Manage" title="Mi cuenta" class="vi-menu__usuario">
-                @(context.User.FindFirst(Permisos.TipoClaimNombreCompleto_wys)?.Value ?? context.User.Identity?.Name)
-            </NavLink>
-
-            <form action="Account/Logout" method="post" class="m-0">
-                <AntiforgeryToken />
-                <button type="submit" class="btn btn-outline-primary btn-sm">Cerrar sesión</button>
-            </form>
+            @* Menú de la persona conectada: un botón con su nombre que despliega sus opciones *@
+            <details class="vi-desplegable">
+                <summary class="vi-desplegable__boton" title="Mi cuenta">
+                    <span class="vi-desplegable__nombre">@(context.User.FindFirst(Permisos.TipoClaimNombreCompleto_wys)?.Value ?? context.User.Identity?.Name)</span>
+                </summary>
+                <div class="vi-desplegable__opciones">
+                    <a href="Account/Manage">Mis datos</a>
+                    <a href="Account/Manage/ChangePassword">Cambiar contraseña</a>
+                    <hr />
+                    @* Cerrar sesión es un formulario con token: nadie puede cerrar tu sesión desde otra web *@
+                    <form action="Account/Logout" method="post" class="m-0">
+                        <AntiforgeryToken />
+                        <button type="submit">Cerrar sesión</button>
+                    </form>
+                </div>
+            </details>
         </Authorized>
     </AuthorizeView>
 </nav>

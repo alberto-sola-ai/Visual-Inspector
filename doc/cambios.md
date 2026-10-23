@@ -1,5 +1,65 @@
 # Registro de cambios
 
+## 0.11.5 — 2026-10-23
+- Se quitan las **carpetas por defecto** (pantalla de Administración, «Elegir de la carpeta de
+  muestras», explorador «Examinar…» y su conexión en Docker): el navegador no deja abrir
+  «Elegir archivo» en una carpeta indicada por la aplicación, así que no tenían sentido
+  (decisión de Alberto, 23/10/2026). Se mantiene «Elegir archivo» con la carpeta recordada
+  de la 0.11.3.
+- Base de datos: se borran los parámetros `CarpetaPatrones` y `CarpetaMuestras`
+  (migración QuitaCarpetasPorDefecto).
+- Pruebas de seguridad: 65 de 65 correctas.
+
+## 0.11.4 — 2026-10-23
+- Se quita «Buscar en la carpeta de patrones» del autocontrol: el patrón se elige con «Elegir
+  archivo», que recuerda la carpeta de patrones. Las muestras mantienen «Elegir de la carpeta
+  de muestras».
+
+## 0.11.3 — 2026-10-23
+- «Elegir archivo» en el autocontrol recuerda la carpeta: el del patrón abre el explorador de
+  Windows en la última carpeta de patrones usada, y los de las muestras en la última de
+  muestras. La primera vez se abre en «Mis documentos». Funciona en Edge y Chrome cuando la
+  aplicación se usa por https (o en el propio equipo); si no, sale el explorador de siempre.
+  Script propio `wwwroot/js/elegir-archivo.js`; la CSP no cambia.
+- El autocontrol ya no enseña la ruta de la carpeta del servidor al operario.
+
+## 0.11.2 — 2026-10-23
+- La opción «Registros» del menú de Administración (y su caja en la portada) pasa a llamarse
+  «Registros Err./Seg.».
+
+## 0.11.1 — 2026-10-23
+- Carpetas por defecto: botón «Examinar…» que abre un explorador de carpetas dentro de la
+  aplicación (entrar, subir y «Elegir esta carpeta») y enseña cuántos PDF e imágenes hay en
+  cada una. Solo el administrador, solo carpetas (nunca abre archivos) y solo dentro de las
+  carpetas permitidas (`Carpetas:RaicesExaminables`; en Docker, `/carpetas`).
+- Pruebas de seguridad: 90 de 90 correctas.
+
+## 0.11.0 — 2026-10-23
+- Menú desplegable «Administración» en la cabecera (solo el administrador): Usuarios y permisos,
+  Parámetros, Carpetas por defecto, Registros y Versiones y actualizaciones. La portada de
+  Administración tiene las mismas cinco opciones.
+- **Carpetas por defecto**: el administrador indica la ruta de la carpeta de patrones y la de
+  muestras (parámetros `CarpetaPatrones` y `CarpetaMuestras`, que se pueden cambiar cuando
+  haga falta) y ve si la aplicación las puede leer. En el autocontrol, cada hueco ofrece
+  «Buscar en la carpeta de patrones» (por litografía o nombre) o «Elegir de la carpeta de
+  muestras» (las últimas escaneadas primero), además de cargar desde el PC. Solo lectura y sin
+  poder salir de la carpeta; los archivos siguen sin guardarse.
+- **Registros**: el administrador elige el diario (errores o seguridad) y el día, y lee los
+  apuntes del más reciente al más antiguo, con búsqueda de texto. Cada consulta se apunta en
+  el diario de seguridad (`ConsultaRegistro`).
+- Docker: ejemplo en `docker-compose.yml` para conectar las carpetas en solo lectura;
+  `docker-compose.override.yml` local (fuera de GitHub) para probar con las carpetas de prueba.
+- Cabecera: el reloj oculta el día de la semana en pantallas de menos de 1400 px para que todo
+  quepa a 1280 px; recuadros de carga del autocontrol con fondo blanco.
+- Pruebas de seguridad: 82 de 82 correctas (20 nuevas para carpetas y registros).
+
+## 0.10.8 — 2026-10-23
+- Inicio: «Nuevo autocontrol» y «Autocontroles realizados» van uno debajo de otro, y la
+  presentación de la aplicación pasa a la esquina inferior derecha, discreta.
+- Menú de la persona conectada: un botón con su nombre en la cabecera despliega «Mis datos»,
+  «Cambiar contraseña» y «Cerrar sesión». Se cierra al pulsar fuera, al elegir una opción o con
+  Escape (script propio `wwwroot/js/menu-usuario.js`; la CSP no cambia).
+
 ## 0.10.7 — 2026-10-23
 - Pruebas automáticas de las normas SEGURIDAD WYS 2026 en `test/VisualInspector.Pruebas`
   (carpeta local, fuera de GitHub y de Docker). Resumen en [pruebas-seguridad.md](pruebas-seguridad.md):

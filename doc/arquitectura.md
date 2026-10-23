@@ -28,7 +28,8 @@ directamente: siempre pasan por un servicio, que es quien comprueba los permisos
         ▼
  ┌─────────────────────────────────────────────────────────────┐
  │ Components/  Pantallas Blazor                               │
- │   Pages/              Inicio, Administración                │
+ │   Pages/              Inicio, Autocontroles, Órdenes,       │
+ │                       Administración (4 secciones)          │
  │   Account/            Entrar, Mi cuenta, verificación 2 pasos│
  │   Layout/, Compartido/ Cabecera WYS, menú, avisos de error  │
  ├─────────────────────────────────────────────────────────────┤
@@ -242,6 +243,9 @@ rechazo.
 | Anular o eliminar autocontroles | Decisión de Alberto (22/10/2026): solo el administrador. Anular deja rastro con motivo; eliminar lo borra de la orden y del informe, y solo queda apuntado en el diario de seguridad |
 | Colores mantenidos, color no analizado | Decisión de Alberto (22/10/2026): todo se ve y se guarda en color; no se mide el tono. Por dentro, la localización de puntos puede usar una copia en gris que no se muestra |
 | Diferencias agrupadas por motivo | Decisión de Alberto (22/10/2026): si hay muchas, se agrupan (manchas, faltan, sobran, desplazamientos, pliegues o bordes) y se pueden validar por grupo o una a una |
+| Sin carpetas por defecto | Probado en la 0.11.0 y quitado en la 0.11.5 (decisión de Alberto, 23/10/2026): el navegador no deja abrir «Elegir archivo» en una carpeta indicada por la aplicación. En su lugar, cada botón de «Elegir archivo» recuerda su carpeta (una para patrones y otra para muestras; la primera vez, «Mis documentos»), en Edge y Chrome con https o en el propio equipo (`wwwroot/js/elegir-archivo.js`) |
+| Sin borrado de registros | Propuesto por Alberto y descartado (23/10/2026): borrar el diario de seguridad permitiría borrar el rastro; los diarios se borran solos (errores a los 30 días, seguridad a los 90) |
+| Registros desde la aplicación | Decisión de Alberto (23/10/2026): el administrador elige el diario (errores o seguridad) y el día (`Servicios/ServicioRegistros.cs`). Solo lectura; como mucho los 1.000 apuntes más recientes; cada consulta se apunta en `Log-Wys-Seg` |
 
 ## Próximos pasos
 

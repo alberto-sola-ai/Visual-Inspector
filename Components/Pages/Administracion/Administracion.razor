@@ -1,43 +1,25 @@
 @page "/administracion"
+@using VisualInspector.Components.Layout
 
 <PageTitle>Administración · Visual Inspector</PageTitle>
 
-@* Portada de la sección de Administración *@
+@* Portada de la sección de Administración: las mismas opciones que el menú «Administración» *@
 <h1>Administración</h1>
 <p>Gestión de la aplicación. Solo la ven los administradores.</p>
 
 <div class="row g-4 mt-2">
-    <div class="col-4">
-        <a href="administracion/usuarios" class="text-decoration-none">
-            <div class="wys-caja wys-caja--azul h-100">
-                <span class="wys-icono-circulo wys-icono-circulo--azul mb-3">
-                    <img src="recursos/iconos/blanco/chica.png" alt="" />
-                </span>
-                <h2 class="h5 text-white">Usuarios y permisos</h2>
-                <p class="mb-0">Crear usuarios, activarlos o desactivarlos, desbloquearlos y darles permisos.</p>
-            </div>
-        </a>
-    </div>
-    <div class="col-4">
-        <a href="administracion/parametros" class="text-decoration-none">
-            <div class="wys-caja wys-caja--azul h-100">
-                <span class="wys-icono-circulo wys-icono-circulo--azul mb-3">
-                    <img src="recursos/iconos/blanco/notas.png" alt="" />
-                </span>
-                <h2 class="h5 text-white">Parámetros</h2>
-                <p class="mb-0">Ajustes de la aplicación que se cambian sin tocar el programa.</p>
-            </div>
-        </a>
-    </div>
-    <div class="col-4">
-        <a href="administracion/versiones" class="text-decoration-none">
-            <div class="wys-caja wys-caja--azul h-100">
-                <span class="wys-icono-circulo wys-icono-circulo--azul mb-3">
-                    <img src="recursos/iconos/blanco/ordenador.png" alt="" />
-                </span>
-                <h2 class="h5 text-white">Versiones y actualizaciones</h2>
-                <p class="mb-0">Qué piezas usa la aplicación y si alguna necesita actualizarse.</p>
-            </div>
-        </a>
-    </div>
+    @foreach (var opcion in OpcionesAdministracion.Lista_wys)
+    {
+        <div class="col-4">
+            <a href="@opcion.Direccion" class="text-decoration-none">
+                <div class="wys-caja wys-caja--azul h-100">
+                    <span class="wys-icono-circulo wys-icono-circulo--azul mb-3">
+                        <img src="@($"recursos/iconos/blanco/{opcion.Icono}.png")" alt="" />
+                    </span>
+                    <h2 class="h5 text-white">@opcion.Titulo</h2>
+                    <p class="mb-0">@opcion.Texto</p>
+                </div>
+            </a>
+        </div>
+    }
 </div>

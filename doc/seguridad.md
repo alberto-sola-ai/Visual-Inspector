@@ -1,6 +1,6 @@
-﻿# Cómo protege esta aplicación tus datos
+# Cómo protege esta aplicación tus datos
 
-Última actualización: 23/10/2026 · Versión: 0.10.7
+Última actualización: 23/10/2026 · Versión: 0.11.5
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.
@@ -42,7 +42,7 @@ otra web y que no "adivine" el tipo de los archivos. Así es más difícil enga�
 Tampoco dice qué programa de servidor usa: es una pista que no hace falta dar.
 
 ## Pruebas automáticas
-Unas pruebas automáticas comprueban que todo lo de esta página se cumple de verdad (62 de 62
+Unas pruebas automáticas comprueban que todo lo de esta página se cumple de verdad (65 de 65
 correctas). El resumen está en [pruebas-seguridad.md](pruebas-seguridad.md).
 
 ## Los archivos, revisados en la puerta y sin guardar
@@ -77,6 +77,9 @@ Las claves con las que la aplicación sella las sesiones se guardan en su propio
 La aplicación apunta en un diario (Log-Wys-Seg) quién entra, quién falla, quién se bloquea y
 quién cambia usuarios, permisos o parámetros, con la hora y desde qué equipo. Nunca apunta
 contraseñas. Los errores se apuntan en otro diario (err-log).
+Solo el administrador puede leer los dos diarios desde la aplicación (Administración →
+Registros), sin poder cambiarlos. Como guardan datos personales, cada vez que alguien los
+consulta queda apuntado quién y qué diario miró.
 
 ## Si algo falla
 Verás un mensaje sencillo con un código. El código ayuda a IT a encontrar el

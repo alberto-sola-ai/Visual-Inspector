@@ -20,11 +20,12 @@
     function actualizar() {
         var partes = {};
         formato.formatToParts(new Date()).forEach(function (p) { partes[p.type] = p.value; });
-        var fecha = partes.weekday + ' ' + partes.day + '/' + partes.month + '/' + partes.year;
+        var fecha = partes.day + '/' + partes.month + '/' + partes.year;
         var hora = partes.hour + ':' + partes.minute + ':' + partes.second;
         var textoTurno = turno(parseInt(partes.hour, 10));
 
         document.querySelectorAll('.vi-reloj').forEach(function (reloj) {
+            reloj.querySelector('.vi-reloj__dia').textContent = partes.weekday;
             reloj.querySelector('.vi-reloj__fecha').textContent = fecha;
             reloj.querySelector('.vi-reloj__hora').textContent = hora;
             reloj.querySelector('.vi-reloj__turno').textContent = textoTurno;

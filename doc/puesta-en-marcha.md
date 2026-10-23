@@ -73,6 +73,9 @@ Los datos de los servidores de la empresa están pendientes de definir (skill wy
   ```bash
   docker compose cp app:/app/log ./log-servidor
   ```
+- El administrador también los puede leer desde la aplicación: **Administración → Registros**
+  (cada consulta queda apuntada en el diario de seguridad).
+
 
 ## Informe de versiones
 

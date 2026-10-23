@@ -25,6 +25,7 @@ public static class AccionesSeguridad
     public const string ReaperturaOrden_wys = "ReaperturaOrden";
     public const string AnulacionAutocontrol_wys = "AnulacionAutocontrol";
     public const string EliminacionAutocontrol_wys = "EliminacionAutocontrol";
+    public const string ConsultaRegistro_wys = "ConsultaRegistro";
 }
 
 /// <summary>
