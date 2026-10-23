@@ -25,6 +25,10 @@ VisualInspector.Servicios.Vision.ConfiguracionVision.Aplicar();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// El servidor no dice qué programa usa (sin cabecera "Server: Kestrel"): es una pista que
+// no hace falta dar a nadie (norma SEGURIDAD WYS 2026, punto 4.1)
+builder.WebHost.ConfigureKestrel(opciones => opciones.AddServerHeader = false);
+
 // Registros en log/: errores en err-log-AAAAMMDD.log y seguridad en Log-Wys-Seg-AAAAMMDD.log
 // (la configuración está en appsettings.json, sección "Serilog")
 builder.Host.UseSerilog((contexto, configuracion) =>

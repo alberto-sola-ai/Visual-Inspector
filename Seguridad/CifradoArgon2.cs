@@ -43,6 +43,13 @@ public sealed class CifradoArgon2 : IPasswordHasher<UsuarioAplicacion>
     /// </summary>
     public PasswordVerificationResult VerifyHashedPassword(UsuarioAplicacion user, string hashedPassword, string providedPassword)
     {
+        // Una contraseña vacía nunca es correcta: se responde "no" sin llegar a calcular nada
+        // (el cálculo Argon2id no admite contraseñas vacías y daría un error interno)
+        if (string.IsNullOrEmpty(providedPassword) || string.IsNullOrEmpty(hashedPassword))
+        {
+            return PasswordVerificationResult.Failed;
+        }
+
         var partes = hashedPassword.Split('$');
         if (partes.Length != 4 || partes[0] != Prefijo_wys)
         {

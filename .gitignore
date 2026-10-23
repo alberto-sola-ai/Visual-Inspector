@@ -29,3 +29,6 @@ publicar/
 # Archivos de prueba con diseños de clientes: NUNCA se suben (se borran al terminar las pruebas)
 muestras-prueba/
 patrones/
+
+# Pruebas automáticas (proyecto local, no se sube a GitHub)
+test/

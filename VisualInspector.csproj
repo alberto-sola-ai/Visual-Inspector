@@ -8,7 +8,7 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- Necesario para los formatos españoles (fechas, números, euros) -->
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.10.6</Version>
+    <Version>0.10.7</Version>
   </PropertyGroup>
 
   <!-- La carpeta recursos/ (logo, fuentes, iconos, tema.css) viaja con la aplicación;
@@ -21,6 +21,11 @@
     <None Remove="doc\**" />
     <Content Remove="log\**" />
     <None Remove="log\**" />
+    <!-- Las pruebas (carpeta test/, fuera de Git) son un proyecto aparte: la aplicación no las compila -->
+    <Compile Remove="test\**" />
+    <Content Remove="test\**" />
+    <None Remove="test\**" />
+    <EmbeddedResource Remove="test\**" />
   </ItemGroup>
 
   <!--

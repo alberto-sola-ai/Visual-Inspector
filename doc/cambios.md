@@ -1,5 +1,14 @@
 # Registro de cambios
 
+## 0.10.7 — 2026-10-23
+- Pruebas automáticas de las normas SEGURIDAD WYS 2026 en `test/VisualInspector.Pruebas`
+  (carpeta local, fuera de GitHub y de Docker). Resumen en [pruebas-seguridad.md](pruebas-seguridad.md):
+  62 de 62 correctas.
+- Corregidos los 2 avisos que encontraron las pruebas: el cifrado responde "no" ante una
+  contraseña vacía (antes daba un error interno) y el servidor ya no envía la cabecera
+  `Server: Kestrel`.
+- `VisualInspector.csproj` excluye la carpeta `test/` para que la aplicación no compile las pruebas.
+
 ## 0.10.6 — 2026-10-23
 - Inicio: se quita el aviso «En desarrollo · Próximamente…», que ya no era cierto. La caja
   «Nuevo autocontrol» dice ahora «cuando lo consideres (se recomienda cada 4 horas)».

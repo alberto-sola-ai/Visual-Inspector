@@ -1,6 +1,6 @@
 ﻿# Cómo protege esta aplicación tus datos
 
-Última actualización: 22/10/2026 · Versión: 0.10.0
+Última actualización: 23/10/2026 · Versión: 0.10.7
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.
@@ -39,6 +39,11 @@ desde fuera: solo habla con la aplicación, dentro de Docker.
 ## El navegador también ayuda
 La aplicación le dice al navegador que no cargue nada de fuera, que no deje meterla dentro de
 otra web y que no "adivine" el tipo de los archivos. Así es más difícil engañar a quien la usa.
+Tampoco dice qué programa de servidor usa: es una pista que no hace falta dar.
+
+## Pruebas automáticas
+Unas pruebas automáticas comprueban que todo lo de esta página se cumple de verdad (62 de 62
+correctas). El resumen está en [pruebas-seguridad.md](pruebas-seguridad.md).
 
 ## Los archivos, revisados en la puerta y sin guardar
 Cuando cargas el patrón y las muestras, la aplicación mira qué son de verdad (no se fía del nombre
