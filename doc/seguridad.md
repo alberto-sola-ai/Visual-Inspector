@@ -1,6 +1,6 @@
 # Cómo protege esta aplicación tus datos
 
-Última actualización: 23/10/2026 · Versión: 0.11.5
+Última actualización: 23/10/2026 · Versión: 0.12.1
 
 ## La puerta de entrada
 Para entrar necesitas tu usuario y tu contraseña, como la llave de casa.
@@ -42,7 +42,7 @@ otra web y que no "adivine" el tipo de los archivos. Así es más difícil enga�
 Tampoco dice qué programa de servidor usa: es una pista que no hace falta dar.
 
 ## Pruebas automáticas
-Unas pruebas automáticas comprueban que todo lo de esta página se cumple de verdad (65 de 65
+Unas pruebas automáticas comprueban que todo lo de esta página se cumple de verdad (80 de 80
 correctas). El resumen está en [pruebas-seguridad.md](pruebas-seguridad.md).
 
 ## Los archivos, revisados en la puerta y sin guardar

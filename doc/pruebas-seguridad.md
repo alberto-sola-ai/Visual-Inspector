@@ -1,6 +1,6 @@
 # Pruebas de seguridad
 
-Última ejecución: 23/10/2026 · Versión: 0.11.5 · Resultado: **65 de 65 correctas**
+Última ejecución: 23/10/2026 · Versión: 0.12.1 · Resultado: **80 de 80 correctas**
 
 ## Qué es esto
 
@@ -19,7 +19,7 @@ aplicación.
 | Nadie puede nada por defecto (1.1) | Un usuario nuevo no puede hacer nada. Cada permiso abre solo lo suyo. Administración es solo para el rol Administrador | Bien |
 | Contraseña temporal | Quien aún no ha cambiado su contraseña temporal no puede hacer nada, ni siendo administrador | Bien |
 | El servidor vigila (1.2) | Aunque alguien se salte la pantalla, el servidor vuelve a mirar el permiso, para la operación y lo apunta en el diario de seguridad | Bien |
-| No fiarse de lo que llega | Un archivo disfrazado (un programa con nombre de PDF), uno de más de 50 MB o un texto con trucos (inyección) se rechazan | Bien |
+| No fiarse de lo que llega | Un archivo disfrazado (un programa con nombre de PDF), uno de más de 50 MB o un texto con trucos (inyección) se rechazan. La orden de fabricación siempre se comprueba completa en el servidor (10 cifras) y el inicio habitual de las órdenes solo admite cifras. La línea de fabricación es obligatoria y solo vale una de la lista. Las órdenes en fabricación que se sugieren solo las ve quien puede hacer autocontroles, y nunca salen las finalizadas ni las desactivadas | Bien |
 | Registros (logs) | Solo el administrador los lee, del más reciente al más antiguo, y cada consulta queda apuntada en el diario de seguridad | Bien |
 | Sin secretos (3.1) | La configuración no lleva contraseñas, y `.env`, `log/`, las claves y los archivos de clientes no se suben a GitHub | Bien |
 | Sin pistas (4.1) | El servidor no dice qué programa usa | Bien |

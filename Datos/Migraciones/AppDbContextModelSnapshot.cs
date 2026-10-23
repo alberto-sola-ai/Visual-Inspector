@@ -403,6 +403,10 @@ namespace VisualInspector.Datos.Migraciones
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<string>("Linea")
+                        .HasMaxLength(10)
+                        .HasColumnType("varchar(10)");
+
                     b.Property<string>("Litografia")
                         .HasMaxLength(8)
                         .HasColumnType("varchar(8)");
@@ -415,6 +419,8 @@ namespace VisualInspector.Datos.Migraciones
 
                     b.HasIndex("Codigo")
                         .IsUnique();
+
+                    b.HasIndex("Linea");
 
                     b.HasIndex("Litografia");
 

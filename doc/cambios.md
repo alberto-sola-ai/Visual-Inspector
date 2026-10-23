@@ -1,5 +1,53 @@
 # Registro de cambios
 
+## 0.12.2 — 2026-10-23
+- Pantalla de entrada: nota «(TFM) > app developed with AI» arriba a la derecha, y el título
+  «Entrar» pasa a «¡Bienvenido!» (el botón sigue diciendo «Entrar»).
+- Nuevo Autocontrol RPI: la lista de sugerencias se titula «Órdenes de fabricación abiertas».
+
+## 0.12.1 — 2026-10-23
+- Nuevo Autocontrol RPI: arriba salen las **órdenes en fabricación** (activas, sin finalizar y
+  con algún autocontrol; las 10 más recientes) con su línea, su litografía, cuánto hace del
+  último control y qué control toca. En amarillo si ya han pasado las 4 horas recomendadas.
+  Un clic rellena la orden y la línea; también se puede seguir escribiendo una orden nueva.
+- Pruebas de seguridad: 80 de 80 correctas.
+
+## 0.12.0 — 2026-10-23
+- **Línea de fabricación** (L1 … L7) en la orden, para los futuros KPI de eficiencia
+  operativa. En Nuevo Autocontrol RPI se elige en un desplegable, es obligatoria y, si la orden
+  ya tiene autocontroles, viene elegida la de su último control. La orden se queda con la
+  línea elegida.
+- La lista de líneas es un parámetro (`Lineas` = L1|L2|…|L7) que el administrador puede ampliar
+  en Administración → Parámetros (solo letras y cifras, sin repetir). El servidor solo acepta
+  líneas de la lista.
+- La línea se ve en los listados de Autocontroles y de Órdenes de Fabricación, en las fichas de
+  la orden y del autocontrol y en el informe de fabricación (pantalla y PDF).
+- Base de datos: columna `Linea` en `OrdenesFabricacion` (migración AnadeLineaOrden).
+- Pruebas de seguridad: 78 de 78 correctas.
+
+## 0.11.8 — 2026-10-23
+- Nuevo Autocontrol RPI: el campo de la orden viene relleno con el inicio habitual de las órdenes
+  («10000») y el operario escribe a continuación el resto. Se puede cambiar como cualquier texto
+  si una orden empieza distinto; el servidor sigue exigiendo las 10 cifras.
+- El inicio habitual se puede cambiar en Administración → Parámetros (`PrefijoOrden`): solo
+  cifras, como mucho 9. Vacío = el campo sale en blanco.
+- Buscadores de Autocontroles y de Órdenes de Fabricación: basta con escribir las últimas cifras
+  de la orden. La explicación del buscador de autocontroles pasa debajo del campo.
+- En los buscadores de Órdenes de Fabricación y de Autocontroles, el campo de la orden también
+  viene relleno con el inicio habitual; al abrir cada pantalla se sigue viendo la lista completa.
+- Pruebas de seguridad: 69 de 69 correctas.
+
+## 0.11.7 — 2026-10-23
+- «Nuevo autocontrol» pasa a llamarse «Nuevo Autocontrol RPI» (caja de Inicio, botón del
+  listado de autocontroles y título de la pantalla).
+- En el menú de la cabecera, «Órdenes» pasa a llamarse «Órdenes de Fabricación».
+
+## 0.11.6 — 2026-10-23
+- Cabecera: Inicio, Autocontroles y Órdenes van junto al logo de Visual Inspector; a la derecha
+  quedan Administración (solo el administrador) y el menú de la persona conectada.
+- La fecha, la hora y el turno pasan al pie, abajo a la izquierda (se ven también en la pantalla
+  de entrada, con el día de la semana siempre).
+
 ## 0.11.5 — 2026-10-23
 - Se quitan las **carpetas por defecto** (pantalla de Administración, «Elegir de la carpeta de
   muestras», explorador «Examinar…» y su conexión en Docker): el navegador no deja abrir

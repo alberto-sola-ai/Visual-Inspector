@@ -12,7 +12,7 @@ namespace VisualInspector.Servicios;
 /// <param name="FechaInicioOrden">Fecha del primer control de la orden, para calcular el tiempo transcurrido.</param>
 public sealed record FilaAutocontrol(
     int Id, string CodigoOrden, DateTime FechaControl, int NumeroControl, DateTime FechaInicioOrden,
-    EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado, string CreadoPor, bool EstaAnulado);
+    EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado, string CreadoPor, bool EstaAnulado, string? Linea);
 
 /// <summary>
 /// Por qué, quién y cuándo se anuló un autocontrol.
@@ -30,7 +30,7 @@ public sealed record FichaAutocontrol(
     int Id, int OrdenId, string CodigoOrden, EstadoOrden EstadoOrden, DateTime FechaControl, int NumeroControl, DateTime FechaInicioOrden,
     EstadoAutocontrol Estado, string? Observaciones,
     string CreadoPor, DateTime FechaCreacion, string? ModificadoPor, DateTime? FechaModificacion,
-    string? LitografiaOrden, DatosRegistro? Registro, DatosAnulacion? Anulacion);
+    string? LitografiaOrden, DatosRegistro? Registro, DatosAnulacion? Anulacion, string? LineaOrden);
 
 /// <summary>
 /// Lo que quedó registrado de un autocontrol: patrón, huellas, tolerancia, resultado y diferencias.
@@ -68,7 +68,15 @@ public sealed record SolicitudRegistro(
 /// Lo que se enseña antes de crear un autocontrol: qué control será y cuándo se hizo el último.
 /// </summary>
 /// <param name="FechaUltimo">Fecha del último control de la orden, o null si será el inicial.</param>
-public sealed record PrevisionControl(string Nombre, DateTime? FechaUltimo);
+/// <param name="LineaOrden">Línea que tiene la orden (la de su último autocontrol), o null si es nueva.</param>
+public sealed record PrevisionControl(string Nombre, DateTime? FechaUltimo, string? LineaOrden);
+
+/// <summary>
+/// Una orden que sigue en fabricación, para sugerirla al crear un autocontrol nuevo y no tener
+/// que escribir otra vez la orden ni elegir la línea.
+/// </summary>
+/// <param name="SiguienteControl">El control que tocaría ahora ("Control 3"…).</param>
+public sealed record OrdenAbierta(string Codigo, string? Linea, string? Litografia, DateTime UltimoControl, string SiguienteControl);
 
 /// <summary>
 /// Resultado de crear un autocontrol: su número si ha ido bien, o el error para el usuario.
@@ -85,7 +93,8 @@ public sealed partial class ServicioAutocontroles(
     IDbContextFactory<AppDbContext> fabricaDatos,
     ServicioAutorizacion autorizacion,
     IUsuarioActual usuarioActual,
-    RegistroSeguridad registroSeguridad)
+    RegistroSeguridad registroSeguridad,
+    ServicioParametros parametros)
 {
     // Cada cuántas horas se recomienda hacer un autocontrol. Es solo un aviso: el operario
     // decide cuándo hacerlo (decisión de Alberto, 22/10/2026)
@@ -94,8 +103,20 @@ public sealed partial class ServicioAutocontroles(
     private const int MaximoFilasListado_wys = 200;
 
     // Código de orden de fabricación: exactamente 10 cifras (por ejemplo 1000063961)
+    public const int CifrasOrden_wys = 10;
     [GeneratedRegex("^[0-9]{10}$")]
     private static partial Regex FormatoOrden();
+
+    /// <summary>
+    /// El inicio habitual de las órdenes (parámetro PrefijoOrden, por ejemplo "10000"), con el que
+    /// viene relleno el campo de la orden al crear un autocontrol. Si el parámetro no es válido,
+    /// se toma vacío y el campo sale en blanco.
+    /// </summary>
+    public async Task<string> ObtenerPrefijoOrdenAsync()
+    {
+        var prefijo = (await parametros.ObtenerValorAsync(ServicioParametros.PrefijoOrden_wys, ServicioParametros.PrefijoOrdenInicial_wys)).Trim();
+        return prefijo.Length < CifrasOrden_wys && prefijo.All(char.IsAsciiDigit) ? prefijo : "";
+    }
 
     /// <summary>
     /// Dice cómo se llama un control según su número: "Control 1 (inicial)", "Control 2"…
@@ -177,7 +198,8 @@ public sealed partial class ServicioAutocontroles(
         var filtro = new string((filtroOrden ?? "").Where(char.IsAsciiDigit).ToArray());
         if (filtro.Length > 0)
         {
-            consulta = consulta.Where(a => a.OrdenFabricacion.Codigo.StartsWith(filtro));
+            // Cualquier parte del número: así basta con las últimas cifras, sin el inicio fijo
+            consulta = consulta.Where(a => a.OrdenFabricacion.Codigo.Contains(filtro));
         }
 
         return await consulta
@@ -185,7 +207,7 @@ public sealed partial class ServicioAutocontroles(
             .Take(MaximoFilasListado_wys)
             .Select(a => new FilaAutocontrol(a.Id, a.OrdenFabricacion.Codigo, a.FechaControl,
                 a.NumeroControl, a.OrdenFabricacion.Autocontroles.Min(x => x.FechaControl),
-                a.Estado, a.Resultado, a.CreadoPor, a.EstaAnulado))
+                a.Estado, a.Resultado, a.CreadoPor, a.EstaAnulado, a.OrdenFabricacion.Linea))
             .ToListAsync();
     }
 
@@ -223,7 +245,7 @@ public sealed partial class ServicioAutocontroles(
         return new FichaAutocontrol(a.Id, a.OrdenFabricacionId, a.OrdenFabricacion.Codigo, a.OrdenFabricacion.Estado, a.FechaControl,
             a.NumeroControl, fechaInicioOrden, a.Estado, a.Observaciones,
             a.CreadoPor, a.FechaCreacion, a.ModificadoPor, a.FechaModificacion,
-            a.OrdenFabricacion.Litografia, registro, anulacion);
+            a.OrdenFabricacion.Litografia, registro, anulacion, a.OrdenFabricacion.Linea);
     }
 
     /// <summary>
@@ -422,22 +444,57 @@ public sealed partial class ServicioAutocontroles(
         }
 
         await using var datos = await fabricaDatos.CreateDbContextAsync();
-        var idOrden = await datos.OrdenesFabricacion.Where(o => o.Codigo == codigo).Select(o => (int?)o.Id).FirstOrDefaultAsync();
-        if (idOrden is null)
+        var orden = await datos.OrdenesFabricacion.Where(o => o.Codigo == codigo)
+            .Select(o => new { o.Id, o.Linea }).FirstOrDefaultAsync();
+        if (orden is null)
         {
-            return new PrevisionControl(NombreControl(1), null);
+            return new PrevisionControl(NombreControl(1), null, null);
         }
 
-        var ultimo = await datos.Autocontroles.Where(a => a.OrdenFabricacionId == idOrden).MaxAsync(a => (DateTime?)a.FechaControl);
-        return new PrevisionControl(NombreControl(await CalcularNumeroSiguienteAsync(datos, idOrden.Value)), ultimo);
+        var ultimo = await datos.Autocontroles.Where(a => a.OrdenFabricacionId == orden.Id).MaxAsync(a => (DateTime?)a.FechaControl);
+        return new PrevisionControl(NombreControl(await CalcularNumeroSiguienteAsync(datos, orden.Id)), ultimo, orden.Linea);
     }
+
+    // Cuántas órdenes abiertas se sugieren como mucho al crear un autocontrol
+    public const int MaximoOrdenesAbiertas_wys = 10;
+
+    /// <summary>
+    /// Las órdenes que siguen en fabricación (activas, sin finalizar y con algún autocontrol), con
+    /// la más reciente primero, para sugerirlas al crear un autocontrol nuevo. Como mucho 10.
+    /// </summary>
+    public async Task<IReadOnlyList<OrdenAbierta>> ListarOrdenesAbiertasAsync()
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var ordenes = await datos.OrdenesFabricacion.AsNoTracking()
+            .Where(o => o.Activa && o.Estado == EstadoOrden.EnFabricacion && o.Autocontroles.Any())
+            .Select(o => new
+            {
+                o.Codigo, o.Linea, o.Litografia,
+                Ultimo = o.Autocontroles.Max(a => a.FechaControl),
+                UltimoNumero = o.Autocontroles.Max(a => a.NumeroControl)
+            })
+            .OrderByDescending(o => o.Ultimo)
+            .Take(MaximoOrdenesAbiertas_wys)
+            .ToListAsync();
+
+        return ordenes.Select(o => new OrdenAbierta(o.Codigo, o.Linea, o.Litografia, o.Ultimo, NombreControl(o.UltimoNumero + 1))).ToList();
+    }
+
+    /// <summary>
+    /// Las líneas de fabricación que se pueden elegir (parámetro Lineas: L1, L2…).
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ObtenerLineasAsync() =>
+        ServicioParametros.SepararLineas(await parametros.ObtenerValorAsync(ServicioParametros.Lineas_wys, ServicioParametros.LineasIniciales_wys));
 
     /// <summary>
     /// Crea un autocontrol nuevo para una orden de fabricación, como quien abre una hoja nueva
     /// en el cuaderno de la orden. Si la orden aún no existe, la crea. La fecha y hora las pone
-    /// el servidor, y el número (1 = inicial, 2, 3…) se calcula solo.
+    /// el servidor, y el número (1 = inicial, 2, 3…) se calcula solo. La línea elegida (obligatoria)
+    /// queda como línea de la orden.
     /// </summary>
-    public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? observaciones)
+    public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? linea, string? observaciones)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
 
@@ -446,6 +503,14 @@ public sealed partial class ServicioAutocontroles(
         if (!FormatoOrden().IsMatch(codigo))
         {
             return new(null, "La orden de fabricación debe tener exactamente 10 cifras, solo números.");
+        }
+
+        // La línea es obligatoria y solo vale una de la lista del parámetro Lineas
+        var lineaElegida = (await ObtenerLineasAsync())
+            .FirstOrDefault(l => string.Equals(l, (linea ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+        if (lineaElegida is null)
+        {
+            return new(null, "Elige la línea de fabricación.");
         }
 
         var textoObservaciones = string.IsNullOrWhiteSpace(observaciones) ? null : observaciones.Trim();
@@ -475,6 +540,9 @@ public sealed partial class ServicioAutocontroles(
                 {
                     return new(null, "Esa orden de fabricación está finalizada. Para añadirle autocontroles, pide al administrador que la reabra.");
                 }
+
+                // La orden se queda con la línea de su último autocontrol
+                orden.Linea = lineaElegida;
 
                 var numero = orden.Id == 0 ? 1 : await CalcularNumeroSiguienteAsync(datos, orden.Id);
                 var autocontrol = new Autocontrol

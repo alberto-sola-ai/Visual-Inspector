@@ -23,6 +23,39 @@ public sealed class ServicioParametros(
     // Tolerancia con la que se abre la comparación de cada autocontrol (el operario puede cambiarla)
     public const string ToleranciaPorDefecto_wys = "ToleranciaPorDefecto";
 
+    // Cifras con las que empiezan habitualmente las órdenes de fabricación: los campos de la orden
+    // vienen rellenos con ellas y se pueden cambiar (decisión de Alberto, 23/10/2026). Vacío = en blanco
+    public const string PrefijoOrden_wys = "PrefijoOrden";
+    public const string PrefijoOrdenInicial_wys = "10000";
+
+    // Líneas de fabricación que se pueden elegir al crear un autocontrol, separadas por "|"
+    // (decisión de Alberto, 23/10/2026). El administrador puede añadir más (por ejemplo L8)
+    public const string Lineas_wys = "Lineas";
+    public const string LineasIniciales_wys = "L1|L2|L3|L4|L5|L6|L7";
+    public const int LongitudMaximaLinea_wys = 10;
+
+    /// <summary>
+    /// Convierte el texto del parámetro de líneas ("L1|L2|…") en la lista de líneas, sin huecos.
+    /// </summary>
+    public static IReadOnlyList<string> SepararLineas(string? valor) =>
+        (valor ?? "").Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    /// <summary>
+    /// Mira si la lista de líneas tiene buena forma: al menos una, sin repetidas y cada una con
+    /// solo letras y cifras (como mucho 10). Devuelve el error o null.
+    /// </summary>
+    public static string? ValidarLineas(string valor)
+    {
+        var lineas = SepararLineas(valor);
+        if (lineas.Count == 0)
+            return "Indica al menos una línea, separadas por | (por ejemplo L1|L2).";
+        if (lineas.Any(l => l.Length > LongitudMaximaLinea_wys || !l.All(char.IsAsciiLetterOrDigit)))
+            return $"Cada línea solo puede tener letras y cifras, como mucho {LongitudMaximaLinea_wys}.";
+        if (lineas.Distinct(StringComparer.OrdinalIgnoreCase).Count() != lineas.Count)
+            return "Hay líneas repetidas.";
+        return null;
+    }
+
     public const string ValorSi_wys = "Si";
     public const string ValorNo_wys = "No";
 
@@ -88,7 +121,18 @@ public sealed class ServicioParametros(
 
         // Zero Trust: el valor se valida aquí aunque la pantalla ya lo haya hecho
         var valor = (nuevoValor ?? "").Trim();
-        var error = Validar(parametro.Tipo, valor, parametro.Opciones);
+        var error = Validar(parametro.Tipo, valor, parametro.Opciones)
+            // El inicio de las órdenes: solo cifras, y menos de 10 (la orden entera tiene 10)
+            ?? (parametro.Clave == PrefijoOrden_wys && (valor.Length > 9 || !valor.All(char.IsAsciiDigit))
+                ? "El inicio de las órdenes solo puede tener cifras, como mucho 9 (la orden completa tiene 10)."
+                : null)
+            // Las líneas de fabricación: al menos una, sin repetidas, solo letras y cifras
+            ?? (parametro.Clave == Lineas_wys ? ValidarLineas(valor) : null);
+        if (parametro.Clave == Lineas_wys && error is null)
+        {
+            // Se guardan siempre igual de limpias: "L1|L2|L3"
+            valor = string.Join('|', SepararLineas(valor));
+        }
         if (error is not null)
         {
             return error;
@@ -128,6 +172,10 @@ public sealed class ServicioParametros(
                 EsEditable = false, MotivoNoEditable = MotivoSinIa_wys },
             new() { Clave = ToleranciaPorDefecto_wys, Valor = "Normal", Tipo = TipoParametro.Lista, Opciones = "Estricta|Normal|Amplia",
                 Descripcion = "Tolerancia con la que se abre la comparación de cada autocontrol. Estricta: avisa de más diferencias, también pequeñas o suaves. Normal: equilibrio para un autocontrol rápido. Amplia: solo las diferencias más claras. El operario puede cambiarla en cada autocontrol." },
+            new() { Clave = PrefijoOrden_wys, Valor = PrefijoOrdenInicial_wys, Tipo = TipoParametro.Texto,
+                Descripcion = "Cifras con las que empiezan habitualmente las órdenes de fabricación. Los campos de la orden (nuevo autocontrol y buscadores) vienen rellenos con ellas y se pueden cambiar. Vacío: salen en blanco." },
+            new() { Clave = Lineas_wys, Valor = LineasIniciales_wys, Tipo = TipoParametro.Texto,
+                Descripcion = "Líneas de fabricación que se pueden elegir al crear un autocontrol, separadas por | (por ejemplo L1|L2|L3). Solo letras y cifras, sin repetir." },
         };
 
         var existentes = await datos.Parametros.Select(p => p.Clave).ToListAsync();

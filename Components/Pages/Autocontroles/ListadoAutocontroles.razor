@@ -8,7 +8,7 @@
 <div class="d-flex align-items-center justify-content-between">
     <h1>Autocontroles</h1>
     <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
-        <a href="autocontroles/nuevo" class="btn btn-primary">Nuevo autocontrol</a>
+        <a href="autocontroles/nuevo" class="btn btn-primary">Nuevo Autocontrol RPI</a>
     </AuthorizeView>
 </div>
 
@@ -16,11 +16,19 @@
     <div class="flex-grow-1">
         <label class="form-label" for="filtro">Buscar por orden de fabricación</label>
         <input id="filtro" class="form-control" inputmode="numeric" maxlength="10"
-               placeholder="Todo o parte del número" @bind="filtroOrden" @bind:event="oninput"
+               @bind="filtroOrden" @bind:event="oninput"
                @onkeydown="AlPulsarTeclaAsync" />
     </div>
     <button class="btn btn-primary" @onclick="BuscarAsync">Buscar</button>
 </div>
+@* La explicación va debajo del campo, nunca dentro *@
+<p class="form-text mt-0">
+    Todo o parte del número de orden.
+    @if (prefijo.Length > 0)
+    {
+        <span>Ya trae escrito el inicio habitual (@prefijo): añade el resto, o bórralo para buscar solo por las últimas cifras.</span>
+    }
+</p>
 
 @if (filas is null)
 {
@@ -36,6 +44,7 @@ else
         <thead>
             <tr>
                 <th>Orden de fabricación</th>
+                <th>Línea</th>
                 <th>Fecha y hora</th>
                 <th>Control</th>
                 <th>Estado</th>
@@ -48,6 +57,7 @@ else
             {
                 <tr>
                     <td><a href="@($"autocontroles/{a.Id}")">@a.CodigoOrden</a></td>
+                    <td>@(a.Linea ?? "-")</td>
                     <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>
                         @ServicioAutocontroles.NombreControl(a.NumeroControl)
@@ -79,13 +89,17 @@ else
 @code {
     private List<FilaAutocontrol>? filas;
     private string filtroOrden = "";
+    private string prefijo = "";
 
     /// <summary>
-    /// Carga los últimos autocontroles al abrir la pantalla.
+    /// Carga los últimos autocontroles al abrir la pantalla, sin filtrar, y deja el campo de la
+    /// orden relleno con el inicio habitual (parámetro PrefijoOrden) para escribir solo el resto.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
         await BuscarAsync();
+        prefijo = await ServicioAutocontroles.ObtenerPrefijoOrdenAsync();
+        filtroOrden = prefijo;
     }
 
     /// <summary>

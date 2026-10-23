@@ -10,7 +10,7 @@ namespace VisualInspector.Servicios;
 /// Una fila del listado de órdenes de fabricación.
 /// </summary>
 public sealed record FilaOrden(
-    int Id, string Codigo, string? Litografia, EstadoOrden Estado,
+    int Id, string Codigo, string? Litografia, string? Linea, EstadoOrden Estado,
     int Autocontroles, int Registrados, int ConIncidencias, DateTime? PrimerControl, DateTime? UltimoControl);
 
 /// <summary>
@@ -36,7 +36,7 @@ public sealed record AutocontrolDeOrden(
 /// La ficha de una orden: sus datos y todos sus autocontroles en orden de tiempo.
 /// </summary>
 public sealed record FichaOrden(
-    int Id, string Codigo, string? Litografia, EstadoOrden Estado, DateTime? FechaFin, string? FinalizadaPor,
+    int Id, string Codigo, string? Litografia, string? Linea, EstadoOrden Estado, DateTime? FechaFin, string? FinalizadaPor,
     string CreadoPor, DateTime FechaCreacion, IReadOnlyList<AutocontrolDeOrden> Autocontroles)
 {
     /// <summary>
@@ -104,14 +104,15 @@ public sealed partial class ServicioOrdenes(
 
         await using var datos = await fabricaDatos.CreateDbContextAsync();
         var consulta = datos.OrdenesFabricacion.AsNoTracking();
-        if (orden.Length > 0) consulta = consulta.Where(o => o.Codigo.StartsWith(orden));
+        // Cualquier parte del número de orden: así basta con las últimas cifras, sin el inicio fijo
+        if (orden.Length > 0) consulta = consulta.Where(o => o.Codigo.Contains(orden));
         if (litografia.Length > 0) consulta = consulta.Where(o => o.Litografia != null && o.Litografia.StartsWith(litografia));
 
         return await consulta
             .OrderByDescending(o => o.FechaCreacion)
             .Take(MaximoFilasListado_wys)
             // Los autocontroles anulados no cuentan en las cifras de la orden
-            .Select(o => new FilaOrden(o.Id, o.Codigo, o.Litografia, o.Estado,
+            .Select(o => new FilaOrden(o.Id, o.Codigo, o.Litografia, o.Linea, o.Estado,
                 o.Autocontroles.Count(a => !a.EstaAnulado),
                 o.Autocontroles.Count(a => !a.EstaAnulado && a.Estado == EstadoAutocontrol.Registrado),
                 o.Autocontroles.Count(a => !a.EstaAnulado && a.Resultado == ResultadoAutocontrol.ConIncidencias),
@@ -255,7 +256,7 @@ public sealed partial class ServicioOrdenes(
                 a.EstaAnulado ? new DatosAnulacion(a.MotivoAnulacion ?? "", a.AnuladoPor ?? "", a.FechaAnulacion ?? a.FechaControl) : null))
             .ToList();
 
-        return new FichaOrden(orden.Id, orden.Codigo, orden.Litografia, orden.Estado, orden.FechaFin, orden.FinalizadaPor,
+        return new FichaOrden(orden.Id, orden.Codigo, orden.Litografia, orden.Linea, orden.Estado, orden.FechaFin, orden.FinalizadaPor,
             orden.CreadoPor, orden.FechaCreacion, autocontroles);
     }
 }

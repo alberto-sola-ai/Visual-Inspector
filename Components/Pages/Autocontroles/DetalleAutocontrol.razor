@@ -31,6 +31,10 @@ else
             <div class="h3 text-white mb-0"><a class="text-white" href="@($"ordenes/{ficha.OrdenId}")">@ficha.CodigoOrden</a></div>
         </div>
         <div>
+            <div class="small text-uppercase">Línea</div>
+            <div class="h3 text-white mb-0">@(ficha.LineaOrden ?? "-")</div>
+        </div>
+        <div>
             <div class="small text-uppercase">Control</div>
             <div class="h3 text-white mb-0">@ServicioAutocontroles.NombreControlConTiempo(ficha.NumeroControl, ficha.FechaControl, ficha.FechaInicioOrden)</div>
         </div>

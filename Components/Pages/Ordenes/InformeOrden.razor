@@ -40,6 +40,7 @@ else
         <tbody>
             <tr><th style="width: 14rem">Orden de fabricación</th><td>@o.Codigo</td></tr>
             <tr><th>Litografía</th><td>@(o.Litografia ?? "-")</td></tr>
+            <tr><th>Línea</th><td>@(o.Linea ?? "-")</td></tr>
             <tr><th>Versiones del patrón</th><td>@(informe.VersionesPatron.Count > 0 ? string.Join(", ", informe.VersionesPatron) : "-")</td></tr>
             <tr><th>Primer autocontrol</th><td>@(o.Autocontroles.FirstOrDefault()?.FechaControl.ToString("dd/MM/yyyy HH:mm") ?? "-")</td></tr>
             <tr><th>Último autocontrol</th><td>@(o.Autocontroles.LastOrDefault()?.FechaControl.ToString("dd/MM/yyyy HH:mm") ?? "-")</td></tr>

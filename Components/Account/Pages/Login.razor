@@ -1,4 +1,4 @@
-﻿@page "/Account/Login"
+@page "/Account/Login"
 @attribute [AllowAnonymous]
 
 @using System.ComponentModel.DataAnnotations
@@ -16,10 +16,12 @@
    registro público ni recuperación por correo: los usuarios los crea y los desbloquea el
    administrador. El logo de WYS sigue en la cabecera. De fondo, la foto de la fábrica difuminada *@
 <div class="vi-fondo-entrada">
+@* Arriba a la derecha: la aplicación es el Trabajo Fin de Máster y se ha desarrollado con IA *@
+<span class="vi-nota-tfm">(TFM) &gt; app developed with AI</span>
 <div class="vi-entrada">
     <img src="recursos/app/visual-inspector-logo.png" class="vi-entrada__logo" alt="Visual Inspector" />
     <div class="vi-entrada__tarjeta">
-        <h1 class="vi-entrada__titulo">Entrar</h1>
+        <h1 class="vi-entrada__titulo">¡Bienvenido!</h1>
         <StatusMessage Message="@errorMessage" />
         <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
             <DataAnnotationsValidator />

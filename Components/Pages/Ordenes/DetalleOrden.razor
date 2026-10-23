@@ -33,6 +33,10 @@ else
             <div class="h3 text-white mb-0">@(ficha.Litografia ?? "-")</div>
         </div>
         <div>
+            <div class="small text-uppercase">Línea</div>
+            <div class="h3 text-white mb-0">@(ficha.Linea ?? "-")</div>
+        </div>
+        <div>
             <div class="small text-uppercase">Estado</div>
             <div class="h3 text-white mb-0">@ServicioOrdenes.NombreEstado(ficha.Estado)</div>
         </div>

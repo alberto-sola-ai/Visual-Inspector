@@ -86,6 +86,19 @@ h1:focus {
     z-index: -1;
 }
 
+/* Pantalla de entrada: nota del TFM arriba a la derecha, sobre la foto */
+.vi-nota-tfm {
+    position: absolute;
+    top: 1rem;
+    right: 1.5rem;
+    padding: .3rem .75rem;
+    border-radius: .375rem;
+    background: var(--wys-azul-oscuro);
+    color: #fff;
+    font-size: .85rem;
+    letter-spacing: .02em;
+}
+
 /* Pantalla de entrada: logo de la aplicación grande y el formulario centrado en una tarjeta */
 .vi-entrada {
     max-width: 26rem;
@@ -114,14 +127,18 @@ h1:focus {
     padding: 1.75rem;
 }
 
-/* Reloj con fecha, hora y turno, a la derecha de la cabecera y antes del menú */
+/* Reloj con fecha, hora y turno, abajo a la izquierda, dentro del pie azul */
 .vi-reloj {
-    margin-left: auto;
+    position: absolute;
+    left: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
     gap: .5rem;
-    color: var(--wys-azul-oscuro);
-    font-size: .85rem;
+    color: #fff;
+    font-weight: 400;
+    text-transform: none;
     white-space: nowrap;
 }
 
@@ -145,35 +162,32 @@ h1:focus {
     font-weight: 700;
 }
 
-/* Si hay reloj, el menú va justo a su derecha con un filete de separación */
-.vi-reloj + .vi-menu {
-    margin-left: 0;
-    padding-left: 1.25rem;
-    border-left: 1px solid var(--wys-gris-1);
-}
-
-/* Menú de la cabecera, a la derecha */
+/* Menú de la cabecera: las secciones junto al logo de Visual Inspector y, a la derecha,
+   Administración y la persona conectada */
 .vi-menu {
-    margin-left: auto;
+    flex: 1;
     display: flex;
     align-items: center;
-    gap: .85rem;
+    gap: 1rem;
 }
 
-/* Cabecera algo más compacta que la de serie de WYS: con el reloj y los menús, el espacio es
-   justo en pantallas de 1280 px (el mínimo WYS) */
+.vi-menu__secciones,
+.vi-menu__cuenta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.vi-menu__cuenta {
+    margin-left: auto;
+}
+
+/* Cabecera algo más compacta que la de serie de WYS, para que todo quepa en 1280 px (el mínimo WYS) */
 .wys-app .wys-cabecera {
-    gap: 1.1rem;
+    gap: 1.25rem;
 }
 
-/* En pantallas de menos de 1400 px el reloj no enseña el día de la semana, para que quepa todo */
-@media (max-width: 1400px) {
-    .vi-reloj__dia {
-        display: none;
-    }
-}
-
-/* En la cabecera nada se parte en dos líneas: con el reloj, el espacio es justo en pantallas de 1280 px */
+/* En la cabecera nada se parte en dos líneas */
 .vi-nombre-app,
 .vi-menu a,
 .vi-menu button {
@@ -280,6 +294,43 @@ h1:focus {
 .vi-desplegable--claro[open] .vi-desplegable__boton {
     background: var(--wys-gris-1);
     color: var(--wys-azul-oscuro);
+}
+
+/* Nuevo autocontrol: órdenes en fabricación que se sugieren para el siguiente control */
+.vi-ordenes-abiertas {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+
+.vi-orden-abierta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+    width: 100%;
+    padding: .6rem .9rem;
+    border: 1px solid var(--wys-gris-1);
+    border-left: 4px solid var(--wys-azul-oscuro);
+    border-radius: .375rem;
+    background: var(--wys-fondo);
+    text-align: left;
+    color: var(--wys-azul-oscuro);
+}
+
+.vi-orden-abierta:hover,
+.vi-orden-abierta:focus-visible {
+    background: var(--wys-gris-1);
+}
+
+/* Ya han pasado las 4 horas recomendadas: toca hacerle el siguiente control */
+.vi-orden-abierta--toca {
+    border-left-color: var(--bs-warning);
+    background: var(--bs-warning-bg-subtle);
+}
+
+.vi-orden-abierta--elegida {
+    outline: 2px solid var(--wys-azul-brillante);
 }
 
 /* Recuadro blanco para agrupar campos sobre el fondo de la aplicación */

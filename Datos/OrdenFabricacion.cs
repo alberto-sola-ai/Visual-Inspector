@@ -11,7 +11,7 @@ public enum EstadoOrden
 
 /// <summary>
 /// Una orden de fabricación (por ejemplo 1000063961). Agrupa todos los autocontroles que se
-/// hacen mientras se fabrica: el inicial y los de cada 4 horas.
+/// hacen mientras se fabrica: el inicial y los que el operario considere (se recomienda cada 4 horas).
 /// </summary>
 public class OrdenFabricacion : EntidadTrazable
 {
@@ -25,6 +25,10 @@ public class OrdenFabricacion : EntidadTrazable
     // Litografía del diseño (L + 7 cifras): la del primer autocontrol registrado de la orden.
     // Si un autocontrol posterior usa otra, se avisa (posible patrón equivocado).
     public string? Litografia { get; set; }
+
+    // Línea de fabricación (L1, L2…): se elige en cada autocontrol y la orden se queda con la del
+    // último. Sirve para los futuros KPI de eficiencia por línea. Null = órdenes anteriores a 0.12.0
+    public string? Linea { get; set; }
 
     // Las órdenes no se borran (perderíamos el rastro de sus autocontroles): se desactivan
     public bool Activa { get; set; } = true;

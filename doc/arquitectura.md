@@ -81,7 +81,7 @@ Detalle completo en [seguridad.md](seguridad.md).
 | `AspNetRoles`, `AspNetUserRoles` | Roles `Administrador` y `Usuario` |
 | `AspNetUserClaims` | Permisos concedidos (tipo `permiso`) |
 | `Parametros` | Ajustes de la aplicación (`MfaActivo`, `IaActiva`…) |
-| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción, litografía (la del primer autocontrol registrado), estado (en fabricación / finalizada), fecha de fin y quién la finalizó |
+| `OrdenesFabricacion` | Código de la orden (10 cifras, único), descripción, litografía (la del primer autocontrol registrado), línea de fabricación (la del último autocontrol; parámetro `Lineas`), estado (en fabricación / finalizada), fecha de fin y quién la finalizó |
 | `Autocontroles` | Orden, fecha y hora (las pone el servidor), `NumeroControl` (1 = inicial, 2, 3…; el operario decide cuándo, se recomienda cada 4 horas), estado (pendiente de archivos / registrado) y observaciones. Al registrar: archivo, litografía y versión del patrón, huellas SHA-256 de los tres archivos, tolerancia, similitudes (%), resultado (sin diferencias / diferencias correctas / con incidencias), si se confirmó una litografía distinta, quién y cuándo registró. Anulación: si está anulado, motivo, quién y cuándo. Índice único orden + número (el siguiente es el último + 1) |
 | `Diferencias` | Una fila por diferencia registrada: número, motivo (mancha / falta / desplazamiento), en qué muestra(s), zona y superficie en mm, evidencia, recorte JPEG en color (~30 KB, `mediumblob`), validación (correcta / incidencia), comentario (obligatorio en incidencias) y trazabilidad (quién validó y cuándo) |
 
@@ -245,6 +245,7 @@ rechazo.
 | Diferencias agrupadas por motivo | Decisión de Alberto (22/10/2026): si hay muchas, se agrupan (manchas, faltan, sobran, desplazamientos, pliegues o bordes) y se pueden validar por grupo o una a una |
 | Sin carpetas por defecto | Probado en la 0.11.0 y quitado en la 0.11.5 (decisión de Alberto, 23/10/2026): el navegador no deja abrir «Elegir archivo» en una carpeta indicada por la aplicación. En su lugar, cada botón de «Elegir archivo» recuerda su carpeta (una para patrones y otra para muestras; la primera vez, «Mis documentos»), en Edge y Chrome con https o en el propio equipo (`wwwroot/js/elegir-archivo.js`) |
 | Sin borrado de registros | Propuesto por Alberto y descartado (23/10/2026): borrar el diario de seguridad permitiría borrar el rastro; los diarios se borran solos (errores a los 30 días, seguridad a los 90) |
+| Línea de fabricación en la orden | Decisión de Alberto (23/10/2026): obligatoria al crear cada autocontrol, viene elegida la del último y la orden se queda con ella. Lista de líneas en el parámetro `Lineas`. Para los futuros KPI de eficiencia operativa |
 | Registros desde la aplicación | Decisión de Alberto (23/10/2026): el administrador elige el diario (errores o seguridad) y el día (`Servicios/ServicioRegistros.cs`). Solo lectura; como mucho los 1.000 apuntes más recientes; cada consulta se apunta en `Log-Wys-Seg` |
 
 ## Próximos pasos

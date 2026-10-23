@@ -1,7 +1,8 @@
 @inherits LayoutComponentBase
 
 @* Estructura de pantalla WYS: cabecera con logo y menú, contenido sobre fondo blanco y pie azul.
-   A la izquierda, el logo de WYS (la empresa); a su lado, el símbolo y el nombre de la aplicación *@
+   A la izquierda, el logo de WYS (la empresa); a su lado, el símbolo y el nombre de la aplicación
+   y las secciones; a la derecha, los menús de Administración y de la persona conectada *@
 <div class="wys-app d-flex flex-column min-vh-100">
     <header class="wys-cabecera">
         <a href="" title="Inicio">
@@ -10,13 +11,6 @@
         <span class="vi-nombre-app">
             <img src="recursos/app/visual-inspector-simbolo.png" class="vi-simbolo-app" alt="" />
             <span><strong>Visual</strong> Inspector</span>
-        </span>
-
-        @* Fecha, hora de Madrid y turno; los rellena wwwroot/js/reloj-turno.js cada segundo *@
-        <span class="vi-reloj" hidden>
-            <span><span class="vi-reloj__dia"></span> <span class="vi-reloj__fecha"></span></span>
-            <strong class="vi-reloj__hora"></strong>
-            <span class="vi-reloj__turno"></span>
         </span>
         <MenuPrincipal />
     </header>
@@ -40,6 +34,12 @@
     </main>
 
     <footer class="wys-pie vi-pie">
+        @* Abajo a la izquierda: fecha, hora de Madrid y turno; los rellena wwwroot/js/reloj-turno.js cada segundo *@
+        <span class="vi-reloj" hidden>
+            <span><span class="vi-reloj__dia"></span> <span class="vi-reloj__fecha"></span></span>
+            <strong class="vi-reloj__hora"></strong>
+            <span class="vi-reloj__turno"></span>
+        </span>
         Witte y Solà, S.A.
         @* Versión de la aplicación, solo con la sesión iniciada: a quien no ha entrado no se le
            da información de la aplicación (norma de seguridad WYS) *@

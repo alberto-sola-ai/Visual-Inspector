@@ -63,6 +63,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             orden.Property(o => o.Estado).HasConversion<string>().HasMaxLength(20);
             orden.Property(o => o.FinalizadaPor).HasMaxLength(256);
             orden.HasIndex(o => o.Litografia);
+            orden.Property(o => o.Linea).HasMaxLength(10);
+            orden.HasIndex(o => o.Linea);   // para los KPI por línea
             orden.Property(o => o.CreadoPor).HasMaxLength(256);
             orden.Property(o => o.ModificadoPor).HasMaxLength(256);
         });

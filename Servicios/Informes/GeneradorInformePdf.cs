@@ -183,6 +183,7 @@ public sealed class GeneradorInformePdf
         {
             ("Orden de fabricación", o.Codigo),
             ("Litografía", o.Litografia ?? "-"),
+            ("Línea", o.Linea ?? "-"),
             ("Versiones del patrón", informe.VersionesPatron.Count > 0 ? string.Join(", ", informe.VersionesPatron) : "-"),
             ("Primer autocontrol", primero?.ToString("dd/MM/yyyy HH:mm") ?? "-"),
             ("Último autocontrol", ultimo?.ToString("dd/MM/yyyy HH:mm") ?? "-"),

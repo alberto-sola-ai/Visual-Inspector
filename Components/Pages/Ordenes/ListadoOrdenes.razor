@@ -1,6 +1,7 @@
 @page "/ordenes"
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
 @inject ServicioOrdenes ServicioOrdenes
+@inject ServicioAutocontroles ServicioAutocontroles
 
 <PageTitle>Órdenes de fabricación · Visual Inspector</PageTitle>
 
@@ -20,7 +21,13 @@
     </div>
     <button class="btn btn-primary" @onclick="BuscarAsync">Buscar</button>
 </div>
-<p class="form-text mt-0">Todo o parte del número de orden o de la litografía (L + 7 cifras).</p>
+<p class="form-text mt-0">
+    Todo o parte del número de orden o el principio de la litografía (L + 7 cifras).
+    @if (prefijo.Length > 0)
+    {
+        <span>La orden ya trae escrito el inicio habitual (@prefijo): añade el resto, o bórralo para buscar solo por las últimas cifras.</span>
+    }
+</p>
 
 @if (filas is null)
 {
@@ -37,6 +44,7 @@ else
             <tr>
                 <th>Orden</th>
                 <th>Litografía</th>
+                <th>Línea</th>
                 <th>Autocontroles</th>
                 <th>Con incidencias</th>
                 <th>Primer control</th>
@@ -50,6 +58,7 @@ else
                 <tr>
                     <td><a href="@($"ordenes/{o.Id}")">@o.Codigo</a></td>
                     <td>@(o.Litografia ?? "-")</td>
+                    <td>@(o.Linea ?? "-")</td>
                     <td>@o.Registrados registrados@(o.Autocontroles > o.Registrados ? $" · {o.Autocontroles - o.Registrados} pendientes" : "")</td>
                     <td>
                         @if (o.ConIncidencias > 0)
@@ -75,13 +84,17 @@ else
     private List<FilaOrden>? filas;
     private string filtroOrden = "";
     private string filtroLitografia = "";
+    private string prefijo = "";
 
     /// <summary>
-    /// Carga las órdenes más recientes al abrir la pantalla.
+    /// Carga las órdenes más recientes al abrir la pantalla, sin filtrar, y deja el campo de la
+    /// orden relleno con el inicio habitual (parámetro PrefijoOrden) para escribir solo el resto.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
         await BuscarAsync();
+        prefijo = await ServicioAutocontroles.ObtenerPrefijoOrdenAsync();
+        filtroOrden = prefijo;
     }
 
     /// <summary>
