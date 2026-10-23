@@ -23,6 +23,13 @@
     <div class="vi-entrada__tarjeta">
         <h1 class="vi-entrada__titulo">¡Bienvenido!</h1>
         <StatusMessage Message="@errorMessage" />
+        @* Aviso cuando el navegador envió una página de entrada antigua (token caducado) *@
+        @if (Caducada == 1 && errorMessage is null)
+        {
+            <div class="alert alert-warning py-2" role="status">
+                La página había caducado. Vuelve a escribir tu usuario y contraseña.
+            </div>
+        }
         <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
             <DataAnnotationsValidator />
             <div class="form-floating mb-3">
@@ -57,6 +64,10 @@
 
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
+
+    // 1 = se vuelve aquí porque el formulario anterior llegó con un token caducado
+    [SupplyParameterFromQuery]
+    private int? Caducada { get; set; }
 
     /// <summary>
     /// Prepara el formulario vacío al abrir la pantalla.

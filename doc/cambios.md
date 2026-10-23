@@ -1,5 +1,20 @@
 # Registro de cambios
 
+## 0.12.3 — 2026-10-23
+- Corrección: en Chrome, entrar podía dar **error 400**. Al restaurar pestañas o volver atrás,
+  Chrome recupera la página de entrada de su memoria con un token antiguo que ya no casa con su
+  cookie (Firefox vuelve a pedir la página y no le pasaba). Ahora, si el formulario de entrar
+  llega con el token caducado, se vuelve a la entrada con un token nuevo y el aviso «La página
+  había caducado»; y si es el de cerrar sesión, la sesión se cierra igualmente (antes podía
+  quedarse abierta). La protección contra formularios de otras webs sigue igual y el rechazo
+  se apunta en el diario de seguridad (`TokenFormularioNoValido`).
+- Pruebas de seguridad: 81 de 81 correctas.
+
+## Documentación — 2026-10-23
+- Nueva guía [guia-master.md](guia-master.md) para el Máster de IA: el MVP, Claude como copiloto
+  en VS Code, prompting, Obsidian, lenguajes y librerías, visión artificial, Docker, seguridad y
+  testing, decisiones y lecciones aprendidas.
+
 ## 0.12.2 — 2026-10-23
 - Pantalla de entrada: nota «(TFM) > app developed with AI» arriba a la derecha, y el título
   «Entrar» pasa a «¡Bienvenido!» (el botón sigue diciendo «Entrar»).

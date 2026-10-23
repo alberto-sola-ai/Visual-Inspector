@@ -1,6 +1,6 @@
 # Pruebas de seguridad
 
-Última ejecución: 23/10/2026 · Versión: 0.12.1 · Resultado: **80 de 80 correctas**
+Última ejecución: 23/10/2026 · Versión: 0.12.3 · Resultado: **81 de 81 correctas**
 
 ## Qué es esto
 
@@ -26,7 +26,7 @@ aplicación.
 | Cabeceras del navegador (4.2) | El navegador solo carga lo de la propia aplicación y no deja meterla dentro de otra web | Bien |
 | Sin registro público | No hay pantalla para crearse una cuenta ni para recuperar la contraseña por correo | Bien |
 | IA y segundo candado (6.1) | La IA y la verificación en dos pasos empiezan apagadas | Bien |
-| Aplicación en marcha | Sin entrar, todo manda a la pantalla de entrada (también el PDF y las pantallas de Administración). Un formulario falso desde otra web se rechaza. Un usuario que no existe recibe un mensaje genérico. Los errores solo enseñan un código. La base de datos no se alcanza desde fuera | Bien |
+| Aplicación en marcha | Sin entrar, todo manda a la pantalla de entrada (también el PDF y las pantallas de Administración). Un formulario falso desde otra web se rechaza, y una página de entrada antigua (la que Chrome recupera de su memoria) vuelve a la entrada en lugar de dar error. Un usuario que no existe recibe un mensaje genérico. Los errores solo enseñan un código. La base de datos no se alcanza desde fuera | Bien |
 | Bloqueo tras 3 fallos | No se prueba de forma automática, para no bloquear cuentas reales. **Ya está comprobado a mano** | Bien |
 
 ## Avisos encontrados y corregidos (0.10.7)

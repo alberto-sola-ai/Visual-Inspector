@@ -197,6 +197,35 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
+// Si el formulario de entrar o de cerrar sesión llega con un token caducado (por ejemplo, Chrome
+// recupera la página de su memoria al restaurar pestañas, pero sin la cookie que le corresponde),
+// en lugar de un error 400:
+// - al entrar, se vuelve a la entrada con un token nuevo y un aviso (sin token válido no se entra);
+// - al cerrar sesión, la sesión se cierra igualmente (es lo que la persona quería; lo peor que
+//   podría hacer otra web con esto es cerrarte la sesión).
+// Se apunta en el diario de seguridad.
+app.Use(async (contexto, siguiente) =>
+{
+    var validacion = contexto.Features.Get<Microsoft.AspNetCore.Antiforgery.IAntiforgeryValidationFeature>();
+    var esEntrar = contexto.Request.Path.Equals("/Account/Login", StringComparison.OrdinalIgnoreCase);
+    var esCerrarSesion = contexto.Request.Path.Equals("/Account/Logout", StringComparison.OrdinalIgnoreCase);
+    if (HttpMethods.IsPost(contexto.Request.Method) && validacion is { IsValid: false } && (esEntrar || esCerrarSesion))
+    {
+        var registro = contexto.RequestServices.GetRequiredService<RegistroSeguridad>();
+        await registro.RegistrarAsync(AccionesSeguridad.TokenFormularioNoValido_wys, $"Rechazado ({contexto.Request.Path})");
+        if (esCerrarSesion)
+        {
+            await registro.RegistrarAsync(AccionesSeguridad.CierreSesion_wys, "Correcto (token caducado)");
+            await contexto.RequestServices.GetRequiredService<SignInManager<UsuarioAplicacion>>().SignOutAsync();
+            contexto.Response.Redirect("/Account/Login");
+            return;
+        }
+        contexto.Response.Redirect("/Account/Login?caducada=1");
+        return;
+    }
+    await siguiente(contexto);
+});
+
 // Los archivos de la web (estilos y el programa de Blazor, _framework/blazor.web.js) se sirven
 // sin exigir sesión: sin ellos la pantalla de entrada se ve mal y los botones no funcionan
 app.MapStaticAssets().AllowAnonymous();
