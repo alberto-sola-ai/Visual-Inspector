@@ -13,7 +13,7 @@
                 <NavLink href="administracion">Administración</NavLink>
             </AuthorizeView>
 
-            <NavLink href="Account/Manage" title="Mi cuenta">
+            <NavLink href="Account/Manage" title="Mi cuenta" class="vi-menu__usuario">
                 @(context.User.FindFirst(Permisos.TipoClaimNombreCompleto_wys)?.Value ?? context.User.Identity?.Name)
             </NavLink>
 

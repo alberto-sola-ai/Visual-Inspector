@@ -11,7 +11,9 @@
     <link rel="stylesheet" href="@Assets["VisualInspector.styles.css"]" />
     @* Marca WYS: siempre después de Bootstrap para que sus colores y tipografía manden *@
     <link rel="stylesheet" href="recursos/tema.css" />
-    <link rel="icon" type="image/svg+xml" href="recursos/marca/favicon.svg" />
+    @* Icono de la pestaña: el símbolo de la aplicación (el manual WYS no permite la "S" sola) *@
+    <link rel="icon" type="image/png" sizes="32x32" href="recursos/app/favicon-32.png" />
+    <link rel="apple-touch-icon" href="recursos/app/icono-180.png" />
     <HeadOutlet @rendermode="ModoPagina" />
 </head>
 
@@ -21,6 +23,8 @@
     <script src="@Assets["_framework/blazor.web.js"]"></script>
     @* Botón "ojo" de los campos de contraseña (script propio: la CSP no permite otros) *@
     <script src="@Assets["js/mostrar-password.js"]"></script>
+    @* Reloj con el turno de la barra superior *@
+    <script src="@Assets["js/reloj-turno.js"]"></script>
 </body>
 
 </html>

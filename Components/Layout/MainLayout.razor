@@ -1,14 +1,33 @@
 ﻿@inherits LayoutComponentBase
 
-@* Estructura de pantalla WYS: cabecera con logo y menú, contenido sobre fondo blanco y pie azul *@
+@* Estructura de pantalla WYS: cabecera con logo y menú, contenido sobre fondo blanco y pie azul.
+   A la izquierda, el logo de WYS (la empresa); a su lado, el símbolo y el nombre de la aplicación *@
 <div class="wys-app d-flex flex-column min-vh-100">
     <header class="wys-cabecera">
         <a href="" title="Inicio">
             <img src="recursos/marca/wys-logo.svg" class="wys-logo" alt="WYS" />
         </a>
-        <span class="vi-nombre-app"><strong>Visual</strong> Inspector</span>
+        <span class="vi-nombre-app">
+            <img src="recursos/app/visual-inspector-simbolo.png" class="vi-simbolo-app" alt="" />
+            <span><strong>Visual</strong> Inspector</span>
+        </span>
+
+        @* Fecha, hora de Madrid y turno; los rellena wwwroot/js/reloj-turno.js cada segundo *@
+        <span class="vi-reloj" hidden>
+            <span class="vi-reloj__fecha"></span>
+            <strong class="vi-reloj__hora"></strong>
+            <span class="vi-reloj__turno"></span>
+        </span>
         <MenuPrincipal />
     </header>
+
+    @* Con la sesión iniciada, fondo fijo y muy suave detrás del contenido (patrón y muestra).
+       La pantalla de entrada tiene su propio fondo *@
+    <AuthorizeView>
+        <Authorized>
+            <div class="vi-fondo-interior" aria-hidden="true"></div>
+        </Authorized>
+    </AuthorizeView>
 
     <main class="flex-grow-1 vi-contenido">
         @* Si la persona tiene que cambiar su contraseña, la lleva a esa pantalla antes que nada *@
@@ -20,7 +39,16 @@
         </LimiteErrores>
     </main>
 
-    <footer class="wys-pie">Witte y Solà, S.A.</footer>
+    <footer class="wys-pie vi-pie">
+        Witte y Solà, S.A.
+        @* Versión de la aplicación, solo con la sesión iniciada: a quien no ha entrado no se le
+           da información de la aplicación (norma de seguridad WYS) *@
+        <AuthorizeView>
+            <Authorized>
+                <span class="vi-pie__version">Versión @VersionAplicacion.Numero_wys</span>
+            </Authorized>
+        </AuthorizeView>
+    </footer>
 </div>
 
 @* Aviso de Blazor si se pierde la conexión con el servidor *@

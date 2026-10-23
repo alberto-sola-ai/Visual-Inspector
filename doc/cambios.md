@@ -1,5 +1,35 @@
 # Registro de cambios
 
+## 0.10.6 — 2026-10-23
+- Inicio: se quita el aviso «En desarrollo · Próximamente…», que ya no era cierto. La caja
+  «Nuevo autocontrol» dice ahora «cuando lo consideres (se recomienda cada 4 horas)».
+
+## 0.10.5 — 2026-10-23
+- La versión de la aplicación se ve abajo a la derecha, en el pie, solo con la sesión iniciada.
+  Se lee sola de `VisualInspector.csproj`, así que no hay que escribirla a mano.
+
+## 0.10.4 — 2026-10-23
+- Fondo para todas las pantallas con la sesión iniciada: ilustración de patrón y muestra
+  (`recursos/app/fondo-interior.jpg`), fija y con un velo blanco para que textos, tablas y
+  recortes se lean igual. La pantalla de entrada mantiene su foto de la fábrica.
+- Cabecera ajustada para que, con el reloj, todo quepa en una línea en pantallas de 1280 px: nada
+  se parte en dos líneas y el nombre de la persona se corta con «…» si es muy largo.
+
+## 0.10.3 — 2026-10-23
+- Pantalla de entrada con una foto de fondo de la fábrica (máquina de impresión y tubos),
+  difuminada y con un velo blanco en el centro; el formulario va en una tarjeta blanca y el logo
+  de la aplicación, sin fondo, encima.
+- Reloj en la barra superior de todas las pantallas: fecha, hora peninsular (Europe/Madrid) que
+  se actualiza cada segundo y turno (mañana de 6 a 14 h, tarde de 14 a 22 h, noche de 22 a 6 h).
+  Script propio (`wwwroot/js/reloj-turno.js`); la política de seguridad (CSP) no cambia.
+
+## 0.10.2 — 2026-10-23
+- Logo propio de la aplicación (carpeta `recursos/app/`): el símbolo va en la cabecera de todas
+  las pantallas, junto al nombre y al lado del logo de WYS, que se mantiene igual. En la
+  pantalla de entrada se muestra el logo completo, grande, encima del formulario.
+- El icono de la pestaña del navegador pasa a ser el símbolo de la aplicación (sustituye al
+  cuadrado azul provisional). El informe PDF sigue solo con el logo de WYS.
+
 ## 0.10.1 — 2026-10-22
 - Botón «ojo» en los campos de contraseña de la pantalla de entrada y de «Cambiar contraseña»:
   al pulsarlo se ve lo escrito y al volver a pulsarlo se oculta. Al enviar el formulario se

@@ -12,11 +12,14 @@
 
 <PageTitle>Entrar · Visual Inspector</PageTitle>
 
-@* Pantalla de entrada: usuario y contraseña. No hay registro público ni recuperación por correo:
-   los usuarios los crea y los desbloquea el administrador *@
-<div class="row">
-    <div class="col-4">
-        <h1>Entrar</h1>
+@* Pantalla de entrada: el logo de la aplicación destacado y debajo usuario y contraseña. No hay
+   registro público ni recuperación por correo: los usuarios los crea y los desbloquea el
+   administrador. El logo de WYS sigue en la cabecera. De fondo, la foto de la fábrica difuminada *@
+<div class="vi-fondo-entrada">
+<div class="vi-entrada">
+    <img src="recursos/app/visual-inspector-logo.png" class="vi-entrada__logo" alt="Visual Inspector" />
+    <div class="vi-entrada__tarjeta">
+        <h1 class="vi-entrada__titulo">Entrar</h1>
         <StatusMessage Message="@errorMessage" />
         <EditForm EditContext="editContext" method="post" OnSubmit="LoginUser" FormName="login">
             <DataAnnotationsValidator />
@@ -32,11 +35,12 @@
                 <ValidationMessage For="() => Input.Password" class="text-danger" />
             </div>
             <button type="submit" class="w-100 btn btn-lg btn-primary">Entrar</button>
-            <p class="mt-3 text-secondary small">
+            <p class="mt-3 mb-0 text-secondary small">
                 ¿Has olvidado tu contraseña o tu acceso está bloqueado? Avisa al administrador de la aplicación.
             </p>
         </EditForm>
     </div>
+</div>
 </div>
 
 @code {

@@ -6,8 +6,11 @@ h1:focus {
     outline: none;
 }
 
-/* Nombre de la aplicación junto al logo, en la cabecera */
+/* Símbolo y nombre de la aplicación junto al logo de WYS, en la cabecera */
 .vi-nombre-app {
+    display: inline-flex;
+    align-items: center;
+    gap: .6rem;
     font-weight: 300;
     text-transform: uppercase;
     color: var(--wys-azul-oscuro);
@@ -20,12 +23,155 @@ h1:focus {
     font-weight: 900;
 }
 
+/* El símbolo de la app, a la altura del texto: acompaña sin quitar protagonismo al logo WYS */
+.vi-simbolo-app {
+    height: 2.25rem;
+    width: auto;
+}
+
+/* Pie: "WITTE Y SOLÀ, S.A." sigue centrado y la versión va abajo a la derecha, discreta */
+.vi-pie {
+    position: relative;
+}
+
+.vi-pie__version {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 400;
+    text-transform: none;
+    opacity: .75;
+}
+
+/* Fondo de las pantallas con la sesión iniciada: ilustración de patrón y muestra, fija (no se
+   mueve al bajar por listados largos) y con un velo blanco para que todo se lea igual que sobre
+   blanco. Queda detrás de todo: la cabecera y el pie la tapan con su propio color */
+.vi-fondo-interior {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;   /* nunca se interpone al pulsar */
+    background:
+        linear-gradient(rgba(255, 255, 255, .6), rgba(255, 255, 255, .6)),
+        url("recursos/app/fondo-interior.jpg") center / cover no-repeat;
+}
+
+/* Fondo de la pantalla de entrada: foto de la fábrica (máquina de impresión y tubos),
+   difuminada y con un velo blanco más fuerte en el centro para que se lea bien el formulario.
+   Ocupa todo el hueco entre la cabecera y el pie, anulando el margen del contenido */
+.vi-fondo-entrada {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    margin: -2rem -3rem;
+    padding: 2.5rem 3rem 3rem;
+    min-height: calc(100vh - 6.6rem);
+}
+
+.vi-fondo-entrada::before {
+    content: "";
+    position: absolute;
+    inset: -1rem;   /* el difuminado no deja bordes borrosos en los lados */
+    background: url("recursos/app/fondo-entrada.jpg") center 45% / cover no-repeat;
+    filter: blur(2px);
+    z-index: -2;
+}
+
+.vi-fondo-entrada::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 30% 60% at center, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, .3) 60%, rgba(255, 255, 255, 0) 100%);
+    z-index: -1;
+}
+
+/* Pantalla de entrada: logo de la aplicación grande y el formulario centrado en una tarjeta */
+.vi-entrada {
+    max-width: 26rem;
+    margin: 0 auto;
+    padding-top: .5rem;
+}
+
+.vi-entrada__logo {
+    display: block;
+    width: 100%;
+    max-width: 20rem;
+    height: auto;
+    margin: 0 auto 1.5rem;
+}
+
+/* Título WYS (mayúsculas, azul oscuro, Lato Black; lo pone tema.css) a un tamaño menor */
+.vi-entrada__titulo {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
+
+.vi-entrada__tarjeta {
+    background: var(--wys-fondo);   /* blanco sólido: el formulario no se mezcla con la foto */
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .5rem;
+    padding: 1.75rem;
+}
+
+/* Reloj con fecha, hora y turno, a la derecha de la cabecera y antes del menú */
+.vi-reloj {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--wys-azul-oscuro);
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+.vi-reloj[hidden] {
+    display: none;
+}
+
+.vi-reloj__hora {
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;   /* las cifras no "bailan" al cambiar cada segundo */
+}
+
+.vi-reloj__hora::before,
+.vi-reloj__turno::before {
+    content: "·";
+    margin-right: .5rem;
+    font-weight: 400;
+}
+
+.vi-reloj__turno {
+    font-weight: 700;
+}
+
+/* Si hay reloj, el menú va justo a su derecha con un filete de separación */
+.vi-reloj + .vi-menu {
+    margin-left: 0;
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--wys-gris-1);
+}
+
 /* Menú de la cabecera, a la derecha */
 .vi-menu {
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
+}
+
+/* En la cabecera nada se parte en dos líneas: con el reloj, el espacio es justo en pantallas de 1280 px */
+.vi-nombre-app,
+.vi-menu a,
+.vi-menu button {
+    white-space: nowrap;
+}
+
+/* El nombre de la persona se corta con "…" si es muy largo (completo al pasar el ratón: "Mi cuenta") */
+.vi-menu__usuario {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .vi-menu a.active {
