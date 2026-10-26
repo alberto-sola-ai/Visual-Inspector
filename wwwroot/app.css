@@ -282,6 +282,17 @@ h1:focus {
     opacity: 1;
 }
 
+/* Desplegable de la izquierda (Calidad): las opciones se abren hacia la derecha del botón */
+.vi-desplegable--izquierda .vi-desplegable__opciones {
+    left: 0;
+    right: auto;
+}
+
+/* Si la pantalla actual es una de sus opciones, el botón se ve en negrita como las demás secciones */
+.vi-desplegable:has(a.active) > .vi-desplegable__boton {
+    font-weight: 700;
+}
+
 /* Variante sin borde (Administración): se ve como un enlace más del menú, con su flecha */
 .vi-desplegable--claro .vi-desplegable__boton {
     border-color: transparent;
@@ -491,25 +502,14 @@ h1:focus {
     border-left: 3px solid var(--wys-rojo);
 }
 
-/* Inicio: los accesos uno debajo de otro, en una columna a la izquierda */
-.vi-accesos {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-    max-width: 40rem;
-}
-
-/* Inicio: presentación discreta de la aplicación, abajo a la derecha, encima del pie */
-.vi-presentacion {
-    position: fixed;
-    right: 3rem;
-    bottom: 3.75rem;
-    max-width: 28rem;
+/* Descripción de la aplicación: una línea pequeña y discreta justo encima del pie */
+.vi-descripcion {
     margin: 0;
-    text-align: right;
-    font-size: .95rem;
-    font-weight: 300;
-    color: var(--wys-azul-titulo);
+    padding: .5rem 3rem .6rem;
+    text-align: center;
+    font-size: .8rem;
+    font-weight: 400;
+    color: var(--wys-texto-secundario);
 }
 
 .vi-menu a.active {
@@ -606,27 +606,62 @@ h1:focus {
     padding: .15rem;
 }
 
-/* Botón de la barra para cambiar de modo: con el aspecto de los menús de la cabecera, sin flecha */
-.vi-boton-modo {
-    background: none;
-    font-family: inherit;
+/* Conmutador diurno / nocturno de la barra: una píldora estrecha, sin texto, con una bola que se
+   desliza. De día, sol a la izquierda sobre fondo azul claro; de noche, luna a la derecha sobre fondo
+   azul noche. Los colores están en recursos/tema.css */
+.vi-conmutador {
+    position: relative;
+    display: block;
+    width: 3.6rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--wys-conmutador-borde);
+    border-radius: 999px;
+    overflow: hidden;               /* los anillos de la bola no se salen de la píldora */
+    background: var(--wys-conmutador-fondo);
+    cursor: pointer;
 }
 
-.vi-boton-modo::after {
+.vi-conmutador:focus-visible {
+    outline: 2px solid var(--wys-azul-brillante);
+    outline-offset: 2px;
+}
+
+.vi-conmutador__bola {
+    position: absolute;
+    top: 50%;
+    left: .2rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: -.75rem;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--wys-conmutador-bola);
+    /* Dos anillos suaves alrededor de la bola, como las ondas de la imagen de referencia */
+    box-shadow: 0 0 0 .35rem rgba(255, 255, 255, .13), 0 0 0 .75rem rgba(255, 255, 255, .07);
+    transition: left .25s ease;
+}
+
+.vi-conmutador__bola svg {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+
+.vi-conmutador__luna {
     display: none;
 }
 
-/* El botón dice "Modo nocturno" de día y "Modo diurno" de noche */
-.vi-modo__ir-dia {
+[data-bs-theme="dark"] .vi-conmutador__bola {
+    left: calc(100% - 1.7rem);
+}
+
+[data-bs-theme="dark"] .vi-conmutador__sol {
     display: none;
 }
 
-[data-bs-theme="dark"] .vi-modo__ir-dia {
-    display: inline;
-}
-
-[data-bs-theme="dark"] .vi-modo__ir-noche {
-    display: none;
+[data-bs-theme="dark"] .vi-conmutador__luna {
+    display: block;
 }
 
 /* Cabecera azul oscura de noche: nombre de la aplicación, secciones y botones de los menús en blanco.

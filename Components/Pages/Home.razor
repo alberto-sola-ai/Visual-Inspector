@@ -1,41 +1,18 @@
 @page "/"
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject NavigationManager Navegacion
 
-<PageTitle>Visual Inspector</PageTitle>
+@* No hay pantalla de inicio: lo importante está en Autocontroles (decisión de Alberto, 26/10/2026).
+   Quien entra por la dirección raíz (por ejemplo, justo después de iniciar sesión) pasa directamente
+   al listado de autocontroles. Sigue pidiendo el permiso de ver autocontroles, como antes *@
 
-@* Portada: accesos directos a los autocontroles, uno debajo de otro, y una breve presentación
-   de la aplicación abajo a la derecha *@
-<h1>Visual <span class="wys-ligero">Inspector</span></h1>
-
-<div class="vi-accesos mt-4">
-    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
-        <a href="autocontroles/nuevo" class="text-decoration-none">
-            <div class="wys-caja wys-caja--azul d-flex align-items-center gap-4">
-                <span class="wys-icono-circulo wys-icono-circulo--rojo">
-                    <img src="recursos/iconos/blanco/notas.png" alt="" />
-                </span>
-                <div>
-                    <h2 class="h4 text-white mb-1">Nuevo Autocontrol RPI</h2>
-                    <p class="mb-0">Al inicio de la orden de fabricación y cuando lo consideres (se recomienda cada 4 horas).</p>
-                </div>
-            </div>
-        </a>
-    </AuthorizeView>
-    <a href="autocontroles" class="text-decoration-none">
-        <div class="wys-caja wys-caja--gris d-flex align-items-center gap-4">
-            <span class="wys-icono-circulo">
-                <img src="recursos/iconos/blanco/ordenador_grafico.png" alt="" />
-            </span>
-            <div>
-                <h2 class="h4 mb-1">Autocontroles realizados</h2>
-                <p class="mb-0">Consulta los controles de cada orden de fabricación.</p>
-            </div>
-        </div>
-    </a>
-</div>
-
-@* Presentación de la aplicación, discreta, en la esquina inferior derecha *@
-<p class="vi-presentacion">
-    Asistente para el autocontrol visual de la impresión: compara el patrón gráfico aprobado por el
-    cliente (PDF) con las dos muestras escaneadas y resalta las diferencias.
-</p>
+@code {
+    /// <summary>
+    /// Lleva a quien llega a la dirección raíz al listado de autocontroles, como un recepcionista
+    /// que indica directamente la sala. "replace" evita que el botón Atrás vuelva a esta página vacía.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        Navegacion.NavigateTo("autocontroles", replace: true);
+    }
+}

@@ -6,11 +6,17 @@
             @* Junto al logo de Visual Inspector: las secciones de trabajo *@
             <div class="vi-menu__secciones">
                 <AuthorizeView Policy="@Permisos.AutocontrolesVer_wys" Context="contextoAutocontroles">
-                    <NavLink href="" Match="NavLinkMatch.All">Inicio</NavLink>
                     <NavLink href="autocontroles">Autocontroles</NavLink>
                     <NavLink href="ordenes">Órdenes de Fabricación</NavLink>
-                    <NavLink href="trazabilidad">Trazabilidad</NavLink>
-                    <NavLink href="impacto">Impacto</NavLink>
+                    @* Los cuadros de mando de gestión de calidad van agrupados en un desplegable (decisión de
+                       Alberto, 26/10/2026). Se abre hacia la derecha para no salirse de la pantalla *@
+                    <details class="vi-desplegable vi-desplegable--claro vi-desplegable--izquierda">
+                        <summary class="vi-desplegable__boton">Calidad</summary>
+                        <div class="vi-desplegable__opciones">
+                            <NavLink href="trazabilidad">Trazabilidad</NavLink>
+                            <NavLink href="impacto">Impacto productivo</NavLink>
+                        </div>
+                    </details>
                 </AuthorizeView>
             </div>
 
@@ -60,10 +66,23 @@
 </nav>
 
 @code {
-    // Botón de la barra que cambia entre modo diurno y nocturno; lo hace wwwroot/js/modo-visual.js
-    // en el navegador. Se ve un texto u otro según el modo activo (lo decide el CSS)
-    private RenderFragment BotonModoVisual => @<button type="button" class="vi-desplegable__boton vi-boton-modo" data-modo-visual>
-        <span class="vi-modo__ir-noche">Modo nocturno</span>
-        <span class="vi-modo__ir-dia">Modo diurno</span>
+    // Conmutador de la barra para cambiar entre modo diurno y nocturno; lo hace wwwroot/js/modo-visual.js
+    // en el navegador. Es un interruptor: de día muestra un sol a la izquierda sobre azul claro; de
+    // noche, una luna a la derecha sobre azul noche. Sin texto: el dibujo ya lo dice. Para los lectores
+    // de pantalla y al pasar el ratón sí lleva una etiqueta. Qué se ve lo decide el CSS según el modo activo
+    private RenderFragment BotonModoVisual => @<button type="button" class="vi-conmutador" data-modo-visual
+                                                       title="Cambiar entre modo diurno y nocturno"
+                                                       aria-label="Cambiar entre modo diurno y nocturno">
+        <span class="vi-conmutador__bola" aria-hidden="true">
+            <svg class="vi-conmutador__sol" viewBox="0 0 24 24" focusable="false">
+                <circle cx="12" cy="12" r="4.4" fill="#FFF6C9" />
+                <g stroke="#FFF6C9" stroke-width="1.6" stroke-linecap="round">
+                    <path d="M12 2.2v2.4M12 19.4v2.4M2.2 12h2.4M19.4 12h2.4M5.1 5.1l1.7 1.7M17.2 17.2l1.7 1.7M5.1 18.9l1.7-1.7M17.2 6.8l1.7-1.7" />
+                </g>
+            </svg>
+            <svg class="vi-conmutador__luna" viewBox="0 0 24 24" focusable="false">
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="#9FB4E6" />
+            </svg>
+        </span>
     </button>;
 }

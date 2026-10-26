@@ -1,5 +1,42 @@
 # Registro de cambios
 
+## 0.16.7 — 2026-10-26
+- Conmutador de modo **sin texto** y aún más estrecho (unos 58 px): solo la píldora con el sol (día)
+  o la luna (noche), como en la imagen de referencia. Sigue teniendo la etiqueta «Cambiar entre
+  modo diurno y nocturno» al pasar el ratón y para los lectores de pantalla.
+
+## 0.16.6 — 2026-10-26
+- Conmutador de modo más estrecho (de 164 a 120 px) y sin la palabra «Modo»: solo «Diurno» o
+  «Nocturno». El texto de ayuda al pasar el ratón sigue diciendo «Cambiar entre modo diurno y nocturno».
+
+## 0.16.5 — 2026-10-26
+- El botón de modo diurno / nocturno pasa a ser un **conmutador** (píldora con una bola que se
+  desliza): de día, sol a la izquierda sobre azul claro y «Modo diurno» a la derecha; de noche,
+  luna a la derecha sobre azul noche y «Modo nocturno» a la izquierda. Ahora el texto dice en qué
+  modo se está, no a cuál se pasa. Los colores están en `recursos/tema.css` (`--wys-conmutador-*`).
+
+## 0.16.4 — 2026-10-26
+- Nuevo menú **Calidad** en la barra, con **Trazabilidad** e **Impacto productivo** dentro (antes
+  eran dos secciones sueltas). Es un desplegable como el de Administración, que se abre hacia la
+  derecha; el botón se ve en negrita cuando se está en una de sus pantallas. Las direcciones y los
+  permisos no cambian (`/trazabilidad`, `/impacto`, «Autocontroles.Ver»).
+
+## 0.16.3 — 2026-10-26
+- La línea descriptiva del pie empieza ahora con «AutoControl Retenido Para Inspección (RPI)» en
+  lugar de «Autocontrol visual de impresión».
+
+## 0.16.2 — 2026-10-26
+- La descripción de la aplicación («Autocontrol visual de impresión: compara el patrón aprobado
+  (PDF) con las dos muestras escaneadas y resalta las diferencias») vuelve como una línea pequeña
+  justo encima del pie, en todas las pantallas con la sesión iniciada. Va en el flujo normal de la
+  página, no flota, así que no tapa nada.
+
+## 0.16.1 — 2026-10-26
+- **Se quita la sección «Inicio».** Solo repetía lo que ya está en Autocontroles. Ya no aparece en
+  la barra; al entrar (o al pulsar el logo) se abre directamente el listado de autocontroles. La
+  dirección raíz sigue existiendo y redirige a Autocontroles, así que los enlaces antiguos y «Volver
+  al inicio» siguen funcionando. Se borran los estilos de la antigua portada.
+
 ## 0.16.0 — 2026-10-26
 - **Impacto productivo.** Cuando el operario marca «Parada de línea» o «Retención de producto» en
   una incidencia, apunta los **minutos de parada** y los **tubos retenidos**, aproximados

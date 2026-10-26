@@ -28,7 +28,7 @@ directamente: siempre pasan por un servicio, que es quien comprueba los permisos
         ▼
  ┌─────────────────────────────────────────────────────────────┐
  │ Components/  Pantallas Blazor                               │
- │   Pages/              Inicio, Autocontroles, Órdenes,       │
+ │   Pages/              Autocontroles, Órdenes,               │
  │                       Administración (4 secciones)          │
  │   Account/            Entrar, Mi cuenta, verificación 2 pasos│
  │   Layout/, Compartido/ Cabecera WYS, menú, avisos de error  │
@@ -150,7 +150,7 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
 
 ### Trazabilidad: cuadro de mando de las órdenes cerradas (0.14.0)
 
-- Menú **Trazabilidad** (`/trazabilidad`): listado de órdenes finalizadas con búsqueda por orden y
+- Menú **Calidad › Trazabilidad** (`/trazabilidad`): listado de órdenes finalizadas con búsqueda por orden y
   litografía. Al elegir una se abre su cuadro de mando (`/trazabilidad/{id}`). Exige
   `Autocontroles.Ver` (de momento no hay permiso propio, decisión de Alberto, 26/10/2026).
 - Todo se calcula en `Servicios/ServicioTrazabilidad.cs` con lo que ya se guarda; no hay tablas

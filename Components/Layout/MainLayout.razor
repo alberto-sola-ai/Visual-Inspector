@@ -7,7 +7,7 @@
     <header class="wys-cabecera">
         @* Dos versiones del logo sin tocarlo: la normal (fondo claro) y la negativa (fondo azul oscuro
            del modo nocturno). El CSS enseña solo una *@
-        <a href="" title="Inicio">
+        <a href="autocontroles" title="Autocontroles">
             <img src="recursos/marca/wys-logo.svg" class="wys-logo wys-logo--diurno" alt="WYS" />
             <img src="recursos/marca/wys-logo-negativo.svg" class="wys-logo wys-logo--nocturno" alt="WYS" />
         </a>
@@ -35,6 +35,16 @@
             @Body
         </LimiteErrores>
     </main>
+
+    @* Qué hace la aplicación, en una línea pequeña al final de la página: va en el flujo normal (no
+       flota sobre el contenido), así que nunca tapa nada. Solo con la sesión iniciada *@
+    <AuthorizeView>
+        <Authorized>
+            <p class="vi-descripcion">
+                AutoControl Retenido Para Inspección (RPI): compara el patrón aprobado (PDF) con las dos muestras escaneadas y resalta las diferencias.
+            </p>
+        </Authorized>
+    </AuthorizeView>
 
     <footer class="wys-pie vi-pie">
         @* Abajo a la izquierda: fecha, hora de Madrid y turno; los rellena wwwroot/js/reloj-turno.js cada segundo *@
