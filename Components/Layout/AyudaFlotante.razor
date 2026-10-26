@@ -1,0 +1,75 @@
+@implements IDisposable
+@inject EstadoAyuda Estado
+@inject ServicioAyuda ServicioAyuda
+
+@* Panel de ayuda flotante: se mueve arrastrando su cabecera (wwwroot/js/ayuda-flotante.js), se
+   cambia de tamaño con su esquina y se cierra con la X. No tapa ni bloquea la pantalla de debajo.
+   Solo existe cuando la pantalla es interactiva; el resto de páginas usan /ayuda completa.
+   Una vez abierto por primera vez se queda en la página (oculto al cerrar) para conservar
+   su sitio y su búsqueda *@
+@if (RendererInfo.IsInteractive && Estado.SeHaAbierto)
+{
+    var guia = ServicioAyuda.ObtenerGuia();
+    <aside class="vi-ayuda-flotante" hidden="@(!Estado.EstaAbierta)" role="complementary" aria-label="Ayuda">
+        <div class="vi-ayuda-flotante__cabecera">
+            <strong>Ayuda</strong>
+            <span class="vi-ayuda-flotante__acciones">
+                <a href="ayuda" title="Abrir la guía en pantalla completa">Pantalla completa</a>
+                <button type="button" class="vi-ayuda-flotante__cerrar" title="Cerrar la ayuda" aria-label="Cerrar la ayuda"
+                        @onclick="Estado.Cerrar">✕</button>
+            </span>
+        </div>
+
+        <div class="vi-ayuda-flotante__cuerpo">
+            @if (guia is null)
+            {
+                <p>La guía de usuario no está disponible ahora mismo. Avisa a IT.</p>
+            }
+            else
+            {
+                var encontrados = ServicioAyuda.Buscar(guia, Estado.Texto);
+                var estaBuscando = !string.IsNullOrWhiteSpace(Estado.Texto);
+
+                <label class="visually-hidden" for="buscarAyudaFlotante">Buscar en la guía</label>
+                <input id="buscarAyudaFlotante" class="form-control mb-3" maxlength="100" autocomplete="off"
+                       placeholder="Buscar en la guía…" value="@Estado.Texto"
+                       @oninput="e => Estado.CambiarTexto(e.Value?.ToString())" />
+
+                @if (encontrados.Count == 0)
+                {
+                    <p>No hay ningún apartado con eso. Prueba con otras palabras o avisa a IT.</p>
+                }
+
+                @* Lo que se enseña viene de la guía del servidor (no de quien usa la pantalla) y ya se
+                   ha convertido sin HTML en bruto. Al buscar, los apartados que coinciden se abren solos *@
+                @foreach (var a in encontrados)
+                {
+                    <details class="vi-ayuda-flotante__apartado" open="@estaBuscando" @key="a.Id">
+                        <summary>@a.Titulo</summary>
+                        <div class="vi-ayuda-flotante__texto">@((MarkupString)a.Html)</div>
+                    </details>
+                }
+            }
+        </div>
+    </aside>
+}
+
+@code {
+    /// <summary>
+    /// Se apunta a los avisos del estado para dibujarse de nuevo cuando se abre, se cierra o se busca.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        Estado.Cambio += AlCambiar;
+    }
+
+    private void AlCambiar()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Estado.Cambio -= AlCambiar;
+    }
+}

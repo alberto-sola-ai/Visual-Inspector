@@ -1,5 +1,69 @@
 # Registro de cambios
 
+## 0.18.4 — 2026-10-26
+- Autocontrol, comparación: al cambiar la tolerancia **con validaciones hechas** sale un aviso («Has
+  validado N diferencias (M incidencias)… ¿Cambiar de todas formas?») con «Sí, cambiar» y «No, seguir
+  con…». La tolerancia no cambia hasta confirmar. Sin validaciones, el cambio sigue siendo inmediato.
+- Un cuadro azul junto al resultado indica **con qué tolerancia se ha comparado** y hacia dónde afinar
+  (demasiadas diferencias: más amplia; muy pocas: más estricta).
+- No se conservan las validaciones al cambiar de nivel: cada comparación numera las diferencias de
+  nuevo y una validación podría quedar pegada a otra diferencia distinta.
+- Guía de usuario actualizada.
+
+## 0.18.3 — 2026-10-26
+- El icono de ayuda cambia de «?» en un círculo azul a un dibujo vectorial: círculo gris claro con borde
+  rojo oscuro e interrogante rojo con contorno (rojo y rojo oscuro de WYS), como la imagen de referencia.
+  Con el panel abierto lleva un aro azul; al pasar el ratón se ilumina un poco.
+
+## 0.18.2 — 2026-10-26
+- El botón «Ayuda» de la barra pasa a ser un **icono de interrogante** (círculo con «?») junto al
+  conmutador de modo diurno y nocturno. Abre y cierra el panel flotante; en las pantallas no
+  interactivas lleva a `/ayuda`. Ya no hay un texto «Ayuda» entre las secciones.
+
+## 0.18.1 — 2026-10-26
+- La **Ayuda** pasa a ser un **panel flotante**: «Ayuda» en la barra lo abre encima de la pantalla
+  actual, sin fondo que la bloquee. Se mueve arrastrando su cabecera, se cambia de tamaño con la
+  esquina inferior derecha y se cierra con la ✕. Sigue abierto al cambiar de pantalla y recuerda la
+  búsqueda; la posición se recuerda mientras la pestaña siga abierta.
+- Dentro, el buscador y los apartados como secciones plegables (al buscar se abren los que coinciden).
+  El enlace «Pantalla completa» lleva a `/ayuda`, que se mantiene.
+- En las pantallas que no son interactivas («Mis datos», «Cambiar contraseña») el botón «Ayuda»
+  sigue llevando a `/ayuda`.
+- Piezas nuevas: `EstadoAyuda` (por sesión), `AyudaFlotante.razor` y `wwwroot/js/ayuda-flotante.js`
+  (script propio; la CSP no cambia).
+
+## 0.18.0 — 2026-10-26
+- Nueva pantalla **Ayuda** (`/ayuda`, opción «Ayuda» en la barra): muestra la guía de usuario con un
+  índice a la izquierda y un buscador. Al escribir se enseñan solo los apartados que contienen todas las
+  palabras (sin distinguir mayúsculas ni acentos); primero los que las llevan en el título.
+- La guía es un único archivo, [guia-usuario.md](guia-usuario.md): se edita ahí y la pantalla se
+  actualiza sola, sin recompilar. Para que llegue a la aplicación, el `.csproj` y el `.dockerignore`
+  tienen una excepción solo para ese archivo (el resto de `doc/` sigue sin publicarse).
+- La puede ver cualquiera con la sesión iniciada, aunque no tenga permisos; sin sesión redirige a la entrada.
+- Biblioteca nueva: **Markdig 1.5.0** (BSD-2-Clause), con el HTML en bruto desactivado. Añadida a
+  `generar-versiones.ps1` y regenerado `recursos/versiones.json`.
+- Servicio nuevo `ServicioAyuda` (una sola instancia, relee el archivo si cambia).
+
+## Documentación — 2026-10-26
+- Nueva [guía de usuario](guia-usuario.md) en lenguaje de operario: cómo hacer un autocontrol paso a
+  paso, tolerancias, incidencias, órdenes, informe, trazabilidad, impacto y preguntas frecuentes.
+  Pensada también como base de una futura ayuda dentro de la aplicación (sin tocar código de momento).
+
+## 0.17.0 — 2026-10-26
+- Nueva opción **Administración → Limpiar datos de prueba** (`/administracion/limpieza`) para dejar
+  la base de datos limpia al pasar de las pruebas a lo real. Solo administrador.
+  - Se buscan órdenes por fecha de creación (desde / hasta) y se marcan una o varias.
+  - Borrar una orden borra también todos sus autocontroles, diferencias y validaciones.
+  - Tres pasos: elegir órdenes, escribir la contraseña del administrador conectado (se pide siempre,
+    sea quien sea el que creó la orden) y un último aviso «¿Está seguro?» con lo que se va a borrar.
+  - El servidor (`ServicioLimpieza`) vuelve a comprobar permiso y contraseña; una contraseña
+    incorrecta avisa con «Contraseña incorrecta» y deja reintentar, sin bloquear la cuenta; tras
+    3 fallos seguidos hay una pausa de 38 segundos (constantes `FallosAntesDePausa_wys` y `SegundosPausa_wys`). El borrado es una sola operación: todo o nada.
+  - Queda apuntado en el diario de seguridad (acción nueva `LimpiezaDatos`): quién, qué órdenes y cuántos
+    autocontroles y diferencias; nunca la contraseña. Máximo 200 órdenes de una vez.
+  - Es una excepción a «los autocontroles no se borran», pensada para el paso de pruebas a producción.
+    Conviene hacer antes una copia de la base de datos.
+
 ## 0.16.7 — 2026-10-26
 - Conmutador de modo **sin texto** y aún más estrecho (unos 58 px): solo la píldora con el sol (día)
   o la luna (noche), como en la imagen de referencia. Sigue teniendo la etiqueta «Cambiar entre

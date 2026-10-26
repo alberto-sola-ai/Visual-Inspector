@@ -155,6 +155,11 @@ builder.Services.AddScoped<ServicioImpacto>();
 builder.Services.AddScoped<VisualInspector.Servicios.Informes.GeneradorInformePdf>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ServicioArchivosAutocontrol>();
 builder.Services.AddScoped<ServicioRegistros>();
+builder.Services.AddScoped<ServicioLimpieza>();
+// Una sola instancia: guarda la guía ya preparada para no leerla en cada visita
+builder.Services.AddSingleton<ServicioAyuda>();
+// Una por sesión abierta: recuerda si el panel de ayuda está abierto al cambiar de pantalla
+builder.Services.AddScoped<EstadoAyuda>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.LocalizadorMuestras>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ComparadorMuestras>();
 

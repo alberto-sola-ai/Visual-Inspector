@@ -1,5 +1,6 @@
 @* Menú de la cabecera. Ocultar opciones aquí es solo comodidad: cada página y cada servicio
    comprueban el permiso en el servidor *@
+@inject EstadoAyuda Estado
 <nav class="vi-menu">
     <AuthorizeView>
         <Authorized>
@@ -24,6 +25,18 @@
                desplegables los abre y cierra el navegador; wwwroot/js/menu-desplegable.js los cierra
                al pulsar fuera, al elegir una opción o con la tecla Escape *@
             <div class="vi-menu__cuenta">
+                @* La ayuda la ve cualquiera con la sesión iniciada, aunque aún no tenga permisos: un
+                   icono de interrogante junto al conmutador de modo. En las pantallas interactivas abre
+                   el panel flotante; en las demás (Mis datos, Cambiar contraseña), la guía completa *@
+                @if (RendererInfo.IsInteractive)
+                {
+                    <button type="button" class="vi-ayuda-icono" title="Ayuda" aria-label="Abrir la ayuda"
+                            aria-expanded="@Estado.EstaAbierta.ToString().ToLowerInvariant()" @onclick="Estado.Alternar">@IconoAyuda</button>
+                }
+                else
+                {
+                    <a href="ayuda" class="vi-ayuda-icono" title="Ayuda" aria-label="Abrir la ayuda">@IconoAyuda</a>
+                }
                 @BotonModoVisual
 
                 <AuthorizeView Policy="@Permisos.Administracion_wys" Context="contextoAdministracion">
@@ -66,6 +79,18 @@
 </nav>
 
 @code {
+    // Dibujo del icono de ayuda: círculo gris claro con borde rojo oscuro y un interrogante rojo con
+    // contorno. Los colores salen de las variables WYS (rojo y rojo oscuro). El contorno del
+    // interrogante se consigue dibujándolo dos veces: una gruesa en rojo oscuro y otra fina en rojo encima
+    private RenderFragment IconoAyuda => @<svg class="vi-ayuda-icono__dibujo" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+        <circle cx="12" cy="12" r="10.6" class="vi-ayuda-icono__fondo" />
+        <path d="M8.7 9.4c0-2.1 1.5-3.5 3.5-3.5s3.4 1.3 3.4 3.1c0 1.5-.9 2.3-2 3-.8.5-1.1 1-1.1 1.9v.4"
+              class="vi-ayuda-icono__contorno" />
+        <path d="M8.7 9.4c0-2.1 1.5-3.5 3.5-3.5s3.4 1.3 3.4 3.1c0 1.5-.9 2.3-2 3-.8.5-1.1 1-1.1 1.9v.4"
+              class="vi-ayuda-icono__signo" />
+        <circle cx="12.5" cy="18" r="1.8" class="vi-ayuda-icono__punto" />
+    </svg>;
+
     // Conmutador de la barra para cambiar entre modo diurno y nocturno; lo hace wwwroot/js/modo-visual.js
     // en el navegador. Es un interruptor: de día muestra un sol a la izquierda sobre azul claro; de
     // noche, una luna a la derecha sobre azul noche. Sin texto: el dibujo ya lo dice. Para los lectores

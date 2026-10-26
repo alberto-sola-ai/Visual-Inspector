@@ -717,3 +717,201 @@ h1:focus {
     right: .75rem;
     top: .5rem;
 }
+
+/* Pantalla Ayuda: índice a la izquierda y la guía de usuario a la derecha */
+.vi-ayuda__indice {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 2rem);
+    overflow: auto;
+}
+
+.vi-ayuda__indice a {
+    display: block;
+    padding: .25rem 0;
+    text-decoration: none;
+}
+
+.vi-ayuda__apartado {
+    scroll-margin-top: 1rem;
+    margin-bottom: 2rem;
+}
+
+.vi-ayuda__apartado table {
+    width: 100%;
+    margin: 1rem 0;
+    border-collapse: collapse;
+}
+
+.vi-ayuda__apartado th {
+    background: var(--wys-tabla-cabecera);
+    color: var(--wys-tabla-cabecera-texto);
+}
+
+.vi-ayuda__apartado th,
+.vi-ayuda__apartado td {
+    border: 1px solid var(--wys-gris-1);
+    padding: .4rem .75rem;
+    vertical-align: top;
+}
+
+
+/* Panel de ayuda flotante: encima de la pantalla, sin fondo que la bloquee. Abre abajo a la derecha;
+   se mueve arrastrando la cabecera y se ajusta de tamaño con la esquina inferior derecha */
+.vi-ayuda-flotante {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    width: 26rem;
+    height: 32rem;
+    min-width: 18rem;
+    min-height: 14rem;
+    max-width: 95vw;
+    max-height: 95vh;
+    resize: both;
+    overflow: hidden;
+    background: var(--wys-fondo);
+    color: var(--bs-body-color);
+    border: 1px solid var(--wys-azul-oscuro);
+    border-radius: .5rem;
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .25);
+}
+
+.vi-ayuda-flotante[hidden] {
+    display: none;
+}
+
+.vi-ayuda-flotante__cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .5rem .75rem;
+    background: var(--wys-azul-oscuro);
+    color: #fff;
+    cursor: move;
+    user-select: none;
+    touch-action: none;
+}
+
+.vi-ayuda-flotante__acciones {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: .85rem;
+}
+
+.vi-ayuda-flotante__acciones a {
+    color: #fff;
+}
+
+.vi-ayuda-flotante__cerrar {
+    border: 0;
+    background: none;
+    color: #fff;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.vi-ayuda-flotante__cuerpo {
+    flex: 1;
+    overflow: auto;
+    padding: .75rem;
+}
+
+.vi-ayuda-flotante__apartado {
+    border-bottom: 1px solid var(--wys-gris-1);
+    padding: .4rem 0;
+}
+
+.vi-ayuda-flotante__apartado > summary {
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.vi-ayuda-flotante__texto {
+    padding-top: .5rem;
+    font-size: .9rem;
+}
+
+.vi-ayuda-flotante__texto table {
+    width: 100%;
+    margin: .5rem 0;
+    border-collapse: collapse;
+}
+
+.vi-ayuda-flotante__texto th {
+    background: var(--wys-tabla-cabecera);
+    color: var(--wys-tabla-cabecera-texto);
+}
+
+.vi-ayuda-flotante__texto th,
+.vi-ayuda-flotante__texto td {
+    border: 1px solid var(--wys-gris-1);
+    padding: .3rem .5rem;
+    vertical-align: top;
+}
+
+/* Icono de ayuda (interrogante) junto al conmutador de modo: círculo gris con borde rojo oscuro e
+   interrogante rojo, como el dibujo de referencia. Los colores son los rojos de WYS */
+.vi-ayuda-icono {
+    display: block;
+    width: 2.2rem;
+    height: 2.2rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+}
+
+.vi-ayuda-icono__dibujo {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.vi-ayuda-icono__fondo {
+    fill: var(--wys-gris-1);
+    stroke: var(--wys-rojo-oscuro);
+    stroke-width: 1.2;
+}
+
+.vi-ayuda-icono__contorno {
+    fill: none;
+    stroke: var(--wys-rojo-oscuro);
+    stroke-width: 4.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vi-ayuda-icono__signo {
+    fill: none;
+    stroke: var(--wys-rojo);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.vi-ayuda-icono__punto {
+    fill: var(--wys-rojo);
+    stroke: var(--wys-rojo-oscuro);
+    stroke-width: .8;
+}
+
+.vi-ayuda-icono:hover {
+    filter: brightness(1.06) drop-shadow(0 0 .25rem rgba(0, 0, 0, .35));
+}
+
+/* Con el panel abierto, un aro azul alrededor */
+.vi-ayuda-icono[aria-expanded="true"] {
+    box-shadow: 0 0 0 .2rem var(--wys-azul-brillante);
+}
+
+.vi-ayuda-icono:focus-visible {
+    outline: 2px solid var(--wys-azul-brillante);
+    outline-offset: 2px;
+}

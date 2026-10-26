@@ -1,11 +1,11 @@
 ﻿{
-    "generado":  "2026-10-22T14:21:03",
+    "generado":  "2026-10-26T14:14:07",
     "componentes":  [
                         {
                             "nombre":  ".NET",
                             "descripcion":  "La plataforma sobre la que funciona toda la aplicación (pantallas Blazor, servicios y seguridad). Licencia MIT.",
                             "instalada":  "10.0.12",
-                            "ultima":  "10.0.13",
+                            "ultima":  "10.0.14",
                             "recomendacion":  "Recomendada"
                         },
                         {
@@ -23,24 +23,31 @@
                             "recomendacion":  "Al día"
                         },
                         {
+                            "nombre":  "Markdig",
+                            "descripcion":  "Convierte la guía de usuario (un archivo de texto en Markdown) en la pantalla Ayuda, sin permitir HTML en bruto. Licencia BSD-2-Clause.",
+                            "instalada":  "1.5.0",
+                            "ultima":  "1.5.0",
+                            "recomendacion":  "Al día"
+                        },
+                        {
                             "nombre":  "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
                             "descripcion":  "Guarda en la base de datos los usuarios, sus roles y sus permisos. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
-                            "ultima":  "10.0.13",
+                            "ultima":  "10.0.14",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.EntityFrameworkCore.Design",
                             "descripcion":  "Herramienta para crear y cambiar las tablas (migraciones). Solo se usa al programar, no en el servidor. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
-                            "ultima":  "10.0.13",
+                            "ultima":  "10.0.14",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.EntityFrameworkCore.Relational",
                             "descripcion":  "Motor de acceso a la base de datos (Entity Framework): lee y guarda los datos sin escribir SQL a mano, lo que evita inyecciones. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
-                            "ultima":  "10.0.13",
+                            "ultima":  "10.0.14",
                             "recomendacion":  "Recomendada"
                         },
                         {
@@ -103,8 +110,8 @@
                             "nombre":  "System.Security.Cryptography.Pkcs",
                             "descripcion":  "Firma y cifrado de documentos que usa PDFsharp por dentro. Se fija una versión corregida porque la que trae PDFsharp tiene fallos de seguridad conocidos. Licencia MIT.",
                             "instalada":  "10.0.13",
-                            "ultima":  "10.0.13",
-                            "recomendacion":  "Al día"
+                            "ultima":  "10.0.14",
+                            "recomendacion":  "Recomendada"
                         }
                     ]
 }

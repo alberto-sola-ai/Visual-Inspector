@@ -19,6 +19,8 @@ public static class OpcionesAdministracion
             "Ajustes de la aplicación que se cambian sin tocar el programa."),
         new("administracion/registros", "Registros Err./Seg.", "alerta",
             "Leer los diarios de errores y de seguridad para investigar lo que ha pasado."),
+        new("administracion/limpieza", "Limpiar datos de prueba", "caja",
+            "Borrar órdenes de fabricación completas (con sus autocontroles) al pasar de las pruebas a lo real."),
         new("administracion/versiones", "Versiones y actualizaciones", "ordenador",
             "Qué piezas usa la aplicación y si alguna necesita actualizarse."),
     ];

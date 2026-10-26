@@ -93,6 +93,21 @@ Solo el administrador puede leer los dos diarios desde la aplicación (Administr
 Registros), sin poder cambiarlos. Como guardan datos personales, cada vez que alguien los
 consulta queda apuntado quién y qué diario miró.
 
+## Borrar datos de prueba, con llave y aviso
+El administrador puede borrar órdenes de fabricación completas (con sus autocontroles y
+diferencias) desde Administración → Limpiar datos de prueba. Para evitar borrados por descuido,
+siempre pide la contraseña del administrador (aunque ya haya entrado) y un último aviso con lo
+que se va a borrar. Si la contraseña falla, avisa con «Contraseña incorrecta» y deja volver a intentarlo, sin bloquear
+la cuenta; tras 3 fallos seguidos obliga a esperar 38 segundos; cada fallo queda apuntado en el diario. Se borra
+todo o nada, y queda apuntado en el diario de seguridad quién lo hizo y cuántos datos se borraron.
+
+## La ayuda, para todos y sin trucos
+La pantalla Ayuda enseña la guía de usuario a cualquiera que haya entrado, aunque aún no tenga
+permisos, porque solo explica cómo se usa la aplicación. Sin haber entrado, no se ve. La guía es
+un archivo del servidor (no lo escribe ningún usuario) y se convierte en pantalla sin permitir
+HTML escrito a mano, así que no puede colar código. Lo que se escribe en el buscador solo se
+compara con el texto de la guía y nunca se interpreta como código.
+
 ## Si algo falla
 Verás un mensaje sencillo con un código. El código ayuda a IT a encontrar el
 problema, sin enseñar detalles que podrían usar personas malintencionadas.

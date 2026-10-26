@@ -1,7 +1,8 @@
 bin/
 obj/
 publicar/
-doc/
+doc/*
+!doc/guia-usuario.md
 .git/
 .vs/
 .vscode/

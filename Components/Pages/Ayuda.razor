@@ -1,0 +1,82 @@
+@page "/ayuda"
+@attribute [Authorize]
+@inject ServicioAyuda ServicioAyuda
+
+<PageTitle>Ayuda · Visual Inspector</PageTitle>
+
+@* Guía de usuario: índice a la izquierda, buscador arriba y los apartados de doc/guia-usuario.md.
+   La puede ver cualquiera con la sesión iniciada, aunque aún no tenga permisos *@
+@if (guia is null)
+{
+    <h1>Ayuda</h1>
+    <div class="alert alert-warning" role="alert">
+        La guía de usuario no está disponible ahora mismo. Avisa a IT.
+    </div>
+}
+else
+{
+    var encontrados = ServicioAyuda.Buscar(guia, texto);
+
+    <h1>@guia.Titulo</h1>
+
+    <div class="row g-4">
+        <div class="col-3">
+            <nav class="vi-ayuda__indice" aria-label="Índice de la guía">
+                <h2 class="h6">Apartados</h2>
+                @foreach (var a in encontrados)
+                {
+                    <a href="ayuda#@a.Id">@a.Titulo</a>
+                }
+                @if (encontrados.Count == 0)
+                {
+                    <span class="text-secondary small">Ninguno.</span>
+                }
+            </nav>
+        </div>
+
+        <div class="col-9">
+            <div class="mb-4" style="max-width: 40rem">
+                <label class="form-label" for="buscarAyuda">Buscar en la guía</label>
+                <input id="buscarAyuda" class="form-control form-control-lg" maxlength="100" autocomplete="off"
+                       @bind="texto" @bind:event="oninput" />
+                <div class="form-text">
+                    Escribe lo que necesitas saber, por ejemplo «tolerancia» o «registrar». Se enseñan solo
+                    los apartados que contienen todo lo que escribas. Vacío para verlos todos.
+                </div>
+            </div>
+
+            @* Lo que se enseña viene de la guía del servidor (no de quien usa la pantalla) y ya se
+               ha convertido sin HTML en bruto *@
+            @if (string.IsNullOrWhiteSpace(texto))
+            {
+                <div class="vi-ayuda__apartado">@((MarkupString)guia.Presentacion)</div>
+            }
+
+            @if (encontrados.Count == 0)
+            {
+                <p>No hay ningún apartado con eso. Prueba con otras palabras o avisa a IT.</p>
+            }
+
+            @foreach (var a in encontrados)
+            {
+                <section id="@a.Id" class="vi-ayuda__apartado">
+                    <h2>@a.Titulo</h2>
+                    @((MarkupString)a.Html)
+                </section>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private GuiaAyuda? guia;
+    private string texto = "";
+
+    /// <summary>
+    /// Al abrir la pantalla se carga la guía (si el archivo cambió, se vuelve a leer sola).
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        guia = ServicioAyuda.ObtenerGuia();
+    }
+}

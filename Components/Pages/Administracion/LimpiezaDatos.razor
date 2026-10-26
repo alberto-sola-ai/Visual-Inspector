@@ -1,0 +1,289 @@
+@page "/administracion/limpieza"
+@inject ServicioLimpieza ServicioLimpieza
+@inject ILogger<LimpiezaDatos> Registro
+
+<PageTitle>Limpiar datos de prueba · Administración</PageTitle>
+
+@* Borrado de órdenes de fabricación completas, para dejar la base de datos limpia al empezar lo real.
+   Tres pasos: elegir órdenes, escribir la contraseña del administrador y confirmar el aviso final *@
+<h1>Limpiar datos de prueba</h1>
+<p><a href="administracion">Administración</a> › Limpiar datos de prueba</p>
+
+<div class="alert alert-warning" role="alert" style="max-width: 52rem">
+    <strong>Esta acción no se puede deshacer.</strong> Al borrar una orden se borran también todos
+    sus autocontroles, diferencias y validaciones, y desaparecen de los informes y de la
+    trazabilidad. Haz antes una copia de la base de datos. Queda apuntado en el diario de seguridad.
+</div>
+
+@if (resultado is not null)
+{
+    <div class="alert alert-success" role="status" style="max-width: 52rem">
+        Borrado terminado: <strong>@resultado.Ordenes</strong> orden(es),
+        <strong>@resultado.Autocontroles</strong> autocontrol(es) y
+        <strong>@resultado.Diferencias</strong> diferencia(s).
+    </div>
+}
+
+@if (error is not null)
+{
+    <div class="alert alert-danger" role="alert" style="max-width: 52rem">@error</div>
+}
+
+@* Paso 1: elegir las órdenes, filtradas por fecha de creación *@
+<div class="vi-panel d-flex flex-wrap gap-3 align-items-end" style="max-width: 52rem">
+    <div>
+        <label class="form-label" for="desde">Creadas desde</label>
+        <input id="desde" type="date" class="form-control" @bind="desde" disabled="@(paso != Paso.Elegir)" />
+    </div>
+    <div>
+        <label class="form-label" for="hasta">hasta</label>
+        <input id="hasta" type="date" class="form-control" @bind="hasta" disabled="@(paso != Paso.Elegir)" />
+    </div>
+    <button class="btn btn-primary" @onclick="BuscarAsync" disabled="@(paso != Paso.Elegir || estaOcupado)">Buscar</button>
+</div>
+<div class="form-text">Con las fechas vacías salen todas las órdenes (hasta @ServicioLimpieza.MaximoOrdenes_wys, las más recientes).</div>
+
+@if (filas is not null)
+{
+    @if (filas.Count == 0)
+    {
+        <p class="mt-4">No hay órdenes en ese periodo.</p>
+    }
+    else
+    {
+        <table class="table align-middle mt-4">
+            <thead>
+                <tr>
+                    <th style="width: 3rem">
+                        <input class="form-check-input" type="checkbox" aria-label="Elegir todas"
+                               checked="@(seleccionadas.Count == filas.Count)" disabled="@(paso != Paso.Elegir)"
+                               @onchange="e => ElegirTodas((bool)e.Value!)" />
+                    </th>
+                    <th>Orden</th>
+                    <th>Litografía</th>
+                    <th>Estado</th>
+                    <th>Creada</th>
+                    <th>Por</th>
+                    <th class="text-end">Autocontroles</th>
+                    <th class="text-end">Diferencias</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var f in filas)
+                {
+                    <tr>
+                        <td>
+                            <input class="form-check-input" type="checkbox" aria-label="Elegir la orden @f.Codigo"
+                                   checked="@seleccionadas.Contains(f.Id)" disabled="@(paso != Paso.Elegir)"
+                                   @onchange="e => Elegir(f.Id, (bool)e.Value!)" />
+                        </td>
+                        <td>@f.Codigo</td>
+                        <td>@(f.Litografia ?? "-")</td>
+                        <td>@ServicioOrdenes.NombreEstado(f.Estado)</td>
+                        <td>@f.FechaCreacion.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@f.CreadoPor</td>
+                        <td class="text-end">@f.Autocontroles</td>
+                        <td class="text-end">@f.Diferencias</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (paso == Paso.Elegir)
+        {
+            <div class="d-flex gap-3 align-items-center">
+                <button class="btn btn-danger" disabled="@(seleccionadas.Count == 0)" @onclick="() => paso = Paso.Password">
+                    Borrar las elegidas (@seleccionadas.Count)
+                </button>
+                @if (seleccionadas.Count > 0)
+                {
+                    <span>@TotalAutocontroles autocontroles y @TotalDiferencias diferencias</span>
+                }
+            </div>
+        }
+    }
+}
+
+@* Paso 2: contraseña del administrador *@
+@if (paso == Paso.Password)
+{
+    <div class="vi-panel mt-4" style="max-width: 32rem">
+        <h2 class="h5">Escribe tu contraseña de administrador</h2>
+        <p class="small text-secondary mb-2">Se pide siempre, aunque ya hayas entrado, para evitar borrados por descuido.</p>
+        <label class="form-label" for="passwordLimpieza">Contraseña</label>
+        <input id="passwordLimpieza" type="password" class="form-control" autocomplete="current-password"
+               maxlength="128" @bind="password" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" disabled="@estaOcupado" />
+        <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-danger" @onclick="VerificarPasswordAsync" disabled="@(estaOcupado || string.IsNullOrEmpty(password))">Continuar</button>
+            <button class="btn btn-outline-secondary" @onclick="Cancelar" disabled="@estaOcupado">Cancelar</button>
+        </div>
+    </div>
+}
+
+@* Paso 3: último aviso *@
+@if (paso == Paso.Confirmar)
+{
+    <div class="alert alert-danger mt-4" role="alert" style="max-width: 52rem">
+        <h2 class="h5">¿Está seguro?</h2>
+        <p class="mb-2">
+            Se va a proceder al borrado de <strong>@seleccionadas.Count orden(es)</strong>
+            (@string.Join(", ", CodigosElegidos)), con <strong>@TotalAutocontroles autocontrol(es)</strong> y
+            <strong>@TotalDiferencias diferencia(s)</strong>. No se puede deshacer.
+        </p>
+        <div class="d-flex gap-2">
+            <button class="btn btn-danger" @onclick="EliminarAsync" disabled="@estaOcupado">Sí, borrar definitivamente</button>
+            <button class="btn btn-outline-secondary" @onclick="Cancelar" disabled="@estaOcupado">No, cancelar</button>
+        </div>
+        @if (estaOcupado)
+        {
+            <p class="mt-2 mb-0">Borrando…</p>
+        }
+    </div>
+}
+
+@code {
+    private enum Paso { Elegir, Password, Confirmar }
+
+    private DateOnly? desde;
+    private DateOnly? hasta;
+    private List<FilaLimpieza>? filas;
+    private readonly HashSet<int> seleccionadas = [];
+    private Paso paso = Paso.Elegir;
+    private string? password;
+    private string? error;
+    private ResultadoLimpieza? resultado;
+    private bool estaOcupado;
+
+    private IEnumerable<FilaLimpieza> Elegidas => filas?.Where(f => seleccionadas.Contains(f.Id)) ?? [];
+    private IEnumerable<string> CodigosElegidos => Elegidas.Select(f => f.Codigo).OrderBy(c => c);
+    private int TotalAutocontroles => Elegidas.Sum(f => f.Autocontroles);
+    private int TotalDiferencias => Elegidas.Sum(f => f.Diferencias);
+
+    /// <summary>
+    /// Carga la lista de órdenes del periodo y borra lo que se había elegido.
+    /// </summary>
+    private async Task BuscarAsync()
+    {
+        error = null;
+        resultado = null;
+        seleccionadas.Clear();
+        if (desde is not null && hasta is not null && desde > hasta)
+        {
+            error = "La fecha «desde» no puede ser posterior a «hasta».";
+            return;
+        }
+        estaOcupado = true;
+        try
+        {
+            filas = await ServicioLimpieza.ListarAsync(desde, hasta);
+        }
+        catch (Exception e) when (e is not AccesoDenegadoException)
+        {
+            var codigo = CodigoError.Generar();
+            Registro.LogError(e, "Error {Codigo} al listar las órdenes para limpiar", codigo);
+            error = $"Algo no ha ido bien. Si se repite, avisa a IT indicando este código: {codigo}.";
+        }
+        finally
+        {
+            estaOcupado = false;
+        }
+    }
+
+    private void Elegir(int id, bool elegida)
+    {
+        if (elegida) seleccionadas.Add(id); else seleccionadas.Remove(id);
+    }
+
+    private void ElegirTodas(bool elegidas)
+    {
+        seleccionadas.Clear();
+        if (elegidas && filas is not null)
+        {
+            foreach (var f in filas) seleccionadas.Add(f.Id);
+        }
+    }
+
+    /// <summary>
+    /// Pulsar Intro en la contraseña es lo mismo que pulsar Continuar.
+    /// </summary>
+    private async Task AlPulsarTeclaAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrEmpty(password))
+        {
+            await VerificarPasswordAsync();
+        }
+    }
+
+    /// <summary>
+    /// Paso 2: el servidor comprueba la contraseña. Si es correcta, se pasa al último aviso.
+    /// </summary>
+    private async Task VerificarPasswordAsync()
+    {
+        error = null;
+        estaOcupado = true;
+        try
+        {
+            error = await ServicioLimpieza.VerificarPasswordAsync(password);
+            if (error is null)
+            {
+                paso = Paso.Confirmar;
+            }
+            else
+            {
+                password = null;
+            }
+        }
+        catch (Exception e) when (e is not AccesoDenegadoException)
+        {
+            var codigo = CodigoError.Generar();
+            Registro.LogError(e, "Error {Codigo} al comprobar la contraseña en la limpieza de datos", codigo);
+            error = $"Algo no ha ido bien. Si se repite, avisa a IT indicando este código: {codigo}.";
+        }
+        finally
+        {
+            estaOcupado = false;
+        }
+    }
+
+    /// <summary>
+    /// Paso 3: borra las órdenes elegidas. El servidor vuelve a comprobar la contraseña.
+    /// </summary>
+    private async Task EliminarAsync()
+    {
+        error = null;
+        estaOcupado = true;
+        try
+        {
+            var (fallo, hecho) = await ServicioLimpieza.EliminarOrdenesAsync(seleccionadas.ToList(), password);
+            error = fallo;
+            resultado = hecho;
+            if (hecho is not null)
+            {
+                seleccionadas.Clear();
+                filas = await ServicioLimpieza.ListarAsync(desde, hasta);
+            }
+            // Se acabe bien o mal, se vuelve al principio y la contraseña no se guarda
+            paso = Paso.Elegir;
+            password = null;
+        }
+        catch (Exception e) when (e is not AccesoDenegadoException)
+        {
+            var codigo = CodigoError.Generar();
+            Registro.LogError(e, "Error {Codigo} al borrar órdenes en la limpieza de datos", codigo);
+            error = $"Algo no ha ido bien y no se ha borrado nada. Si se repite, avisa a IT indicando este código: {codigo}.";
+            paso = Paso.Elegir;
+            password = null;
+        }
+        finally
+        {
+            estaOcupado = false;
+        }
+    }
+
+    private void Cancelar()
+    {
+        paso = Paso.Elegir;
+        password = null;
+        error = null;
+    }
+}

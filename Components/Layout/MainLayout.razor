@@ -64,6 +64,14 @@
     </footer>
 </div>
 
+@* Panel de ayuda flotante, solo con la sesión iniciada: va aquí, fuera del contenido, para que
+   siga abierto al cambiar de pantalla y no afecte a lo que haya debajo *@
+<AuthorizeView>
+    <Authorized>
+        <AyudaFlotante />
+    </Authorized>
+</AuthorizeView>
+
 @* Aviso de Blazor si se pierde la conexión con el servidor *@
 <div id="blazor-error-ui" data-nosnippet>
     Algo no ha ido bien y la pantalla ha dejado de responder.

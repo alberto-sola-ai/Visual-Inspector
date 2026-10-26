@@ -8,6 +8,8 @@ Este proyecto sigue las normas de desarrollo de Witte y Solá.
   las skills WYS que correspondan y muestra la lista de comprobación antes de empezar.
 - Comentarios y documentación en castellano, en lenguaje sencillo.
 - Anota cada cambio relevante en `doc/cambios.md`.
+- Si un cambio altera lo que el usuario ve o hace, actualiza `doc/guia-usuario.md` en el mismo
+  cambio (skill **wys-ayuda**).
 - Git y GitHub se gestionan a mano: no ejecutes comandos de Git salvo que Alberto lo pida.
 - Cada biblioteca nueva se añade a `generar-versiones.ps1` con una descripción sencilla de para
   qué se usa en el proyecto y su licencia (solo bibliotecas gratuitas). Después se regenera

@@ -42,6 +42,31 @@
     }
 </p>
 
+@* Si hay decisiones tomadas, antes de cambiar de tolerancia se avisa de lo que se perdería. La
+   tolerancia no cambia hasta que el operario lo confirma *@
+@if (toleranciaPendiente is { } nuevoNivel)
+{
+    <div class="alert alert-warning mt-3" role="alert">
+        <p class="mb-2">
+            Has validado <strong>@Validadas</strong> @(Validadas == 1 ? "diferencia" : "diferencias")
+            @if (IncidenciasMarcadas > 0)
+            {
+                <span>(@IncidenciasMarcadas @(IncidenciasMarcadas == 1 ? "incidencia" : "incidencias"))</span>
+            }
+            con la tolerancia <strong>@tolerancia</strong>. Si cambias a <strong>@nuevoNivel</strong>,
+            se vuelve a comparar y se pierde todo lo validado. ¿Cambiar de todas formas?
+        </p>
+        <div class="d-flex gap-2">
+            <button class="btn btn-danger btn-sm" @onclick="ConfirmarCambioToleranciaAsync" disabled="@estaComparando">
+                Sí, cambiar a @nuevoNivel
+            </button>
+            <button class="btn btn-outline-primary btn-sm" @onclick="() => toleranciaPendiente = null" disabled="@estaComparando">
+                No, seguir con @tolerancia
+            </button>
+        </div>
+    </div>
+}
+
 @if (error is not null)
 {
     <div class="alert alert-danger mt-3" role="alert">@error</div>
@@ -54,8 +79,14 @@
         <div class="alert alert-warning mt-3" role="alert">@aviso</div>
     }
 
-    @* Resumen: diferencias por motivo y parecido orientativo *@
+    @* Resumen: tolerancia usada, diferencias por motivo y parecido orientativo *@
     <div class="d-flex flex-wrap gap-3 mt-3 align-items-stretch">
+        @* Con qué nivel se ha comparado, bien visible, y hacia dónde afinar si no convence *@
+        <div class="wys-caja wys-caja--azul">
+            <div class="small">Comparado con tolerancia</div>
+            <div class="h3 mb-1 text-white">@r.Tolerancia</div>
+            <div class="small">@SugerenciaAfinar(r.Tolerancia)</div>
+        </div>
         @if (r.Diferencias.Count == 0)
         {
             <div class="wys-caja wys-caja--azul">
@@ -288,6 +319,8 @@
     [Parameter] public EventCallback OnRegistrado { get; set; }
 
     private NivelTolerancia tolerancia = NivelTolerancia.Normal;
+    // Nivel que el operario ha pulsado pero aún no ha confirmado (hay validaciones que se perderían)
+    private NivelTolerancia? toleranciaPendiente;
     private ResultadoComparacion? resultado;
     private bool estaComparando;
     private bool estaRegistrando;
@@ -352,6 +385,10 @@
 
     private int Pendientes => validaciones.Values.Count(v => v.Validacion is null);
 
+    // Lo ya decidido por el operario: es lo que se perdería al cambiar de tolerancia
+    private int Validadas => validaciones.Values.Count(v => v.Validacion is not null);
+    private int IncidenciasMarcadas => validaciones.Values.Count(v => v.Validacion == ValidacionDiferencia.Incidencia);
+
     private int IncidenciasSinComentario => validaciones.Values.Count(v =>
         v.Validacion == ValidacionDiferencia.Incidencia && string.IsNullOrWhiteSpace(v.Comentario));
 
@@ -377,17 +414,54 @@
     }
 
     /// <summary>
-    /// Cambia la tolerancia; si ya se había comparado, se repite la comparación con la nueva.
+    /// Cambia la tolerancia. Si todavía no se ha comparado, solo se elige. Si ya se comparó y no hay
+    /// nada validado, se repite la comparación al momento. Si hay validaciones hechas, antes se pide
+    /// confirmación para no perderlas por un clic.
     /// </summary>
     private async Task CambiarToleranciaAsync(NivelTolerancia nivel)
     {
-        if (nivel == tolerancia) return;
-        tolerancia = nivel;
-        if (resultado is not null)
+        if (nivel == tolerancia)
         {
+            // Volver al nivel actual cancela un cambio pendiente de confirmar
+            toleranciaPendiente = null;
+            return;
+        }
+
+        if (resultado is null)
+        {
+            tolerancia = nivel;
+        }
+        else if (Validadas > 0)
+        {
+            toleranciaPendiente = nivel;
+        }
+        else
+        {
+            tolerancia = nivel;
             await CompararAsync();
         }
     }
+
+    /// <summary>
+    /// El operario ha confirmado que quiere perder lo validado: cambia la tolerancia y compara de nuevo.
+    /// </summary>
+    private async Task ConfirmarCambioToleranciaAsync()
+    {
+        if (toleranciaPendiente is not { } nivel) return;
+        toleranciaPendiente = null;
+        tolerancia = nivel;
+        await CompararAsync();
+    }
+
+    /// <summary>
+    /// Dice hacia dónde afinar si el resultado no convence: más diferencias o menos.
+    /// </summary>
+    private static string SugerenciaAfinar(NivelTolerancia usada) => usada switch
+    {
+        NivelTolerancia.Estricta => "¿Demasiadas diferencias? Prueba Normal o Amplia.",
+        NivelTolerancia.Amplia => "¿Muy pocas diferencias? Prueba Normal o Estricta.",
+        _ => "¿Demasiadas? Prueba Amplia. ¿Muy pocas? Prueba Estricta."
+    };
 
     /// <summary>
     /// Compara las dos muestras con el patrón y prepara una validación vacía para cada diferencia.
@@ -397,6 +471,7 @@
     {
         estaComparando = true;
         error = null;
+        toleranciaPendiente = null;
         try
         {
             resultado = await Comparador.CompararAsync(Patron, Muestra1, Muestra2, tolerancia);
