@@ -61,6 +61,31 @@ Antes de dar por buena una versión, pruébala siempre con `docker compose up --
 Los datos de los servidores de la empresa están pendientes de definir (skill wys-code,
 `references/infraestructura.md`).
 
+## Publicar detrás de Nginx Proxy Manager (producción)
+
+En producción, **Nginx Proxy Manager** está delante de la aplicación: recibe las visitas por el
+dominio con su certificado (https) y se las pasa a la aplicación por http. La aplicación no
+lleva certificados (ámbito Interno WYS).
+
+1. En Nginx Proxy Manager, el «Proxy Host» del dominio apunta a la aplicación (puerto 8082 del
+   servidor, o 8080 del contenedor si comparten red de Docker), con el certificado SSL y
+   «Websockets Support» activado (Blazor lo necesita).
+2. En el `.env` del servidor:
+   ```
+   USAR_CABECERAS_PROXY=true
+   PROXY_CONFIABLE=<IP de Nginx Proxy Manager tal como la ve la aplicación, o su red, p. ej. 172.18.0.0/16>
+   ```
+3. `docker compose up -d` para aplicar el cambio.
+
+Con eso la aplicación sabe que el usuario entra por https (las cookies se marcan «solo https») y
+el diario de seguridad guarda la IP real de cada usuario. Solo se aceptan esas cabeceras si
+llegan de `PROXY_CONFIABLE`: las de cualquier otro equipo se ignoran.
+
+**Cómo saber la IP de Nginx Proxy Manager:** activa primero `USAR_CABECERAS_PROXY=true` con
+`PROXY_CONFIABLE` vacío, entra en la aplicación y mira en Administración → Registros Err./Seg. →
+Seguridad la IP de tu entrada (`InicioSesion`): esa es la del proxy. Ponla en `PROXY_CONFIABLE`
+y reinicia. Desde ese momento, las entradas siguientes mostrarán la IP real de cada equipo.
+
 ## Registros (carpeta `log/`)
 
 | Fichero | Contenido | Se guarda |

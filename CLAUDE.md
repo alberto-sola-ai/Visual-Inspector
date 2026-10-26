@@ -18,7 +18,8 @@ Este proyecto sigue las normas de desarrollo de Witte y Solá.
 - **Qué hace:** asiste al autocontrol visual de la impresión de tubos comparando el patrón
   gráfico aprobado (PDF) con las dos muestras escaneadas de cada control.
 - **Ámbito:** Interno WYS (la red de la empresa gestiona el cifrado; la aplicación no configura
-  TLS ni certificados).
+  TLS ni certificados). En producción, Nginx Proxy Manager pone el dominio y el certificado
+  delante de la aplicación (`USAR_CABECERAS_PROXY` y `PROXY_CONFIABLE` en el `.env`).
 - **Tecnología:** C# / .NET 10 · Blazor Server · MariaDB 11.4 · Docker.
 - **Excepciones a las normas WYS:**
   - *Temporal (21/10/2026):* la capa de datos usa Entity Framework 9 + Pomelo 9 sobre .NET 10,

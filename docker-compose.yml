@@ -18,6 +18,9 @@ services:
       UsuariosIniciales__PasswordAdmin: ${PASSWORD_ADMIN}
       UsuariosIniciales__PasswordPrueba: ${PASSWORD_PRUEBA}
       UsuariosIniciales__CrearUsuarioPrueba: ${CREAR_USUARIO_PRUEBA}
+      # Publicación detrás de Nginx Proxy Manager (pone el certificado). Ver doc/puesta-en-marcha.md
+      Seguridad__UsarCabecerasProxy: ${USAR_CABECERAS_PROXY:-false}
+      Seguridad__ProxiesConfiables__0: ${PROXY_CONFIABLE:-}
       # IA: la aplicación todavía no usa inteligencia artificial. Cuando la use, se añaden aquí
       # IA__ApiKey y las variables de límites (ver skill wys-seguridad).
     volumes:

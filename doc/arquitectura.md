@@ -234,7 +234,7 @@ rechazo.
 |---|---|
 | C# / Blazor en lugar de Python | Normas WYS (decisión de Alberto, 21/10/2026). La visión artificial se hace con OpenCvSharp |
 | Entity Framework 9 + Pomelo 9 sobre .NET 10 | **Excepción temporal**: Pomelo aún no tiene versión para Entity Framework 10. Se actualizará cuando salga |
-| Sin TLS en la aplicación | Ámbito Interno WYS: lo gestiona la red de la empresa |
+| Sin TLS en la aplicación | Ámbito Interno WYS: lo gestiona la red de la empresa. En producción, Nginx Proxy Manager pone el dominio y el certificado; la aplicación solo se fía de sus cabeceras (Seguridad/ConfiguracionProxy.cs) |
 | No se guardan los archivos completos | Decisión de Alberto (22/10/2026): se procesan en memoria; queda el registro, la huella SHA-256 de cada archivo y un recorte pequeño de cada diferencia |
 | Validación humana de cada diferencia | Decisión de Alberto (22/10/2026): la aplicación propone, la persona decide (correcta / incidencia). Las incidencias solo se registran |
 | Informe de fabricación en pantalla y PDF WYS | Decisión de Alberto (22/10/2026). PDF con PDFsharp-MigraDoc 6.2.4, la última con licencia MIT: no actualizar (desde la 6.5.0 es AGPL) |

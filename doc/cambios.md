@@ -1,5 +1,23 @@
 # Registro de cambios
 
+## 0.12.5 — 2026-10-26
+- Publicación detrás de **Nginx Proxy Manager** (producción, con dominio y certificado): con
+  `USAR_CABECERAS_PROXY=true` y `PROXY_CONFIABLE` en el `.env`, la aplicación sabe que el usuario
+  entra por https (las cookies se marcan «solo https») y el diario de seguridad guarda la IP real
+  de cada persona. Solo se aceptan las cabeceras del proxy indicado; las de cualquier otro equipo
+  se ignoran. Apagado por defecto (en el PC de desarrollo todo sigue igual).
+- La cookie que protege los formularios se configura de forma explícita: no la lee JavaScript,
+  no viaja a otras webs y solo viaja por https cuando se entra por https.
+- Pruebas de seguridad: 86 de 86 correctas.
+
+## 0.12.4 — 2026-10-26
+- Corrección: en producción, al entrar con Chrome la sesión se abría pero salía el aviso «La
+  página había caducado». Chrome enviaba el formulario de entrada dos veces y el segundo envío
+  llegaba con la sesión ya abierta y el token anterior. Ahora, si llega un formulario de entrada
+  caducado de alguien que ya tiene la sesión abierta, se le lleva a la aplicación sin aviso (no
+  se procesa nada del formulario). Y si alguien con la sesión abierta abre la pantalla de
+  entrada, se le lleva a la aplicación.
+
 ## 0.12.3 — 2026-10-23
 - Corrección: en Chrome, entrar podía dar **error 400**. Al restaurar pestañas o volver atrás,
   Chrome recupera la página de entrada de su memoria con un token antiguo que ya no casa con su

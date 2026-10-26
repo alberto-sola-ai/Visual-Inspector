@@ -1,6 +1,6 @@
 # Pruebas de seguridad
 
-Última ejecución: 23/10/2026 · Versión: 0.12.3 · Resultado: **81 de 81 correctas**
+Última ejecución: 26/10/2026 · Versión: 0.12.5 · Resultado: **86 de 86 correctas**
 
 ## Qué es esto
 
@@ -23,6 +23,7 @@ aplicación.
 | Registros (logs) | Solo el administrador los lee, del más reciente al más antiguo, y cada consulta queda apuntada en el diario de seguridad | Bien |
 | Sin secretos (3.1) | La configuración no lleva contraseñas, y `.env`, `log/`, las claves y los archivos de clientes no se suben a GitHub | Bien |
 | Sin pistas (4.1) | El servidor no dice qué programa usa | Bien |
+| Detrás del proxy (Nginx Proxy Manager) | La aplicación solo se fía de las cabeceras del proxy indicado (IP real y https); las de cualquier otro equipo o con la configuración mal escrita se ignoran, así nadie puede falsear su IP en el diario | Bien |
 | Cabeceras del navegador (4.2) | El navegador solo carga lo de la propia aplicación y no deja meterla dentro de otra web | Bien |
 | Sin registro público | No hay pantalla para crearse una cuenta ni para recuperar la contraseña por correo | Bien |
 | IA y segundo candado (6.1) | La IA y la verificación en dos pasos empiezan apagadas | Bien |

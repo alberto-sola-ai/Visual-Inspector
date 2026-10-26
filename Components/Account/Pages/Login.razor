@@ -70,12 +70,19 @@
     private int? Caducada { get; set; }
 
     /// <summary>
-    /// Prepara el formulario vacío al abrir la pantalla.
+    /// Prepara el formulario vacío al abrir la pantalla. Si la persona ya tiene la sesión abierta,
+    /// no tiene sentido volver a entrar: se la lleva a la aplicación.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
         Input ??= new();
         editContext = new EditContext(Input);
+
+        if (HttpMethods.IsGet(HttpContext.Request.Method) && HttpContext.User.Identity?.IsAuthenticated == true)
+        {
+            // Solo direcciones de la propia aplicación (RedirectTo ignora las de fuera)
+            RedirectManager.RedirectTo(ReturnUrl);
+        }
 
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {

@@ -38,6 +38,15 @@ builder.Host.UseSerilog((contexto, configuracion) =>
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Cookie que protege los formularios: no la puede leer JavaScript, no viaja a otras webs y, si se
+// entra por https (en producción, a través de Nginx Proxy Manager), solo viaja por https
+builder.Services.AddAntiforgery(opciones =>
+{
+    opciones.Cookie.HttpOnly = true;
+    opciones.Cookie.SameSite = SameSiteMode.Strict;
+    opciones.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+});
+
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
@@ -147,13 +156,15 @@ builder.Services.AddScoped<ServicioRegistros>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.LocalizadorMuestras>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ComparadorMuestras>();
 
-// Si la red de WYS publica la aplicación a través de un proxy, esto permite conocer la IP real
-// del usuario para el diario de seguridad. Desactivado salvo que se active en la configuración.
-var usarCabecerasProxy = builder.Configuration.GetValue("Seguridad:UsarCabecerasProxy", false);
+// En producción la aplicación se publica detrás de Nginx Proxy Manager, que pone el certificado.
+// Activándolo, la aplicación sabe la IP real del usuario (diario de seguridad) y que entró por
+// https (las cookies se marcan como "solo https"). Solo se fía de los proxies indicados en
+// Seguridad:ProxiesConfiables. Desactivado salvo que se active en la configuración.
+var usarCabecerasProxy = builder.Configuration.GetValue(ConfiguracionProxy.SeccionActivar_wys, false);
 if (usarCabecerasProxy)
 {
-    builder.Services.Configure<ForwardedHeadersOptions>(opciones =>
-        opciones.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto);
+    var proxiesConfiables = builder.Configuration.GetSection(ConfiguracionProxy.SeccionProxies_wys).Get<string[]>() ?? [];
+    builder.Services.Configure<ForwardedHeadersOptions>(opciones => ConfiguracionProxy.Configurar(opciones, proxiesConfiables));
 }
 
 var app = builder.Build();
@@ -198,9 +209,12 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 // Si el formulario de entrar o de cerrar sesión llega con un token caducado (por ejemplo, Chrome
-// recupera la página de su memoria al restaurar pestañas, pero sin la cookie que le corresponde),
-// en lugar de un error 400:
-// - al entrar, se vuelve a la entrada con un token nuevo y un aviso (sin token válido no se entra);
+// recupera la página de su memoria al restaurar pestañas, pero sin la cookie que le corresponde,
+// o envía el formulario de entrada dos veces), en lugar de un error 400:
+// - al entrar sin sesión, se vuelve a la entrada con un token nuevo y un aviso (sin token válido
+//   no se entra);
+// - al entrar con la sesión YA abierta (el segundo envío), se lleva a la aplicación sin aviso:
+//   no se procesa nada del formulario, solo se lleva a donde la persona ya podía estar;
 // - al cerrar sesión, la sesión se cierra igualmente (es lo que la persona quería; lo peor que
 //   podría hacer otra web con esto es cerrarte la sesión).
 // Se apunta en el diario de seguridad.
@@ -220,7 +234,7 @@ app.Use(async (contexto, siguiente) =>
             contexto.Response.Redirect("/Account/Login");
             return;
         }
-        contexto.Response.Redirect("/Account/Login?caducada=1");
+        contexto.Response.Redirect(contexto.User.Identity?.IsAuthenticated == true ? "/" : "/Account/Login?caducada=1");
         return;
     }
     await siguiente(contexto);
