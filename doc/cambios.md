@@ -1,5 +1,99 @@
 # Registro de cambios
 
+## 0.16.0 — 2026-10-26
+- **Impacto productivo.** Cuando el operario marca «Parada de línea» o «Retención de producto» en
+  una incidencia, apunta los **minutos de parada** y los **tubos retenidos**, aproximados
+  (obligatorios en ese caso; entre 1 y 10.080 minutos y entre 1 y 9.999.999 tubos).
+- **Se pueden corregir después.** En la ficha del autocontrol, botón «Corregir» junto a esas cifras
+  (permiso «Autocontroles.Realizar», también con la orden finalizada). Es lo único de un registro
+  que se puede cambiar: la detección y la decisión no. Quién y cuándo queda en `ModificadoPor` y el
+  diario de seguridad guarda el valor de antes y el de después (`CorreccionImpacto`).
+- **Pantalla nueva «Impacto»** (menú de la barra, `/impacto`): totales del periodo (minutos de
+  parada, tubos retenidos, incidencias, con parada, con retención, órdenes con incidencias), con
+  filtro por fechas (por defecto, los últimos 30 días) y por línea, y rankings de más a menos
+  impacto por **orden, línea, diseño (litografía) y tipo de defecto**. Se calcula en el momento
+  con lo registrado: cada autocontrol que se registra la actualiza sola.
+- El cuadro de trazabilidad de cada orden y su listado muestran también los minutos de parada y
+  los tubos retenidos; el informe de fabricación (pantalla y PDF) los incluye en cada incidencia.
+- Migración `ImpactoProductivoIncidencia`: dos columnas vacías nuevas en las diferencias.
+- Fuera de esta fase, por decisión de Alberto: análisis por cliente (otra fase) y posición de impresión.
+
+## 0.15.0 — 2026-10-26
+- **Impacto de cada incidencia.** Al marcar una diferencia como «Incidencia», el operario indica
+  con casillas qué se hizo en producción: sin intervención, ajuste en marcha, parada de línea,
+  retención de producto y/o aviso a Calidad. Se puede marcar varias (no es una escala de gravedad);
+  «Sin intervención» va sola. Es obligatorio marcar al menos una. Sigue siendo el operario quien
+  decide: no hay criticidad automática, ni flujo de autorización de Calidad, ni zonas críticas, ni
+  producto regulado (decisiones de Alberto, 26/10/2026). «Aviso a Calidad» es solo informativo.
+- Se guarda en cada diferencia (columna `Actuaciones`, migración `ActuacionesIncidencia`). Las
+  incidencias anteriores quedan «Sin clasificar». El servidor vuelve a comprobarlo al registrar.
+- Se ve en el registro del autocontrol, en el informe de fabricación (pantalla y PDF) y en el
+  cuadro de trazabilidad: cuántas incidencias tuvo cada actuación y, si hubo retención de producto,
+  la **producción a revisar** (desde el último autocontrol sin incidencias hasta el control en el
+  que se retuvo).
+
+## 0.14.1 — 2026-10-26
+- Los títulos de columna de todas las tablas (listados, parámetros, usuarios, versiones…) llevan
+  ahora un fondo amarillo clarito con texto oscuro; de noche, un amarillo oscuro apagado con texto
+  claro. Los colores están en `recursos/tema.css` (`--wys-tabla-cabecera`).
+
+## 0.14.0 — 2026-10-26
+- **Trazabilidad.** Opción nueva en la barra, «Trazabilidad»: listado de órdenes cerradas y, al
+  elegir una, su cuadro de mando «Calidad de impresión» con autocontroles completados, muestras
+  escaneadas, incidencias detectadas, correcciones verificadas y dos barras (eficacia de corrección
+  e integridad de autocontroles), más incidencias por motivo y la lista de autocontroles.
+- Una incidencia se da por corregida si en el siguiente autocontrol registrado ya no se repite ese
+  motivo. Las cifras se calculan con lo ya guardado: sin tablas ni migraciones nuevas.
+- **Cierre automático de órdenes.** Al crear un autocontrol de una orden en una línea, la orden
+  anterior en fabricación de esa línea se finaliza sola. La pantalla avisa antes de crearlo y el
+  cierre queda apuntado en el diario de seguridad.
+- Una orden ya se puede finalizar con autocontroles sin registrar (no se sabe cuántos se harán);
+  basta con tener al menos uno registrado. Los pendientes de una orden finalizada ya no se pueden
+  registrar salvo que el administrador la reabra.
+- Sin permiso propio de momento: la trazabilidad usa «Autocontroles.Ver».
+
+## 0.13.4 — 2026-10-26
+- El cambio de modo diurno / nocturno pasa de estar dentro del menú con el nombre a ser un botón
+  propio en la barra superior, a la derecha, junto a Administración. También se ve en la pantalla
+  de entrada (antes no había forma de cambiarlo sin haber iniciado sesión).
+
+## 0.13.3 — 2026-10-26
+- Modo nocturno: el logo, los menús y algunos textos no se veían. Causa: `recursos/tema.css` no
+  llevaba número de versión y el navegador seguía usando una copia antigua (sin los colores
+  nocturnos) junto al resto de estilos nuevos, así que la cabecera quedaba blanca con logo y menús
+  blancos, y los textos azules sobre fondo oscuro. Ahora se pide como `tema.css?v=<versión>`, y se
+  descarga de nuevo con cada actualización de la aplicación.
+
+## 0.13.2 — 2026-10-26
+- Modo nocturno: el fondo con la ilustración (patrón y muestra) es claro y el velo oscuro que lo
+  cubría era demasiado suave, así que había texto claro sobre zonas claras. Ahora el velo es casi
+  opaco (`--wys-velo-opacidad` en `recursos/tema.css`) y el fondo queda oscuro de forma uniforme:
+  texto claro sobre fondo oscuro en todas las pantallas. El modo diurno no cambia.
+- Revisadas con capturas reales en modo nocturno: entrada, inicio, Administración, usuarios y su
+  ficha, parámetros, registros, versiones, órdenes y nuevo autocontrol.
+
+## 0.13.1 — 2026-10-26
+- Modo nocturno: corregidos textos y botones que se leían mal.
+  - Botones con solo borde (por ejemplo «Correcta», «Incidencia», «Descargar»): ahora usan colores
+    claros de noche.
+  - Textos de apoyo en gris y avisos en rojo o verde: más claros y con contraste suficiente.
+  - Logos de la aplicación (pantalla de entrada y cabecera): llevan letras azul oscuro, así que de
+    noche se ponen sobre una placa blanca; el dibujo no se toca.
+  - Aviso de «conexión perdida»: usaba fondo blanco fijo con texto claro; ahora sigue el modo.
+
+## 0.13.0 — 2026-10-26
+- **Modo diurno y nocturno.** En el menú con el nombre de la persona (arriba a la derecha) hay una
+  opción nueva, «Modo nocturno» (o «Modo diurno» si ya está activo). La elección se recuerda en el
+  navegador de cada persona (`localStorage`); no se guarda nada en el servidor.
+- De noche la cabecera pasa a azul oscuro con el logo negativo de WYS (sin modificarlo), y los
+  fondos, textos y azules de lectura se aclaran u oscurecen para mantener el contraste. Los colores
+  del modo nocturno están en `recursos/tema.css` (bloque `data-bs-theme="dark"`).
+- Decisión de diseño: el manual de identidad WYS solo define el modo diurno; el nocturno es una
+  variante añadida a petición. El modo diurno queda exactamente igual que antes.
+- La pantalla de entrada también sigue la elección guardada (no tiene menú para cambiarla).
+- Script nuevo `wwwroot/js/modo-visual.js`, cargado en la cabecera de `App.razor` para evitar el
+  parpadeo en blanco. No afecta a la seguridad (CSP sin cambios).
+
 ## 0.12.5 — 2026-10-26
 - Publicación detrás de **Nginx Proxy Manager** (producción, con dominio y certificado): con
   `USAR_CABECERAS_PROXY=true` y `PROXY_CONFIABLE` en el `.env`, la aplicación sabe que el usuario

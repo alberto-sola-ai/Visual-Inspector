@@ -79,7 +79,7 @@
            del último. La orden se queda con la línea elegida *@
         <div class="mb-3" style="max-width: 16rem">
             <label class="form-label" for="linea">Línea</label>
-            <select id="linea" class="form-select form-select-lg" @bind="linea">
+            <select id="linea" class="form-select form-select-lg" value="@linea" @onchange="CambiarLineaAsync">
                 <option value="">Elige la línea</option>
                 @foreach (var l in lineas)
                 {
@@ -88,6 +88,17 @@
             </select>
             <div class="form-text">Obligatoria. En una orden que ya tiene autocontroles viene elegida la de su último control.</div>
         </div>
+
+        @* Una línea fabrica una orden a la vez: al empezar otra, la anterior de esa línea se finaliza sola.
+           Se avisa aquí, antes de crear el autocontrol *@
+        @if (ordenesACerrar.Count > 0)
+        {
+            <div class="alert alert-warning" role="alert">
+                Al crear este autocontrol se finalizará automáticamente @(ordenesACerrar.Count == 1 ? "la orden anterior" : "las órdenes anteriores")
+                de la línea @linea: <strong>@string.Join(", ", ordenesACerrar)</strong>.
+                Ya no admitirá autocontroles nuevos, salvo que el administrador la reabra.
+            </div>
+        }
 
         <div class="mb-3">
             <label class="form-label" for="observaciones">Observaciones (opcional)</label>
@@ -111,6 +122,7 @@
     private IReadOnlyList<OrdenAbierta> ordenesAbiertas = [];
     private string? observaciones;
     private PrevisionControl? prevision;
+    private IReadOnlyList<string> ordenesACerrar = [];
     private string? error;
     private bool estaOcupado;
 
@@ -140,6 +152,24 @@
         {
             linea = orden.Linea;
         }
+        await ActualizarAvisoCierreAsync();
+    }
+
+    /// <summary>
+    /// Al elegir otra línea se vuelve a mirar qué orden anterior de esa línea se cerraría sola.
+    /// </summary>
+    private async Task CambiarLineaAsync(ChangeEventArgs e)
+    {
+        linea = e.Value?.ToString() ?? "";
+        await ActualizarAvisoCierreAsync();
+    }
+
+    /// <summary>
+    /// Mira si, con esta orden y esta línea, se finalizaría sola alguna orden anterior, para avisar.
+    /// </summary>
+    private async Task ActualizarAvisoCierreAsync()
+    {
+        ordenesACerrar = await ServicioAutocontroles.ListarOrdenesACerrarAsync(codigoOrden, linea);
     }
 
     /// <summary>
@@ -157,6 +187,7 @@
         {
             linea = lineaOrden;
         }
+        await ActualizarAvisoCierreAsync();
     }
 
     /// <summary>

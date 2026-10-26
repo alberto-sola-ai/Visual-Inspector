@@ -6,11 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
+    @* Modo diurno o nocturno: va aquí, antes de pintar la pantalla, para que no parpadee en blanco *@
+    <script src="@Assets["js/modo-visual.js"]"></script>
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["VisualInspector.styles.css"]" />
     @* Marca WYS: siempre después de Bootstrap para que sus colores y tipografía manden *@
-    <link rel="stylesheet" href="recursos/tema.css" />
+    @* El número de versión al final obliga al navegador a descargar el tema de nuevo cuando la
+       aplicación se actualiza (sin él puede seguir usando un tema antiguo guardado y los colores
+       del modo nocturno se mezclan: cabecera blanca con logo y menús blancos, por ejemplo) *@
+    <link rel="stylesheet" href="recursos/tema.css?v=@VersionAplicacion.Numero_wys" />
     @* Icono de la pestaña: el símbolo de la aplicación (el manual WYS no permite la "S" sola) *@
     <link rel="icon" type="image/png" sizes="32x32" href="recursos/app/favicon-32.png" />
     <link rel="apple-touch-icon" href="recursos/app/icono-180.png" />

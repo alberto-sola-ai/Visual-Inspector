@@ -38,6 +38,15 @@
   --wys-fondo: #FFFFFF;
   --wys-fondo-suave: #F4F4F3;
 
+  /* Azul para textos y títulos: en modo diurno es el azul oscuro; en el nocturno, uno claro */
+  --wys-azul-titulo: var(--wys-azul-oscuro);
+  /* Velo suave (R, G, B) que se pone sobre las fotos de fondo para que el texto se lea bien */
+  --wys-velo-rgb: 255, 255, 255;
+  --wys-velo-opacidad: .6;
+  /* Fondo y texto de los títulos de columna de las tablas: amarillo claro con texto oscuro */
+  --wys-tabla-cabecera: #FFF4C2;
+  --wys-tabla-cabecera-texto: #1F1A05;
+
   --wys-fuente: "Lato", "Segoe UI", Arial, sans-serif;
 
   /* Adaptación de Bootstrap a la marca */
@@ -59,7 +68,7 @@
 body { font-family: var(--wys-fuente); font-weight: 400; color: var(--wys-texto); }
 
 /* Titulares en MAYÚSCULAS, combinando grosores (manual, pág. 14) */
-h1, h2, h3, .wys-titulo { text-transform: uppercase; color: var(--wys-azul-oscuro); letter-spacing: .01em; }
+h1, h2, h3, .wys-titulo { text-transform: uppercase; color: var(--wys-azul-titulo); letter-spacing: .01em; }
 h1 { font-weight: 900; }
 h2 { font-weight: 700; }
 h3 { font-weight: 300; }
@@ -108,3 +117,62 @@ h3 { font-weight: 300; }
 
 /* Pie de trazabilidad en formularios ("Creado por… · Modificado por…") */
 .wys-trazabilidad { font-size: .75rem; color: var(--wys-texto-secundario); margin-top: 1.5rem; }
+
+/* --- Modo nocturno (variante añadida a petición de la aplicación; el manual solo define el diurno) ---
+   Se activa con data-bs-theme="dark" en <html>. Mantiene el azul oscuro y el rojo de la marca;
+   solo cambian los fondos, los textos y los azules de lectura, que se aclaran para tener contraste. */
+[data-bs-theme="dark"] {
+  --wys-azul-titulo: #9DBBE8;
+  --wys-azul-brillante: #8FB2E8;  /* enlaces e iconos */
+  --wys-texto: #E6E9EC;
+  --wys-texto-secundario: #A9B3BD;
+  --wys-fondo: #1A222B;           /* recuadros, menús y tarjetas */
+  --wys-fondo-suave: #232D38;
+  --wys-gris-1: #34404D;          /* bordes y fondos al pasar el ratón */
+  --wys-velo-rgb: 17, 23, 30;
+  --wys-tabla-cabecera: #4B4116;  /* amarillo oscuro apagado con texto claro, para no deslumbrar de noche */
+  --wys-tabla-cabecera-texto: #FFF1B8;
+  --wys-velo-opacidad: .93;      /* la foto de fondo es clara: el velo oscuro casi la tapa para que el texto claro se lea siempre */
+
+  --bs-body-bg: #11171E;
+  --bs-body-bg-rgb: 17, 23, 30;
+  --bs-link-color: var(--wys-azul-brillante);
+  --bs-link-color-rgb: 143, 178, 232;
+  --bs-link-hover-color: var(--wys-azul-titulo);
+}
+
+/* La cabecera pasa a azul oscuro (el logo negativo está pensado para ese fondo) */
+[data-bs-theme="dark"] .wys-cabecera { background: var(--wys-azul-oscuro); border-bottom-color: var(--wys-azul-oscuro); }
+
+/* El azul oscuro sobre fondo oscuro no se ve: el botón principal usa el azul de lectura */
+[data-bs-theme="dark"] .btn-primary {
+  --bs-btn-bg: var(--wys-azul-medio); --bs-btn-border-color: var(--wys-azul-medio);
+  --bs-btn-hover-bg: var(--wys-azul-brillante); --bs-btn-hover-border-color: var(--wys-azul-brillante);
+  --bs-btn-hover-color: #000;
+  --bs-btn-active-bg: var(--wys-azul-brillante); --bs-btn-active-border-color: var(--wys-azul-brillante);
+}
+
+[data-bs-theme="dark"] .wys-caja--gris { color: var(--wys-texto); }
+
+/* Botones con solo borde: los colores de serie de Bootstrap (azul, verde, rojo) se leen mal sobre
+   fondo oscuro; se usan sus versiones claras de modo nocturno (--bs-*-text-emphasis) */
+[data-bs-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: var(--wys-azul-titulo); --bs-btn-border-color: var(--wys-azul-titulo);
+  --bs-btn-hover-color: #fff; --bs-btn-hover-bg: var(--wys-azul-medio); --bs-btn-hover-border-color: var(--wys-azul-medio);
+  --bs-btn-active-color: #fff; --bs-btn-active-bg: var(--wys-azul-medio); --bs-btn-active-border-color: var(--wys-azul-medio);
+  --bs-btn-disabled-color: var(--wys-azul-titulo); --bs-btn-disabled-border-color: var(--wys-azul-titulo);
+}
+[data-bs-theme="dark"] .btn-outline-success {
+  --bs-btn-color: var(--bs-success-text-emphasis); --bs-btn-border-color: var(--bs-success-text-emphasis);
+  --bs-btn-disabled-color: var(--bs-success-text-emphasis); --bs-btn-disabled-border-color: var(--bs-success-text-emphasis);
+}
+[data-bs-theme="dark"] .btn-outline-danger {
+  --bs-btn-color: var(--bs-danger-text-emphasis); --bs-btn-border-color: var(--bs-danger-text-emphasis);
+  --bs-btn-disabled-color: var(--bs-danger-text-emphasis); --bs-btn-disabled-border-color: var(--bs-danger-text-emphasis);
+}
+
+/* Textos de apoyo y de aviso: el gris y el rojo de serie quedan apagados sobre fondo oscuro */
+[data-bs-theme="dark"] .text-secondary { color: var(--wys-texto-secundario) !important; }
+[data-bs-theme="dark"] .text-danger,
+[data-bs-theme="dark"] .validation-message { color: var(--bs-danger-text-emphasis) !important; }
+[data-bs-theme="dark"] .text-success { color: var(--bs-success-text-emphasis) !important; }

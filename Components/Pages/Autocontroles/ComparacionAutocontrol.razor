@@ -138,7 +138,7 @@
                                     @* Validación: correcta o incidencia (con comentario obligatorio) *@
                                     <div class="d-flex gap-2 mt-2">
                                         <button class="btn btn-sm @(v.Validacion == ValidacionDiferencia.Correcta ? "btn-success" : "btn-outline-success")"
-                                                disabled="@estaRegistrando" @onclick="() => v.Validacion = ValidacionDiferencia.Correcta">
+                                                disabled="@estaRegistrando" @onclick="() => MarcarCorrecta(v)">
                                             Correcta
                                         </button>
                                         <button class="btn btn-sm @(v.Validacion == ValidacionDiferencia.Incidencia ? "btn-danger" : "btn-outline-danger")"
@@ -148,6 +148,58 @@
                                     </div>
                                     @if (v.Validacion == ValidacionDiferencia.Incidencia)
                                     {
+                                        @* ¿Qué se ha hecho en producción? Se marca todo lo que corresponda; "Sin intervención" va sola *@
+                                        <div class="mt-2">
+                                            <div class="small fw-bold">¿Qué se ha hecho? <span class="fw-normal text-secondary">Marca todo lo que corresponda.</span></div>
+                                            <div class="d-flex flex-wrap gap-3 mt-1">
+                                                @foreach (var actuacion in ServicioAutocontroles.ActuacionesDisponibles_wys)
+                                                {
+                                                    var idActuacion = $"actuacion-{d.Numero}-{(int)actuacion}";
+                                                    <div class="form-check mb-0">
+                                                        <input class="form-check-input" type="checkbox" id="@idActuacion"
+                                                               checked="@v.Actuaciones.HasFlag(actuacion)" disabled="@estaRegistrando"
+                                                               @onchange="() => AlternarActuacion(v, actuacion)" />
+                                                        <label class="form-check-label" for="@idActuacion">@ServicioAutocontroles.NombreActuacion(actuacion)</label>
+                                                    </div>
+                                                }
+                                            </div>
+                                            @if (!ServicioAutocontroles.EsActuacionValida(v.Actuaciones))
+                                            {
+                                                <div class="form-text text-danger">Marca al menos una opción.</div>
+                                            }
+                                            else if (v.Actuaciones.HasFlag(ActuacionIncidencia.ParadaLinea) || v.Actuaciones.HasFlag(ActuacionIncidencia.RetencionProducto))
+                                            {
+                                                @* Cifras aproximadas: luego se pueden corregir desde la ficha del autocontrol *@
+                                                <div class="d-flex flex-wrap gap-3 mt-2">
+                                                    @if (v.Actuaciones.HasFlag(ActuacionIncidencia.ParadaLinea))
+                                                    {
+                                                        <div>
+                                                            <label class="form-label small mb-0" for="@($"minutos-{d.Numero}")">Minutos de parada (aprox.)</label>
+                                                            <input id="@($"minutos-{d.Numero}")" type="number" min="1" max="@ServicioAutocontroles.MaximoMinutosParada_wys"
+                                                                   class="form-control form-control-sm" style="width: 11rem"
+                                                                   @bind="v.Minutos" @bind:event="oninput" disabled="@estaRegistrando" />
+                                                        </div>
+                                                    }
+                                                    @if (v.Actuaciones.HasFlag(ActuacionIncidencia.RetencionProducto))
+                                                    {
+                                                        <div>
+                                                            <label class="form-label small mb-0" for="@($"tubos-{d.Numero}")">Tubos retenidos (aprox.)</label>
+                                                            <input id="@($"tubos-{d.Numero}")" type="number" min="1" max="@ServicioAutocontroles.MaximoTubosRetenidos_wys"
+                                                                   class="form-control form-control-sm" style="width: 11rem"
+                                                                   @bind="v.Tubos" @bind:event="oninput" disabled="@estaRegistrando" />
+                                                        </div>
+                                                    }
+                                                </div>
+                                                @if (ServicioAutocontroles.ComprobarImpacto(v.Actuaciones, v.Minutos, v.Tubos) is { } avisoImpacto)
+                                                {
+                                                    <div class="form-text text-danger">@avisoImpacto</div>
+                                                }
+                                                else
+                                                {
+                                                    <div class="form-text">Una cifra aproximada vale; se puede corregir después en la ficha del autocontrol.</div>
+                                                }
+                                            }
+                                        </div>
                                         <textarea class="form-control form-control-sm mt-2 @(string.IsNullOrWhiteSpace(v.Comentario) ? "is-invalid" : "")"
                                                   rows="2" maxlength="@ServicioAutocontroles.LongitudMaximaComentario_wys"
                                                   @bind="v.Comentario" @bind:event="oninput" disabled="@estaRegistrando"></textarea>
@@ -201,6 +253,14 @@
                 {
                     <span class="text-danger">Incidencias sin comentario: <strong>@IncidenciasSinComentario</strong></span>
                 }
+                @if (IncidenciasSinActuacion > 0)
+                {
+                    <span class="text-danger">Incidencias sin indicar qué se ha hecho: <strong>@IncidenciasSinActuacion</strong></span>
+                }
+                @if (IncidenciasSinCifras > 0)
+                {
+                    <span class="text-danger">Incidencias sin minutos o tubos: <strong>@IncidenciasSinCifras</strong></span>
+                }
                 @if (estaRegistrando)
                 {
                     <span>Registrando…</span>
@@ -243,6 +303,48 @@
     {
         public ValidacionDiferencia? Validacion { get; set; }
         public string? Comentario { get; set; }
+
+        // Qué se hizo en producción; solo se pide en las incidencias
+        public ActuacionIncidencia Actuaciones { get; set; }
+
+        // Cifras aproximadas: minutos de parada y tubos retenidos (solo si se marcó parada o retención)
+        public int? Minutos { get; set; }
+        public int? Tubos { get; set; }
+    }
+
+    /// <summary>
+    /// Marca una diferencia como correcta. Si antes era una incidencia, se borra lo que se había
+    /// marcado de actuaciones: en una diferencia correcta no hay nada que hacer en producción.
+    /// </summary>
+    private static void MarcarCorrecta(EstadoValidacion estado)
+    {
+        estado.Validacion = ValidacionDiferencia.Correcta;
+        estado.Actuaciones = ActuacionIncidencia.Ninguna;
+        estado.Minutos = null;
+        estado.Tubos = null;
+    }
+
+    /// <summary>
+    /// Marca o desmarca una actuación de una incidencia. "Sin intervención" se queda sola: al marcarla
+    /// se quitan las demás y al marcar cualquier otra se quita ella.
+    /// </summary>
+    private static void AlternarActuacion(EstadoValidacion estado, ActuacionIncidencia actuacion)
+    {
+        if (actuacion == ActuacionIncidencia.SinIntervencion)
+        {
+            estado.Actuaciones = estado.Actuaciones == ActuacionIncidencia.SinIntervencion
+                ? ActuacionIncidencia.Ninguna
+                : ActuacionIncidencia.SinIntervencion;
+        }
+        else
+        {
+            estado.Actuaciones &= ~ActuacionIncidencia.SinIntervencion;
+            estado.Actuaciones ^= actuacion;
+        }
+
+        // Si ya no hay parada o retención, sus cifras se borran para no guardar datos sueltos
+        if (!estado.Actuaciones.HasFlag(ActuacionIncidencia.ParadaLinea)) estado.Minutos = null;
+        if (!estado.Actuaciones.HasFlag(ActuacionIncidencia.RetencionProducto)) estado.Tubos = null;
     }
 
     private bool EsLitografiaDistinta =>
@@ -253,8 +355,16 @@
     private int IncidenciasSinComentario => validaciones.Values.Count(v =>
         v.Validacion == ValidacionDiferencia.Incidencia && string.IsNullOrWhiteSpace(v.Comentario));
 
+    private int IncidenciasSinActuacion => validaciones.Values.Count(v =>
+        v.Validacion == ValidacionDiferencia.Incidencia && !ServicioAutocontroles.EsActuacionValida(v.Actuaciones));
+
+    // Incidencias con actuación válida pero sin los minutos o los tubos que esa actuación pide
+    private int IncidenciasSinCifras => validaciones.Values.Count(v =>
+        v.Validacion == ValidacionDiferencia.Incidencia && ServicioAutocontroles.EsActuacionValida(v.Actuaciones)
+        && ServicioAutocontroles.ComprobarImpacto(v.Actuaciones, v.Minutos, v.Tubos) is not null);
+
     private bool PuedeRegistrar => resultado is not null && resultado.Avisos.Count == 0
-        && Pendientes == 0 && IncidenciasSinComentario == 0
+        && Pendientes == 0 && IncidenciasSinComentario == 0 && IncidenciasSinActuacion == 0 && IncidenciasSinCifras == 0
         && (!EsLitografiaDistinta || esLitografiaConfirmada);
 
     /// <summary>
@@ -338,7 +448,8 @@
             var solicitud = new SolicitudRegistro(AutocontrolId, Patron.NombreArchivo, Litografia, VersionPatron,
                 Patron.Huella, Muestra1.Huella, Muestra2.Huella, resultado.Tolerancia,
                 resultado.SimilitudMuestra1, resultado.SimilitudMuestra2, resultado.SimilitudEntreMuestras,
-                resultado.Diferencias.Select(d => new DiferenciaValidada(d, validaciones[d.Numero].Validacion, validaciones[d.Numero].Comentario)).ToList(),
+                resultado.Diferencias.Select(d => new DiferenciaValidada(d, validaciones[d.Numero].Validacion, validaciones[d.Numero].Comentario, validaciones[d.Numero].Actuaciones,
+                    validaciones[d.Numero].Minutos, validaciones[d.Numero].Tubos)).ToList(),
                 EsLitografiaDistinta && esLitografiaConfirmada);
             error = await ServicioAutocontroles.RegistrarAsync(solicitud);
             if (error is null)

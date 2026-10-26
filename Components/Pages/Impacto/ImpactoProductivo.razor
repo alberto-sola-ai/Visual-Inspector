@@ -1,0 +1,175 @@
+@page "/impacto"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject ServicioImpacto ServicioImpacto
+@inject ServicioAutocontroles ServicioAutocontroles
+
+<PageTitle>Impacto productivo · Visual Inspector</PageTitle>
+
+@* Cuadro de mando de impacto productivo: no cuenta solo incidencias, sino lo que costaron en
+   producción (minutos de parada y tubos retenidos, aproximados). Se calcula en el momento con lo
+   registrado, así que cada autocontrol que se registra lo actualiza *@
+<h1>Impacto productivo</h1>
+<p>Qué han costado las incidencias en producción, para ver qué líneas, diseños y defectos dan más problemas.</p>
+
+<div class="d-flex flex-wrap gap-3 align-items-end my-3">
+    <div>
+        <label class="form-label" for="desde">Desde</label>
+        <input id="desde" type="date" class="form-control" @bind="desde" />
+    </div>
+    <div>
+        <label class="form-label" for="hasta">Hasta</label>
+        <input id="hasta" type="date" class="form-control" @bind="hasta" />
+    </div>
+    <div>
+        <label class="form-label" for="linea">Línea</label>
+        <select id="linea" class="form-select" @bind="linea">
+            <option value="">Todas</option>
+            @foreach (var l in lineas)
+            {
+                <option value="@l">@l</option>
+            }
+        </select>
+    </div>
+    <button class="btn btn-primary" @onclick="CargarAsync">Ver</button>
+</div>
+
+@if (panel is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    <section class="vi-cuadro" aria-labelledby="titulo-impacto">
+        <header class="vi-cuadro__cabecera">
+            <div>
+                <h2 id="titulo-impacto" class="h4 mb-1">
+                    Impacto productivo · @panel.Desde.ToString("dd/MM/yyyy") – @panel.Hasta.ToString("dd/MM/yyyy")@(panel.Linea is null ? "" : $" · {panel.Linea}")
+                </h2>
+                <p class="vi-cuadro__subtitulo mb-0">Minutos y tubos son aproximados: los apunta el operario y se pueden corregir en cada autocontrol.</p>
+            </div>
+        </header>
+
+        <div class="vi-impacto">
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Minutos.ToString("N0")</div><div class="vi-cifra__nombre">Minutos de parada</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Tubos.ToString("N0")</div><div class="vi-cifra__nombre">Tubos retenidos</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Incidencias.ToString("N0")</div><div class="vi-cifra__nombre">Incidencias</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.ConParada.ToString("N0")</div><div class="vi-cifra__nombre">Incidencias con parada</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.ConRetencion.ToString("N0")</div><div class="vi-cifra__nombre">Incidencias con retención</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.OrdenesConIncidencias.ToString("N0")</div><div class="vi-cifra__nombre">Órdenes con incidencias</div></div>
+        </div>
+    </section>
+
+    <p class="form-text mt-2">
+        Sin intervención: @panel.SinIntervencion · Aviso a Calidad: @panel.AvisosCalidad
+        @if (panel.SinClasificar > 0)
+        {
+            <span> · Sin clasificar (anteriores a este dato): @panel.SinClasificar</span>
+        }
+        · Una incidencia puede contar en varias actuaciones.
+    </p>
+
+    @if (panel.Incidencias == 0)
+    {
+        <p class="mt-4">No hay incidencias en este periodo.</p>
+    }
+    else
+    {
+        @Ranking("Órdenes con más impacto", "Orden", panel.Ordenes, true)
+        @Ranking("Por línea", "Línea", panel.PorLinea, false)
+        @Ranking("Por diseño (litografía)", "Litografía", panel.PorLitografia, false)
+        @Ranking("Por tipo de defecto", "Defecto", panel.PorDefecto, false)
+    }
+}
+
+@code {
+    private PanelImpacto? panel;
+    private DateTime desde = DateTime.Today.AddDays(-30);
+    private DateTime hasta = DateTime.Today;
+    private string linea = "";
+    private IReadOnlyList<string> lineas = [];
+
+    /// <summary>
+    /// Al abrir se cargan las líneas que se pueden elegir y el cuadro de los últimos 30 días.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        lineas = await ServicioAutocontroles.ObtenerLineasAsync();
+        await CargarAsync();
+    }
+
+    /// <summary>
+    /// Vuelve a calcular el cuadro con las fechas y la línea elegidas.
+    /// </summary>
+    private async Task CargarAsync()
+    {
+        panel = await ServicioImpacto.ObtenerAsync(desde, hasta, linea);
+    }
+
+    /// <summary>
+    /// Dibuja una tabla de ranking, de más a menos impacto. Cada cifra de minutos y de tubos lleva una
+    /// barra proporcional a la mayor de la tabla; el número siempre está escrito al lado.
+    /// </summary>
+    private RenderFragment Ranking(string titulo, string columna, IReadOnlyList<FilaImpacto> filas, bool conEnlace) => @<div class="mt-5">
+        <h2 class="h4">@titulo</h2>
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>@columna</th>
+                    <th>Incidencias</th>
+                    <th>Con parada</th>
+                    <th style="width: 20%">Minutos de parada</th>
+                    <th>Con retención</th>
+                    <th style="width: 20%">Tubos retenidos</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var maximoMinutos = Math.Max(1, filas.Max(f => f.Minutos));
+                    var maximoTubos = Math.Max(1, filas.Max(f => f.Tubos));
+                }
+                @foreach (var f in filas)
+                {
+                    <tr>
+                        <td>
+                            @if (conEnlace && f.OrdenId is { } idOrden)
+                            {
+                                <a href="@($"trazabilidad/{idOrden}")">@f.Nombre</a>
+                            }
+                            else
+                            {
+                                @f.Nombre
+                            }
+                        </td>
+                        <td>@f.Incidencias.ToString("N0")</td>
+                        <td>@f.ConParada.ToString("N0")</td>
+                        <td>
+                            <div class="vi-celda-barra">
+                                <span>@f.Minutos.ToString("N0")</span>
+                                @if (f.Minutos > 0)
+                                {
+                                    <span class="vi-mini-barra" style="width: @(Ancho(f.Minutos, maximoMinutos))%"></span>
+                                }
+                            </div>
+                        </td>
+                        <td>@f.ConRetencion.ToString("N0")</td>
+                        <td>
+                            <div class="vi-celda-barra">
+                                <span>@f.Tubos.ToString("N0")</span>
+                                @if (f.Tubos > 0)
+                                {
+                                    <span class="vi-mini-barra" style="width: @(Ancho(f.Tubos, maximoTubos))%"></span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>;
+
+    /// <summary>
+    /// Ancho de la barra en CSS (con punto decimal) como porcentaje del mayor valor de la tabla.
+    /// </summary>
+    private static string Ancho(int valor, int maximo) =>
+        FormatoCifras.AnchoBarra(100m * valor / maximo);
+}

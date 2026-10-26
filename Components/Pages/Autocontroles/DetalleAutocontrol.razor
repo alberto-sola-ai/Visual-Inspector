@@ -120,7 +120,7 @@ else
     @if (ficha.Registro is not null)
     {
         @* Ya registrado: solo se consulta *@
-        <RegistroAutocontrol Registro="ficha.Registro" />
+        <RegistroAutocontrol Registro="ficha.Registro" PuedeCorregir="@(ficha.Anulacion is null)" OnImpactoCorregido="RecargarAsync" />
     }
     else if (ficha.Anulacion is null)
     {

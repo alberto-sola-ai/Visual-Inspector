@@ -1,0 +1,243 @@
+@page "/trazabilidad/{Id:int}"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@using VisualInspector.Components.Pages.Autocontroles
+@inject ServicioTrazabilidad ServicioTrazabilidad
+
+<PageTitle>Trazabilidad de la orden · Visual Inspector</PageTitle>
+
+@* Cuadro de mando de una orden: cuántos autocontroles se hicieron, qué incidencias hubo y si se
+   corrigieron. Todas las cifras las calcula el servidor a partir de lo ya registrado *@
+<h1>Trazabilidad</h1>
+<p><a href="trazabilidad">Trazabilidad</a> › @panel?.Codigo</p>
+
+@if (noExiste)
+{
+    <p>Esta orden no existe.</p>
+}
+else if (panel is null)
+{
+    <p>Cargando…</p>
+}
+else
+{
+    @if (panel.EsProvisional)
+    {
+        <div class="alert alert-warning" role="alert">
+            Esta orden sigue en fabricación: las cifras son provisionales y pueden cambiar.
+        </div>
+    }
+
+    <section class="vi-cuadro" aria-labelledby="titulo-cuadro">
+        <header class="vi-cuadro__cabecera">
+            <div>
+                <h2 id="titulo-cuadro" class="h4 mb-1">Calidad de impresión · @panel.Codigo</h2>
+                <p class="vi-cuadro__subtitulo mb-0">Resumen para supervisión y liberación</p>
+            </div>
+            <div class="vi-cuadro__acciones">
+                <a href="@($"ordenes/{panel.Id}")" class="btn btn-outline-primary btn-sm">Ver orden</a>
+                <a href="@($"ordenes/{panel.Id}/informe")" class="btn btn-primary btn-sm">Informe de fabricación</a>
+            </div>
+        </header>
+
+        @* Cuatro cifras clave *@
+        <div class="vi-cuadro__cifras">
+            <div class="vi-cifra">
+                <div class="vi-cifra__valor">@panel.ControlesCompletados/@panel.ControlesIniciados</div>
+                <div class="vi-cifra__nombre">Autocontroles completados</div>
+            </div>
+            <div class="vi-cifra">
+                <div class="vi-cifra__valor">@panel.MuestrasEscaneadas/@panel.MuestrasEsperadas</div>
+                <div class="vi-cifra__nombre">Muestras escaneadas</div>
+            </div>
+            <div class="vi-cifra">
+                <div class="vi-cifra__valor">@panel.Incidencias</div>
+                <div class="vi-cifra__nombre">Incidencias detectadas</div>
+            </div>
+            <div class="vi-cifra">
+                <div class="vi-cifra__valor">@panel.CorreccionesVerificadas/@panel.Incidencias</div>
+                <div class="vi-cifra__nombre">Correcciones verificadas</div>
+            </div>
+        </div>
+
+        @* Dos barras: una incidencia se da por corregida si en el siguiente control no se repite *@
+        @Barra("Eficacia de corrección verificada", panel.Eficacia, "Sin incidencias")
+        @Barra("Integridad de autocontroles", panel.Integridad, "Sin autocontroles registrados")
+    </section>
+
+    <p class="form-text mt-2">
+        Una incidencia se da por corregida cuando en el siguiente autocontrol registrado ya no se repite ese mismo motivo;
+        las del último control no se pueden comprobar. La integridad mide los autocontroles registrados con todos sus datos
+        de trazabilidad (patrón, versión, litografía, huellas de los archivos, quién y cuándo).
+    </p>
+
+    @* Datos de la orden *@
+    <dl class="vi-datos mt-4">
+        <div><dt>Línea</dt><dd>@(panel.Linea ?? "-")</dd></div>
+        <div><dt>Litografía</dt><dd>@(panel.Litografia ?? "-")</dd></div>
+        <div><dt>Versión del patrón</dt><dd>@(panel.VersionesPatron.Count > 0 ? string.Join(", ", panel.VersionesPatron) : "-")</dd></div>
+        <div><dt>Primer control</dt><dd>@panel.Inicio.ToString("dd/MM/yyyy HH:mm")</dd></div>
+        <div>
+            <dt>Cierre</dt>
+            <dd>
+                @if (panel.FechaFin is { } fin)
+                {
+                    <span>@fin.ToString("dd/MM/yyyy HH:mm") · @panel.FinalizadaPor</span>
+                }
+                else
+                {
+                    <span>En fabricación</span>
+                }
+            </dd>
+        </div>
+    </dl>
+
+    @if (panel.Incidencias > 0)
+    {
+        @* Qué se hizo en producción ante las incidencias (lo marca el operario al validar cada una) *@
+        <h2 class="h4 mt-5">Impacto en producción</h2>
+        <p class="form-text mt-0">
+            Número de incidencias en las que se hizo cada cosa. Una incidencia puede contar en varias
+            (por ejemplo, parada de línea y retención de producto), por eso no suman el total.
+        </p>
+        @* Lo que costó en producción, con las cifras aproximadas que apuntó el operario *@
+        <div class="vi-impacto mb-4">
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.MinutosParada.ToString("N0")</div><div class="vi-cifra__nombre">Minutos de parada (aprox.)</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.TubosRetenidos.ToString("N0")</div><div class="vi-cifra__nombre">Tubos retenidos (aprox.)</div></div>
+        </div>
+        <div class="vi-impacto">
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.SinIntervencion</div><div class="vi-cifra__nombre">Sin intervención</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.AjusteEnMarcha</div><div class="vi-cifra__nombre">Ajuste en marcha</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.ParadaLinea</div><div class="vi-cifra__nombre">Parada de línea</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.RetencionProducto</div><div class="vi-cifra__nombre">Retención de producto</div></div>
+            <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.AvisoCalidad</div><div class="vi-cifra__nombre">Aviso a Calidad</div></div>
+            @if (panel.Impacto.SinClasificar > 0)
+            {
+                <div class="vi-cifra"><div class="vi-cifra__valor">@panel.Impacto.SinClasificar</div><div class="vi-cifra__nombre">Sin clasificar (anteriores a este dato)</div></div>
+            }
+        </div>
+
+        @if (panel.TramosARevisar.Count > 0)
+        {
+            <h3 class="h5 mt-4">Producción a revisar</h3>
+            <p class="form-text mt-0">
+                Se retuvo producto: hay que revisar lo fabricado desde el último autocontrol sin incidencias
+                hasta el control en el que se retuvo.
+            </p>
+            <table class="table align-middle" style="max-width: 52rem">
+                <thead>
+                    <tr>
+                        <th>Desde</th>
+                        <th>Hasta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var t in panel.TramosARevisar)
+                    {
+                        <tr>
+                            <td>@ServicioAutocontroles.NombreControl(t.ControlDesde) · @t.Desde.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>@ServicioAutocontroles.NombreControl(t.ControlHasta) · @t.Hasta.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+
+    @if (panel.PorMotivo.Count > 0)
+    {
+        <h2 class="h4 mt-5">Incidencias por motivo</h2>
+        <table class="table align-middle" style="max-width: 40rem">
+            <thead>
+                <tr>
+                    <th>Motivo</th>
+                    <th>Detectadas</th>
+                    <th>Corrección verificada</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in panel.PorMotivo)
+                {
+                    <tr>
+                        <td>@ComparacionAutocontrol.NombreMotivo(m.Motivo)</td>
+                        <td>@m.Detectadas</td>
+                        <td>@m.Verificadas de @m.Detectadas</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h2 class="h4 mt-5">Autocontroles</h2>
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Control</th>
+                <th>Fecha y hora</th>
+                <th>Versión del patrón</th>
+                <th>Resultado</th>
+                <th>Incidencias</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in panel.Controles)
+            {
+                <tr>
+                    <td>
+                        <a href="@($"autocontroles/{c.Id}")">@ServicioAutocontroles.NombreControl(c.NumeroControl)</a>
+                        <span class="small text-secondary">@ServicioAutocontroles.TiempoDesdeInicio(c.FechaControl, panel.Inicio)</span>
+                    </td>
+                    <td>@c.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@(c.VersionPatron ?? "-")</td>
+                    <td>
+                        @if (c.Estado != EstadoAutocontrol.Registrado)
+                        {
+                            <span class="text-secondary">Sin registrar</span>
+                        }
+                        else if (c.Resultado == ResultadoAutocontrol.ConIncidencias)
+                        {
+                            <span class="wys-etiqueta">@ServicioAutocontroles.NombreResultado(c.Resultado)</span>
+                        }
+                        else
+                        {
+                            @ServicioAutocontroles.NombreResultado(c.Resultado)
+                        }
+                    </td>
+                    <td>@c.Incidencias</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private PanelTrazabilidad? panel;
+    private bool noExiste;
+
+    /// <summary>
+    /// Carga el cuadro de mando de la orden indicada en la dirección.
+    /// </summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        panel = await ServicioTrazabilidad.ObtenerPanelAsync(Id);
+        noExiste = panel is null;
+    }
+
+    /// <summary>
+    /// Dibuja una barra con su nombre y su porcentaje: verde al llegar al 100 % y ámbar por debajo.
+    /// Sin datos para calcular (valor vacío) se dibuja llena y con el texto indicado.
+    /// </summary>
+    private RenderFragment Barra(string nombre, decimal? valor, string textoSinDatos) => @<div class="vi-barra">
+        <div class="vi-barra__texto">
+            <span>@nombre</span>
+            <strong>@(valor is { } v ? FormatoCifras.Porcentaje(v) : textoSinDatos)</strong>
+        </div>
+        <div class="vi-barra__pista" role="progressbar" aria-label="@nombre" aria-valuemin="0" aria-valuemax="100"
+             aria-valuenow="@FormatoCifras.AnchoBarra(valor ?? 100m)">
+            <div class="vi-barra__relleno @((valor ?? 100m) >= 100m ? "vi-barra__relleno--completa" : "vi-barra__relleno--parcial")"
+                 style="width: @(FormatoCifras.AnchoBarra(valor ?? 100m))%"></div>
+        </div>
+    </div>;
+}

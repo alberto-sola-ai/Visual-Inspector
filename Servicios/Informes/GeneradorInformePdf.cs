@@ -348,6 +348,11 @@ public sealed class GeneradorInformePdf
                 : $" · solo en la muestra {(i.EnMuestra1 ? 1 : 2)}");
             datos.AddText($" · zona de {i.AnchoMm:N0} × {i.AltoMm:N0} mm");
 
+            var actuacion = seccion.AddParagraph();
+            actuacion.Format.KeepWithNext = true;
+            actuacion.AddFormattedText("Qué se hizo: ", TextFormat.Bold);
+            actuacion.AddText(ServicioAutocontroles.DescribirActuacionesConCifras(i.Actuaciones, i.MinutosParada, i.TubosRetenidos));
+
             var comentario = seccion.AddParagraph();
             comentario.Format.KeepWithNext = true;
             comentario.AddFormattedText("Comentario: ", TextFormat.Bold);

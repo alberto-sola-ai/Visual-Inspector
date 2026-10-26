@@ -126,7 +126,13 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
 ### Finalización e informe de fabricación (0.7.0)
 
 - Finaliza la orden quien puede hacer autocontroles (`Autocontroles.Realizar`), y solo si tiene
-  autocontroles y todos están registrados. Después no admite autocontroles nuevos.
+  al menos un autocontrol registrado (desde la 0.14.0 puede haber otros sin registrar: no se sabe
+  cuántos se harán en una orden). Después no admite autocontroles nuevos ni registrar los que
+  quedaron pendientes.
+- **Cierre automático (0.14.0):** una línea fabrica una orden a la vez. Al crear un autocontrol de
+  una orden en la línea L1, las demás órdenes en fabricación de L1 que ya tienen algún autocontrol
+  registrado se finalizan solas (`FinalizadaPor` = «nombre (cierre automático)»). La pantalla de
+  «Nuevo autocontrol» avisa antes. Cada cierre se apunta en `Log-Wys-Seg` (`CierreAutomaticoOrden`).
 - Solo el administrador (`Administracion`) puede **reabrirla** (0.8.0): vuelve a «En
   fabricación», se borran la fecha de fin y quién la finalizó, y el informe vuelve a ser
   provisional. Quién y cuándo la reabrió queda en `ModificadoPor`/`FechaModificacion` y en
@@ -141,6 +147,56 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
   `Autocontroles.Ver` y vuelve a comprobarlo en el servicio.
 - El PDF lo genera `Servicios/Informes/GeneradorInformePdf.cs` con PDFsharp-MigraDoc 6.2.4 (MIT),
   con el logo y las fuentes Lato de `recursos/`. Comprobado en Windows y en Linux (Docker).
+
+### Trazabilidad: cuadro de mando de las órdenes cerradas (0.14.0)
+
+- Menú **Trazabilidad** (`/trazabilidad`): listado de órdenes finalizadas con búsqueda por orden y
+  litografía. Al elegir una se abre su cuadro de mando (`/trazabilidad/{id}`). Exige
+  `Autocontroles.Ver` (de momento no hay permiso propio, decisión de Alberto, 26/10/2026).
+- Todo se calcula en `Servicios/ServicioTrazabilidad.cs` con lo que ya se guarda; no hay tablas
+  nuevas. Los autocontroles anulados no cuentan.
+
+| Cifra | Cómo se calcula |
+|---|---|
+| Autocontroles completados (6/7) | registrados entre los iniciados (los iniciados que quedaron sin registrar cuentan como no completados) |
+| Muestras escaneadas (12/14) | muestras con huella guardada entre 2 por cada autocontrol iniciado |
+| Incidencias detectadas | diferencias que el operario marcó como incidencia |
+| Correcciones verificadas | incidencia que, en el siguiente autocontrol registrado de la orden, ya no se repite con el mismo motivo (decisión de Alberto, 26/10/2026); las del último control no se pueden comprobar |
+| Eficacia de corrección | correcciones verificadas entre incidencias |
+| Integridad de autocontroles | registrados con patrón, versión, litografía, tres huellas, quién y cuándo, entre registrados (no vuelve a abrir los archivos: no se guardan) |
+
+### Detección, decisión e impacto (0.15.0)
+
+Cada diferencia se mide en tres cosas independientes:
+
+| Dimensión | Quién | Dónde se guarda |
+|---|---|---|
+| Detección: qué encontró el sistema | La aplicación | `Motivo`, medidas, evidencia, muestra(s) |
+| Decisión: cómo la clasificó el operario | El operario | `Validacion` (Correcta / Incidencia) y `Comentario` |
+| Impacto: qué se hizo en producción | El operario, solo en incidencias | `Actuaciones` (varias a la vez, como texto: «ParadaLinea, RetencionProducto») |
+
+- Actuaciones: sin intervención, ajuste en marcha, parada de línea, retención de producto y aviso
+  a Calidad. No es una escala de gravedad: se pueden combinar. «Sin intervención» no se combina
+  con las demás. Es obligatorio elegir al menos una en cada incidencia (comprobado en el servidor).
+- Decisión de Alberto (26/10/2026): el operario es autónomo (hay turnos sin responsable de
+  Calidad), así que **no hay** criticidad automática, flujo de autorización de Calidad, zonas
+  críticas sobre el patrón ni producto regulado. «Aviso a Calidad» solo deja constancia.
+- Las incidencias anteriores a la 0.15.0 tienen la columna vacía y se muestran «Sin clasificar».
+- **Cifras de impacto (0.16.0):** con «Parada de línea» el operario apunta los minutos
+  (`MinutosParada`) y con «Retención de producto» los tubos (`TubosRetenidos`), aproximados. Se
+  pueden corregir después (`ServicioAutocontroles.CorregirImpactoAsync`): es la única excepción a
+  «un autocontrol registrado no se cambia». Queda quién y cuándo en `ModificadoPor` y, en
+  `Log-Wys-Seg`, el valor anterior y el nuevo (`CorreccionImpacto`).
+- **Cuadro de impacto productivo** (`/impacto`, `Servicios/ServicioImpacto.cs`, permiso
+  `Autocontroles.Ver`): suma minutos y tubos de las incidencias de autocontroles registrados y no
+  anulados, por fecha del control y, si se elige, por línea. Rankings por orden, línea, litografía y
+  defecto, ordenados por minutos, luego tubos y luego número de incidencias. No hay una «puntuación
+  única»: minutos y tubos se muestran por separado para no mezclarlos con pesos inventados.
+  Pendiente para otra fase: análisis por cliente. No se tiene en cuenta la posición de impresión.
+- El cuadro de trazabilidad cuenta las incidencias por actuación y calcula la **producción a
+  revisar** si hubo retención: desde el último autocontrol registrado sin incidencias (o el primero
+  de la orden) hasta el control con retención; si varios controles seguidos retienen sin uno limpio
+  en medio, forman un solo tramo.
 
 **Los archivos completos no se guardan** (decisión de Alberto, 22/10/2026): el patrón y las
 muestras se cargan desde el PC, se procesan en memoria y se descartan al terminar. Solo se guarda

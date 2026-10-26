@@ -129,6 +129,7 @@ else
                     · @(i.EnMuestra1 && i.EnMuestra2 ? "en las dos muestras (posible fallo de plancha)" : $"solo en la muestra {(i.EnMuestra1 ? 1 : 2)}")
                     · zona de @i.AnchoMm.ToString("N0") × @i.AltoMm.ToString("N0") mm
                 </p>
+                <p class="mb-1"><strong>Qué se hizo:</strong> @ServicioAutocontroles.DescribirActuacionesConCifras(i.Actuaciones, i.MinutosParada, i.TubosRetenidos)</p>
                 @* El comentario se muestra como texto (Blazor lo escapa): nunca como HTML *@
                 <p class="mb-1" style="white-space: pre-line"><strong>Comentario:</strong> @i.Comentario</p>
                 <p class="wys-trazabilidad mt-0">Validada por @i.ValidadoPor el @i.FechaValidacion.ToString("dd/MM/yyyy HH:mm")</p>

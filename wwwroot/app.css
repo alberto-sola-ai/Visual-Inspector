@@ -13,7 +13,7 @@ h1:focus {
     gap: .6rem;
     font-weight: 300;
     text-transform: uppercase;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
     letter-spacing: .05em;
     border-left: 1px solid var(--wys-gris-1);
     padding-left: 1.5rem;
@@ -53,7 +53,7 @@ h1:focus {
     z-index: -1;
     pointer-events: none;   /* nunca se interpone al pulsar */
     background:
-        linear-gradient(rgba(255, 255, 255, .6), rgba(255, 255, 255, .6)),
+        linear-gradient(rgba(var(--wys-velo-rgb), var(--wys-velo-opacidad)), rgba(var(--wys-velo-rgb), var(--wys-velo-opacidad))),
         url("recursos/app/fondo-interior.jpg") center / cover no-repeat;
 }
 
@@ -82,7 +82,7 @@ h1:focus {
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse 30% 60% at center, rgba(255, 255, 255, .7) 0%, rgba(255, 255, 255, .3) 60%, rgba(255, 255, 255, 0) 100%);
+    background: radial-gradient(ellipse 30% 60% at center, rgba(var(--wys-velo-rgb), .7) 0%, rgba(var(--wys-velo-rgb), .3) 60%, rgba(var(--wys-velo-rgb), 0) 100%);
     z-index: -1;
 }
 
@@ -208,7 +208,7 @@ h1:focus {
     padding: .3rem .75rem;
     border: 1px solid var(--wys-azul-oscuro);
     border-radius: .375rem;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
     font-size: .9rem;
     cursor: pointer;
     user-select: none;
@@ -267,7 +267,7 @@ h1:focus {
     background: none;
     text-align: left;
     text-decoration: none;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
     font-size: .95rem;
 }
 
@@ -293,7 +293,7 @@ h1:focus {
 .vi-desplegable--claro .vi-desplegable__boton:hover,
 .vi-desplegable--claro[open] .vi-desplegable__boton {
     background: var(--wys-gris-1);
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
 }
 
 /* Nuevo autocontrol: órdenes en fabricación que se sugieren para el siguiente control */
@@ -315,7 +315,7 @@ h1:focus {
     border-radius: .375rem;
     background: var(--wys-fondo);
     text-align: left;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
 }
 
 .vi-orden-abierta:hover,
@@ -339,6 +339,134 @@ h1:focus {
     border: 1px solid var(--wys-gris-1);
     border-radius: .375rem;
     padding: 1.25rem;
+}
+
+/* Títulos de columna de todas las tablas con un fondo amarillo clarito (los colores están en
+   recursos/tema.css y cambian solos en el modo nocturno) */
+.table > thead > tr > th {
+    --bs-table-bg: var(--wys-tabla-cabecera);
+    --bs-table-color: var(--wys-tabla-cabecera-texto);
+    border-bottom-color: var(--wys-gris-azulado-claro);
+}
+
+/* Trazabilidad: cuadro de mando de una orden cerrada (cifras clave y dos barras de progreso) */
+.vi-cuadro {
+    background: var(--wys-fondo);
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .5rem;
+    padding: 1.5rem 1.75rem;
+    max-width: 52rem;
+}
+
+.vi-cuadro__cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.vi-cuadro__subtitulo {
+    color: var(--wys-texto-secundario);
+    font-size: .9rem;
+}
+
+.vi-cuadro__acciones {
+    display: flex;
+    gap: .5rem;
+}
+
+.vi-cuadro__cifras {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem 2rem;
+    margin-bottom: 1.75rem;
+}
+
+.vi-cifra__valor {
+    font-size: 1.9rem;
+    font-weight: 900;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.vi-cifra__nombre {
+    color: var(--wys-texto-secundario);
+    font-size: .9rem;
+}
+
+/* Impacto en producción: las cifras de actuaciones en una fila que se reparte en columnas */
+.vi-impacto {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem 2rem;
+    max-width: 52rem;
+}
+
+/* Rankings de impacto: el número y, debajo, una barra fina proporcional a la mayor cifra de la tabla */
+.vi-celda-barra {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.vi-mini-barra {
+    display: block;
+    height: .4rem;
+    min-width: 2px;
+    border-radius: 999px;
+    background: var(--wys-azul-brillante);
+}
+
+.vi-barra + .vi-barra {
+    margin-top: 1.1rem;
+}
+
+.vi-barra__texto {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: .3rem;
+}
+
+.vi-barra__pista {
+    height: .7rem;
+    border-radius: 999px;
+    background: var(--wys-gris-1);
+    overflow: hidden;
+}
+
+.vi-barra__relleno {
+    height: 100%;
+    border-radius: 999px;
+}
+
+/* Verde al llegar al 100 %; ámbar por debajo (colores de estado de Bootstrap, válidos en los dos modos) */
+.vi-barra__relleno--completa {
+    background: var(--bs-success);
+}
+
+.vi-barra__relleno--parcial {
+    background: var(--bs-warning);
+}
+
+/* Datos de la orden en filas de "nombre: valor" */
+.vi-datos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2.5rem;
+    margin-bottom: 0;
+}
+
+.vi-datos dt {
+    color: var(--wys-texto-secundario);
+    font-size: .85rem;
+    font-weight: 400;
+}
+
+.vi-datos dd {
+    margin-bottom: 0;
+    font-weight: 700;
 }
 
 /* Registros: cada apunte del diario en letra de ancho fijo, tal cual, sobre blanco */
@@ -381,12 +509,12 @@ h1:focus {
     text-align: right;
     font-size: .95rem;
     font-weight: 300;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
 }
 
 .vi-menu a.active {
     font-weight: 700;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
 }
 
 .vi-contenido {
@@ -430,7 +558,7 @@ h1:focus {
     justify-content: center;
     border: 0;
     background: transparent;
-    color: var(--wys-azul-oscuro);
+    color: var(--wys-azul-titulo);
     z-index: 5;
 }
 
@@ -447,6 +575,87 @@ h1:focus {
 
 .vi-ojo.vi-ojo--visible .vi-ojo__tachado {
     display: inline;
+}
+
+/* Modo diurno / nocturno: los colores están en recursos/tema.css; aquí, lo que cambia de sitio.
+   Logo: se ve el normal de día y el negativo (para fondo azul oscuro) de noche */
+.wys-logo--nocturno {
+    display: none;
+}
+
+[data-bs-theme="dark"] .wys-logo--diurno {
+    display: none;
+}
+
+[data-bs-theme="dark"] .wys-logo--nocturno {
+    display: inline;
+}
+
+/* Los logos de la aplicación llevan letras azul oscuro sobre fondo transparente: de noche se ponen
+   sobre una placa blanca para que se lean, sin tocar el dibujo */
+[data-bs-theme="dark"] .vi-entrada__logo {
+    background: #fff;
+    border-radius: .5rem;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+[data-bs-theme="dark"] .vi-simbolo-app {
+    background: #fff;
+    border-radius: .4rem;
+    padding: .15rem;
+}
+
+/* Botón de la barra para cambiar de modo: con el aspecto de los menús de la cabecera, sin flecha */
+.vi-boton-modo {
+    background: none;
+    font-family: inherit;
+}
+
+.vi-boton-modo::after {
+    display: none;
+}
+
+/* El botón dice "Modo nocturno" de día y "Modo diurno" de noche */
+.vi-modo__ir-dia {
+    display: none;
+}
+
+[data-bs-theme="dark"] .vi-modo__ir-dia {
+    display: inline;
+}
+
+[data-bs-theme="dark"] .vi-modo__ir-noche {
+    display: none;
+}
+
+/* Cabecera azul oscura de noche: nombre de la aplicación, secciones y botones de los menús en blanco.
+   Las opciones desplegables mantienen su propio fondo y color, por eso no se tocan sus enlaces */
+[data-bs-theme="dark"] .wys-cabecera .vi-nombre-app,
+[data-bs-theme="dark"] .wys-cabecera .vi-menu__secciones a,
+[data-bs-theme="dark"] .wys-cabecera .vi-menu__secciones a.active,
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable__boton {
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .vi-nombre-app {
+    border-left-color: var(--wys-gris-azulado);
+}
+
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable__boton {
+    border-color: var(--wys-gris-azulado-claro);
+}
+
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable--claro .vi-desplegable__boton {
+    border-color: transparent;
+}
+
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable__boton:hover,
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable[open] .vi-desplegable__boton,
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable--claro .vi-desplegable__boton:hover,
+[data-bs-theme="dark"] .wys-cabecera .vi-desplegable--claro[open] .vi-desplegable__boton {
+    background: var(--wys-azul-medio);
+    color: #fff;
 }
 
 /* Aviso que aparece si se pierde la conexión con el servidor */

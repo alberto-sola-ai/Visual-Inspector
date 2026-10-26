@@ -55,7 +55,8 @@ public sealed record FichaOrden(
 /// </summary>
 public sealed record IncidenciaInforme(
     int NumeroControl, DateTime FechaControl, int Numero, MotivoDiferencia Motivo, bool EnMuestra1, bool EnMuestra2,
-    decimal AnchoMm, decimal AltoMm, string? Comentario, string ValidadoPor, DateTime FechaValidacion, byte[] Recorte);
+    decimal AnchoMm, decimal AltoMm, string? Comentario, string ValidadoPor, DateTime FechaValidacion, byte[] Recorte,
+    ActuacionIncidencia? Actuaciones, int? MinutosParada, int? TubosRetenidos);
 
 /// <summary>
 /// Todo el informe de fabricación de una orden: cabecera, resumen, autocontroles e incidencias.
@@ -134,8 +135,10 @@ public sealed partial class ServicioOrdenes(
     /// <summary>
     /// Finaliza la orden al terminar la fabricación, como quien cierra el cuaderno de la orden:
     /// guarda la fecha y quién la cierra, y a partir de ahí no admite autocontroles nuevos.
-    /// No se puede finalizar si hay autocontroles sin registrar o si no hay ninguno registrado
-    /// (los anulados no cuentan). Devuelve un mensaje de error para el usuario, o null si va bien.
+    /// No se puede finalizar si no hay ningún autocontrol registrado (los anulados no cuentan).
+    /// Sí se puede con autocontroles sin registrar: no se sabe cuántos se harán en una orden y esos
+    /// controles quedan en la orden como "sin registrar" (decisión de Alberto, 26/10/2026).
+    /// Devuelve un mensaje de error para el usuario, o null si va bien.
     /// </summary>
     public async Task<string?> FinalizarAsync(int id)
     {
@@ -148,11 +151,7 @@ public sealed partial class ServicioOrdenes(
         if (orden.Estado == EstadoOrden.Finalizada)
             return "La orden ya está finalizada.";
 
-        var validos = orden.Autocontroles.Where(a => !a.EstaAnulado).ToList();
-        var pendientes = validos.Count(a => a.Estado != EstadoAutocontrol.Registrado);
-        if (pendientes > 0)
-            return $"Hay {pendientes} autocontrol(es) sin registrar. Regístralos (o pide al administrador que los anule) antes de finalizar la orden.";
-        if (validos.Count == 0)
+        if (!orden.Autocontroles.Any(a => !a.EstaAnulado && a.Estado == EstadoAutocontrol.Registrado))
             return "La orden no tiene ningún autocontrol registrado.";
 
         orden.Estado = EstadoOrden.Finalizada;
@@ -210,7 +209,8 @@ public sealed partial class ServicioOrdenes(
             .Select(d => new
             {
                 d.Autocontrol.NumeroControl, d.Autocontrol.FechaControl, d.Numero, d.Motivo, d.EnMuestra1, d.EnMuestra2,
-                d.AnchoMm, d.AltoMm, d.Validacion, d.Comentario, d.CreadoPor, d.FechaCreacion, d.Recorte
+                d.AnchoMm, d.AltoMm, d.Validacion, d.Comentario, d.CreadoPor, d.FechaCreacion, d.Recorte, d.Actuaciones,
+                d.MinutosParada, d.TubosRetenidos
             })
             .ToListAsync();
 
@@ -218,7 +218,7 @@ public sealed partial class ServicioOrdenes(
             .Where(d => d.Validacion == ValidacionDiferencia.Incidencia)
             .OrderBy(d => d.FechaControl).ThenBy(d => d.Numero)
             .Select(d => new IncidenciaInforme(d.NumeroControl, d.FechaControl, d.Numero, d.Motivo, d.EnMuestra1, d.EnMuestra2,
-                d.AnchoMm, d.AltoMm, d.Comentario, d.CreadoPor, d.FechaCreacion, d.Recorte))
+                d.AnchoMm, d.AltoMm, d.Comentario, d.CreadoPor, d.FechaCreacion, d.Recorte, d.Actuaciones, d.MinutosParada, d.TubosRetenidos))
             .ToList();
 
         var versiones = ficha.Autocontroles.Where(a => a.Cuenta).Select(a => a.VersionPatron).Where(v => v is not null).Distinct().Select(v => v!).ToList();

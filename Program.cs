@@ -150,6 +150,8 @@ builder.Services.AddScoped<ServicioUsuarios>();
 builder.Services.AddScoped<ServicioVersiones>();
 builder.Services.AddScoped<ServicioAutocontroles>();
 builder.Services.AddScoped<ServicioOrdenes>();
+builder.Services.AddScoped<ServicioTrazabilidad>();
+builder.Services.AddScoped<ServicioImpacto>();
 builder.Services.AddScoped<VisualInspector.Servicios.Informes.GeneradorInformePdf>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ServicioArchivosAutocontrol>();
 builder.Services.AddScoped<ServicioRegistros>();

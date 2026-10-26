@@ -69,6 +69,12 @@ nuevos. Solo el administrador puede reabrirla, y eso también queda apuntado en 
 diario de seguridad. El informe en PDF solo se descarga con permiso para ver autocontroles, y el servidor lo
 vuelve a comprobar en cada descarga.
 
+Una línea de fabricación hace una orden a la vez: al empezar otra en la misma línea, la anterior
+se finaliza sola. La pantalla avisa antes de crear el autocontrol y cada cierre automático queda
+apuntado en el diario de seguridad (quién creó el autocontrol que lo provocó y qué orden se cerró).
+El cuadro de trazabilidad de las órdenes cerradas solo se ve con permiso para ver autocontroles, y
+el servidor lo comprueba en cada consulta.
+
 Si un autocontrol está mal, solo el administrador puede tacharlo (anularlo, con el motivo escrito)
 o arrancar la hoja (eliminarlo), aunque la orden ya esté cerrada. Las dos cosas se apuntan
 en el diario de seguridad: quién, cuándo y qué autocontrol era.

@@ -23,7 +23,9 @@ public static class AccionesSeguridad
     public const string ActivacionMfa_wys = "ActivacionMfa";
     public const string DesactivacionMfa_wys = "DesactivacionMfa";
     public const string ReaperturaOrden_wys = "ReaperturaOrden";
+    public const string CierreAutomaticoOrden_wys = "CierreAutomaticoOrden";
     public const string AnulacionAutocontrol_wys = "AnulacionAutocontrol";
+    public const string CorreccionImpacto_wys = "CorreccionImpacto";
     public const string EliminacionAutocontrol_wys = "EliminacionAutocontrol";
     public const string ConsultaRegistro_wys = "ConsultaRegistro";
     public const string TokenFormularioNoValido_wys = "TokenFormularioNoValido";

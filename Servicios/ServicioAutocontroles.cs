@@ -48,12 +48,18 @@ public sealed record DatosRegistro(
 public sealed record DiferenciaRegistrada(
     int Numero, MotivoDiferencia Motivo, bool EnMuestra1, bool EnMuestra2,
     decimal AnchoMm, decimal AltoMm, decimal AreaMm2,
-    ValidacionDiferencia Validacion, string? Comentario, byte[] Recorte, string ValidadoPor, DateTime FechaValidacion);
+    ValidacionDiferencia Validacion, string? Comentario, byte[] Recorte, string ValidadoPor, DateTime FechaValidacion,
+    ActuacionIncidencia? Actuaciones, int? MinutosParada, int? TubosRetenidos, int Id);
 
 /// <summary>
 /// Una diferencia de la comparación con lo que ha decidido el operario (o null si aún no ha decidido).
 /// </summary>
-public sealed record DiferenciaValidada(DiferenciaDetectada Diferencia, ValidacionDiferencia? Validacion, string? Comentario);
+/// <param name="Actuaciones">Qué se hizo en producción; solo cuenta si la diferencia es una incidencia.</param>
+/// <param name="MinutosParada">Minutos aproximados de parada; solo con la actuación «Parada de línea».</param>
+/// <param name="TubosRetenidos">Tubos aproximados retenidos; solo con la actuación «Retención de producto».</param>
+public sealed record DiferenciaValidada(
+    DiferenciaDetectada Diferencia, ValidacionDiferencia? Validacion, string? Comentario, ActuacionIncidencia Actuaciones,
+    int? MinutosParada, int? TubosRetenidos);
 
 /// <summary>
 /// Todo lo necesario para registrar un autocontrol al terminar la validación.
@@ -175,6 +181,82 @@ public sealed partial class ServicioAutocontroles(
     public const int LongitudMaximaComentario_wys = 500;
     public const int LongitudMaximaMotivoAnulacion_wys = 500;
 
+    // Las actuaciones que se pueden marcar en una incidencia, en el orden en que se enseñan
+    public static readonly IReadOnlyList<ActuacionIncidencia> ActuacionesDisponibles_wys =
+    [
+        ActuacionIncidencia.SinIntervencion, ActuacionIncidencia.AjusteEnMarcha, ActuacionIncidencia.ParadaLinea,
+        ActuacionIncidencia.RetencionProducto, ActuacionIncidencia.AvisoCalidad
+    ];
+
+    /// <summary>
+    /// Nombre de cada actuación para la pantalla.
+    /// </summary>
+    public static string NombreActuacion(ActuacionIncidencia actuacion) => actuacion switch
+    {
+        ActuacionIncidencia.SinIntervencion => "Sin intervención",
+        ActuacionIncidencia.AjusteEnMarcha => "Ajuste en marcha",
+        ActuacionIncidencia.ParadaLinea => "Parada de línea",
+        ActuacionIncidencia.RetencionProducto => "Retención de producto",
+        ActuacionIncidencia.AvisoCalidad => "Aviso a Calidad",
+        _ => "-"
+    };
+
+    /// <summary>
+    /// Escribe las actuaciones marcadas separadas por comas ("Parada de línea, Retención de producto"),
+    /// o "Sin clasificar" si la incidencia es anterior a que se pidiera este dato.
+    /// </summary>
+    public static string DescribirActuaciones(ActuacionIncidencia? actuaciones) =>
+        actuaciones is null or ActuacionIncidencia.Ninguna
+            ? "Sin clasificar"
+            : string.Join(", ", ActuacionesDisponibles_wys.Where(a => actuaciones.Value.HasFlag(a)).Select(NombreActuacion));
+
+    /// <summary>
+    /// Igual que DescribirActuaciones, pero con las cifras aproximadas entre paréntesis:
+    /// "Parada de línea (45 min aprox.), Retención de producto (2.000 tubos aprox.)".
+    /// </summary>
+    public static string DescribirActuacionesConCifras(ActuacionIncidencia? actuaciones, int? minutos, int? tubos)
+    {
+        if (actuaciones is null or ActuacionIncidencia.Ninguna)
+            return "Sin clasificar";
+
+        return string.Join(", ", ActuacionesDisponibles_wys.Where(a => actuaciones.Value.HasFlag(a)).Select(a => a switch
+        {
+            ActuacionIncidencia.ParadaLinea when minutos is not null => $"{NombreActuacion(a)} ({minutos:N0} min aprox.)",
+            ActuacionIncidencia.RetencionProducto when tubos is not null => $"{NombreActuacion(a)} ({tubos:N0} tubos aprox.)",
+            _ => NombreActuacion(a)
+        }));
+    }
+
+    // Topes para evitar errores de dedo: una semana de parada y diez millones de tubos
+    public const int MaximoMinutosParada_wys = 10080;
+    public const int MaximoTubosRetenidos_wys = 9_999_999;
+
+    /// <summary>
+    /// Mira que los minutos de parada y los tubos retenidos tengan sentido: si se marcó «Parada de
+    /// línea» hacen falta los minutos y si se marcó «Retención de producto», los tubos (entre 1 y el tope).
+    /// Devuelve un mensaje para el usuario, o null si está bien.
+    /// </summary>
+    public static string? ComprobarImpacto(ActuacionIncidencia actuaciones, int? minutos, int? tubos)
+    {
+        if (actuaciones.HasFlag(ActuacionIncidencia.ParadaLinea) && minutos is not (>= 1 and <= MaximoMinutosParada_wys))
+            return $"Indica los minutos de parada, aproximados (entre 1 y {MaximoMinutosParada_wys:N0}).";
+        if (actuaciones.HasFlag(ActuacionIncidencia.RetencionProducto) && tubos is not (>= 1 and <= MaximoTubosRetenidos_wys))
+            return $"Indica los tubos retenidos, aproximados (entre 1 y {MaximoTubosRetenidos_wys:N0}).";
+        return null;
+    }
+
+    /// <summary>
+    /// Dice si las actuaciones marcadas valen para una incidencia: al menos una, solo las conocidas y,
+    /// si es "Sin intervención", sin ninguna otra (no tiene sentido no intervenir y parar la línea).
+    /// </summary>
+    public static bool EsActuacionValida(ActuacionIncidencia actuaciones)
+    {
+        var todas = ActuacionesDisponibles_wys.Aggregate(ActuacionIncidencia.Ninguna, (suma, a) => suma | a);
+        return actuaciones != ActuacionIncidencia.Ninguna
+            && (actuaciones & ~todas) == ActuacionIncidencia.Ninguna
+            && (!actuaciones.HasFlag(ActuacionIncidencia.SinIntervencion) || actuaciones == ActuacionIncidencia.SinIntervencion);
+    }
+
     // Versión del patrón: R seguida de cifras (por ejemplo R002)
     [GeneratedRegex("^R[0-9]{1,9}$")]
     private static partial Regex FormatoVersion();
@@ -236,7 +318,8 @@ public sealed partial class ServicioAutocontroles(
             a.Tolerancia, a.SimilitudMuestra1, a.SimilitudMuestra2, a.SimilitudEntreMuestras,
             a.Resultado, a.EsLitografiaDistintaConfirmada, a.RegistradoPor, a.FechaRegistro,
             a.Diferencias.Select(d => new DiferenciaRegistrada(d.Numero, d.Motivo, d.EnMuestra1, d.EnMuestra2,
-                d.AnchoMm, d.AltoMm, d.AreaMm2, d.Validacion, d.Comentario, d.Recorte, d.CreadoPor, d.FechaCreacion)).ToList());
+                d.AnchoMm, d.AltoMm, d.AreaMm2, d.Validacion, d.Comentario, d.Recorte, d.CreadoPor, d.FechaCreacion, d.Actuaciones,
+                d.MinutosParada, d.TubosRetenidos, d.Id)).ToList());
 
         var anulacion = !a.EstaAnulado ? null
             : new DatosAnulacion(a.MotivoAnulacion ?? "", a.AnuladoPor ?? "", a.FechaAnulacion ?? a.FechaModificacion ?? a.FechaCreacion);
@@ -319,6 +402,51 @@ public sealed partial class ServicioAutocontroles(
         return null;
     }
 
+    /// <summary>
+    /// Corrige los minutos de parada y los tubos retenidos de una incidencia, como quien repasa a lápiz
+    /// una cifra aproximada cuando ya se sabe el dato real. Es lo único de un autocontrol registrado que
+    /// se puede cambiar (decisión de Alberto, 26/10/2026): la detección y la decisión no se tocan. Se
+    /// puede hacer también con la orden finalizada. Quién y cuándo lo corrigió queda en la diferencia y
+    /// los valores antes y después, en el diario de seguridad. Devuelve un mensaje de error, o null si va bien.
+    /// </summary>
+    public async Task<string?> CorregirImpactoAsync(int idDiferencia, int? minutos, int? tubos)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var diferencia = await datos.Diferencias
+            .Include(d => d.Autocontrol).ThenInclude(a => a.OrdenFabricacion)
+            .FirstOrDefaultAsync(d => d.Id == idDiferencia);
+        if (diferencia is null)
+            return "La diferencia ya no existe.";
+        if (diferencia.Autocontrol.EstaAnulado)
+            return "Este autocontrol está anulado y ya no se puede corregir.";
+        if (diferencia.Validacion != ValidacionDiferencia.Incidencia || diferencia.Actuaciones is not { } actuaciones)
+            return "Solo se pueden corregir los datos de una incidencia con parada o retención.";
+
+        var tieneParada = actuaciones.HasFlag(ActuacionIncidencia.ParadaLinea);
+        var tieneRetencion = actuaciones.HasFlag(ActuacionIncidencia.RetencionProducto);
+        if (!tieneParada && !tieneRetencion)
+            return "Esta incidencia no tuvo parada ni retención: no hay nada que corregir.";
+
+        // Zero Trust: solo se admite lo que corresponde a las actuaciones marcadas en su día
+        var nuevosMinutos = tieneParada ? minutos : null;
+        var nuevosTubos = tieneRetencion ? tubos : null;
+        if (ComprobarImpacto(actuaciones, nuevosMinutos, nuevosTubos) is { } error)
+            return error;
+
+        var antes = $"parada {diferencia.MinutosParada?.ToString() ?? "-"} min, tubos {diferencia.TubosRetenidos?.ToString() ?? "-"}";
+        diferencia.MinutosParada = nuevosMinutos;
+        diferencia.TubosRetenidos = nuevosTubos;
+        await datos.SaveChangesAsync();
+
+        var orden = diferencia.Autocontrol.OrdenFabricacion.Codigo;
+        await registroSeguridad.RegistrarAsync(AccionesSeguridad.CorreccionImpacto_wys,
+            $"Correcto: orden {orden}, {NombreControl(diferencia.Autocontrol.NumeroControl)}, diferencia {diferencia.Numero}: " +
+            $"{antes} → parada {nuevosMinutos?.ToString() ?? "-"} min, tubos {nuevosTubos?.ToString() ?? "-"}");
+        return null;
+    }
+
     private static string NombreEstadoOrden(EstadoOrden estado) =>
         estado == EstadoOrden.Finalizada ? "finalizada" : "en fabricación";
 
@@ -358,6 +486,13 @@ public sealed partial class ServicioAutocontroles(
             return "Quedan diferencias sin validar.";
         if (solicitud.Diferencias.Any(d => d.Validacion == ValidacionDiferencia.Incidencia && string.IsNullOrWhiteSpace(d.Comentario)))
             return "Cada incidencia necesita un comentario que explique qué pasa.";
+        if (solicitud.Diferencias.Any(d => d.Validacion == ValidacionDiferencia.Incidencia && !EsActuacionValida(d.Actuaciones)))
+            return "Indica qué se ha hecho en cada incidencia (por ejemplo, sin intervención o parada de línea).";
+        foreach (var d in solicitud.Diferencias.Where(d => d.Validacion == ValidacionDiferencia.Incidencia))
+        {
+            if (ComprobarImpacto(d.Actuaciones, d.MinutosParada, d.TubosRetenidos) is { } errorImpacto)
+                return errorImpacto;
+        }
         if (solicitud.Diferencias.Any(d => (d.Comentario?.Trim().Length ?? 0) > LongitudMaximaComentario_wys))
             return $"Los comentarios no pueden pasar de {LongitudMaximaComentario_wys} caracteres.";
         if (solicitud.Diferencias.Select(d => d.Diferencia.Numero).Distinct().Count() != solicitud.Diferencias.Count)
@@ -373,6 +508,9 @@ public sealed partial class ServicioAutocontroles(
             return "Este autocontrol ya está registrado y no se puede cambiar.";
         if (autocontrol.EstaAnulado)
             return "Este autocontrol está anulado y ya no se puede registrar.";
+        // Una orden finalizada (a mano o al cerrarse sola) ya no cambia: su cuadro de trazabilidad queda fijo
+        if (autocontrol.OrdenFabricacion.Estado == EstadoOrden.Finalizada)
+            return "La orden de este autocontrol está finalizada y ya no admite registros. Para registrarlo, pide al administrador que la reabra.";
 
         // La litografía debe ser la de la orden, salvo que el operario confirme que el patrón es correcto
         var litografiaOrden = autocontrol.OrdenFabricacion.Litografia;
@@ -416,7 +554,12 @@ public sealed partial class ServicioAutocontroles(
                 Evidencia = Math.Round((decimal)d.Evidencia, 2),
                 Recorte = d.Recorte,
                 Validacion = v.Validacion!.Value,
-                Comentario = string.IsNullOrWhiteSpace(v.Comentario) ? null : v.Comentario.Trim()
+                Comentario = string.IsNullOrWhiteSpace(v.Comentario) ? null : v.Comentario.Trim(),
+                // Las actuaciones solo tienen sentido en una incidencia: en una diferencia correcta se descartan
+                Actuaciones = v.Validacion == ValidacionDiferencia.Incidencia ? v.Actuaciones : null,
+                // Minutos y tubos solo si la incidencia tuvo parada o retención (si no, se descartan)
+                MinutosParada = v.Validacion == ValidacionDiferencia.Incidencia && v.Actuaciones.HasFlag(ActuacionIncidencia.ParadaLinea) ? v.MinutosParada : null,
+                TubosRetenidos = v.Validacion == ValidacionDiferencia.Incidencia && v.Actuaciones.HasFlag(ActuacionIncidencia.RetencionProducto) ? v.TubosRetenidos : null
             });
         }
 
@@ -489,10 +632,44 @@ public sealed partial class ServicioAutocontroles(
         ServicioParametros.SepararLineas(await parametros.ObtenerValorAsync(ServicioParametros.Lineas_wys, ServicioParametros.LineasIniciales_wys));
 
     /// <summary>
+    /// Busca las órdenes que se cerrarían solas al crear un autocontrol de la orden indicada en esa
+    /// línea: las que siguen en fabricación en la misma línea, que no son la indicada y que ya tienen
+    /// algún autocontrol registrado (sin ninguno no habría nada que mostrar en su trazabilidad).
+    /// Una línea solo fabrica una orden a la vez: al empezar otra, la anterior ha terminado.
+    /// </summary>
+    private static async Task<List<OrdenFabricacion>> BuscarOrdenesACerrarAsync(AppDbContext datos, string codigoOrden, string linea) =>
+        await datos.OrdenesFabricacion
+            .Where(o => o.Activa && o.Estado == EstadoOrden.EnFabricacion && o.Linea == linea && o.Codigo != codigoOrden
+                && o.Autocontroles.Any(a => !a.EstaAnulado && a.Estado == EstadoAutocontrol.Registrado))
+            .ToListAsync();
+
+    /// <summary>
+    /// Dice qué órdenes se cerrarán solas al crear un autocontrol de esta orden en esta línea, para
+    /// avisar al operario antes de crearlo. Devuelve sus códigos (vacío si no se cierra ninguna).
+    /// </summary>
+    public async Task<IReadOnlyList<string>> ListarOrdenesACerrarAsync(string? codigoOrden, string? linea)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
+
+        var codigo = (codigoOrden ?? "").Trim();
+        var lineaElegida = (await ObtenerLineasAsync())
+            .FirstOrDefault(l => string.Equals(l, (linea ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!FormatoOrden().IsMatch(codigo) || lineaElegida is null)
+        {
+            return [];
+        }
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var ordenes = await BuscarOrdenesACerrarAsync(datos, codigo, lineaElegida);
+        return ordenes.Select(o => o.Codigo).Order().ToList();
+    }
+
+    /// <summary>
     /// Crea un autocontrol nuevo para una orden de fabricación, como quien abre una hoja nueva
     /// en el cuaderno de la orden. Si la orden aún no existe, la crea. La fecha y hora las pone
     /// el servidor, y el número (1 = inicial, 2, 3…) se calcula solo. La línea elegida (obligatoria)
-    /// queda como línea de la orden.
+    /// queda como línea de la orden. Si en esa línea había otra orden en fabricación, se finaliza
+    /// sola (decisión de Alberto, 26/10/2026): el operario ya fue avisado en la pantalla.
     /// </summary>
     public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? linea, string? observaciones)
     {
@@ -518,6 +695,8 @@ public sealed partial class ServicioAutocontroles(
         {
             return new(null, $"Las observaciones no pueden pasar de {LongitudMaximaObservaciones_wys} caracteres.");
         }
+
+        var nombreOperario = await usuarioActual.ObtenerNombreAsync();
 
         // Si dos personas crean a la vez un control de la misma orden, la base de datos rechaza
         // el duplicado (índice único) y se vuelve a intentar con el número siguiente
@@ -554,7 +733,24 @@ public sealed partial class ServicioAutocontroles(
                     Observaciones = textoObservaciones
                 };
                 datos.Autocontroles.Add(autocontrol);
+
+                // La orden anterior de esta línea ha terminado: se finaliza en la misma operación
+                var cerradas = await BuscarOrdenesACerrarAsync(datos, codigo, lineaElegida);
+                foreach (var anterior in cerradas)
+                {
+                    anterior.Estado = EstadoOrden.Finalizada;
+                    anterior.FechaFin = DateTime.Now;
+                    anterior.FinalizadaPor = $"{nombreOperario} (cierre automático)";
+                }
+
                 await datos.SaveChangesAsync();
+
+                foreach (var anterior in cerradas)
+                {
+                    await registroSeguridad.RegistrarAsync(AccionesSeguridad.CierreAutomaticoOrden_wys,
+                        $"Correcto: orden {anterior.Codigo} (línea {lineaElegida}) al crear un autocontrol de la orden {codigo}");
+                }
+
                 return new(autocontrol.Id, null);
             }
             catch (DbUpdateException)

@@ -1,0 +1,121 @@
+@page "/trazabilidad"
+@attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@inject ServicioTrazabilidad ServicioTrazabilidad
+@inject ServicioAutocontroles ServicioAutocontroles
+
+<PageTitle>Trazabilidad · Visual Inspector</PageTitle>
+
+@* Órdenes ya cerradas. Al elegir una se abre su cuadro de mando con la calidad de impresión *@
+<h1>Trazabilidad</h1>
+<p>Órdenes de fabricación cerradas. Elige una para ver el resumen de su calidad de impresión.</p>
+
+<div class="d-flex gap-2 align-items-end my-3" style="max-width: 48rem">
+    <div class="flex-grow-1">
+        <label class="form-label" for="filtroOrden">Orden de fabricación</label>
+        <input id="filtroOrden" class="form-control" inputmode="numeric" maxlength="10"
+               @bind="filtroOrden" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" />
+    </div>
+    <div class="flex-grow-1">
+        <label class="form-label" for="filtroLitografia">Litografía</label>
+        <input id="filtroLitografia" class="form-control" maxlength="8"
+               @bind="filtroLitografia" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" />
+    </div>
+    <button class="btn btn-primary" @onclick="BuscarAsync">Buscar</button>
+</div>
+<p class="form-text mt-0">
+    Todo o parte del número de orden o el principio de la litografía (L + 7 cifras).
+    @if (prefijo.Length > 0)
+    {
+        <span>La orden ya trae escrito el inicio habitual (@prefijo): añade el resto, o bórralo para buscar solo por las últimas cifras.</span>
+    }
+</p>
+
+@if (filas is null)
+{
+    <p>Cargando…</p>
+}
+else if (filas.Count == 0)
+{
+    <p>No hay órdenes cerradas que cumplan la búsqueda.</p>
+}
+else
+{
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Orden</th>
+                <th>Litografía</th>
+                <th>Línea</th>
+                <th>Cerrada el</th>
+                <th>Autocontroles completados</th>
+                <th>Incidencias</th>
+                <th>Eficacia de corrección</th>
+                <th>Minutos de parada</th>
+                <th>Tubos retenidos</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in filas)
+            {
+                <tr>
+                    <td><a href="@($"trazabilidad/{o.Id}")">@o.Codigo</a></td>
+                    <td>@(o.Litografia ?? "-")</td>
+                    <td>@(o.Linea ?? "-")</td>
+                    <td>@(o.FechaFin?.ToString("dd/MM/yyyy HH:mm") ?? "-")</td>
+                    <td>@o.ControlesCompletados</td>
+                    <td>
+                        @if (o.Incidencias > 0)
+                        {
+                            <span class="wys-etiqueta">@o.Incidencias</span>
+                        }
+                        else
+                        {
+                            <span>0</span>
+                        }
+                    </td>
+                    <td>@(o.Eficacia is { } eficacia ? FormatoCifras.Porcentaje(eficacia) : "Sin incidencias")</td>
+                    <td>@o.MinutosParada.ToString("N0")</td>
+                    <td>@o.TubosRetenidos.ToString("N0")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="small text-secondary">Se muestran como máximo las 100 cerradas más recientes. Usa la búsqueda para encontrar las anteriores.</p>
+}
+
+@code {
+    private List<FilaTrazabilidad>? filas;
+    private string filtroOrden = "";
+    private string filtroLitografia = "";
+    private string prefijo = "";
+
+    /// <summary>
+    /// Carga las órdenes cerradas más recientes al abrir la pantalla, sin filtrar, y deja el campo
+    /// de la orden relleno con el inicio habitual (parámetro PrefijoOrden) para escribir solo el resto.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await BuscarAsync();
+        prefijo = await ServicioAutocontroles.ObtenerPrefijoOrdenAsync();
+        filtroOrden = prefijo;
+    }
+
+    /// <summary>
+    /// Vuelve a cargar la lista con los filtros escritos.
+    /// </summary>
+    private async Task BuscarAsync()
+    {
+        filas = await ServicioTrazabilidad.ListarCerradasAsync(filtroOrden, filtroLitografia);
+    }
+
+    /// <summary>
+    /// Pulsar Intro en un filtro es lo mismo que pulsar Buscar.
+    /// </summary>
+    private async Task AlPulsarTeclaAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BuscarAsync();
+        }
+    }
+}

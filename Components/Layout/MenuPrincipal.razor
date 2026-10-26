@@ -9,6 +9,8 @@
                     <NavLink href="" Match="NavLinkMatch.All">Inicio</NavLink>
                     <NavLink href="autocontroles">Autocontroles</NavLink>
                     <NavLink href="ordenes">Órdenes de Fabricación</NavLink>
+                    <NavLink href="trazabilidad">Trazabilidad</NavLink>
+                    <NavLink href="impacto">Impacto</NavLink>
                 </AuthorizeView>
             </div>
 
@@ -16,6 +18,8 @@
                desplegables los abre y cierra el navegador; wwwroot/js/menu-desplegable.js los cierra
                al pulsar fuera, al elegir una opción o con la tecla Escape *@
             <div class="vi-menu__cuenta">
+                @BotonModoVisual
+
                 <AuthorizeView Policy="@Permisos.Administracion_wys" Context="contextoAdministracion">
                     <details class="vi-desplegable vi-desplegable--claro">
                         <summary class="vi-desplegable__boton">Administración</summary>
@@ -46,5 +50,20 @@
                 </details>
             </div>
         </Authorized>
+        <NotAuthorized>
+            @* Sin sesión (pantalla de entrada) solo se ofrece el cambio de modo, también a la derecha *@
+            <div class="vi-menu__cuenta">
+                @BotonModoVisual
+            </div>
+        </NotAuthorized>
     </AuthorizeView>
 </nav>
+
+@code {
+    // Botón de la barra que cambia entre modo diurno y nocturno; lo hace wwwroot/js/modo-visual.js
+    // en el navegador. Se ve un texto u otro según el modo activo (lo decide el CSS)
+    private RenderFragment BotonModoVisual => @<button type="button" class="vi-desplegable__boton vi-boton-modo" data-modo-visual>
+        <span class="vi-modo__ir-noche">Modo nocturno</span>
+        <span class="vi-modo__ir-dia">Modo diurno</span>
+    </button>;
+}

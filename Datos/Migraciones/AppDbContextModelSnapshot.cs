@@ -283,6 +283,10 @@ namespace VisualInspector.Datos.Migraciones
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Actuaciones")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<decimal>("AltoMm")
                         .HasPrecision(7, 1)
                         .HasColumnType("decimal(7,1)");
@@ -323,6 +327,9 @@ namespace VisualInspector.Datos.Migraciones
                     b.Property<DateTime?>("FechaModificacion")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<int?>("MinutosParada")
+                        .HasColumnType("int");
+
                     b.Property<string>("ModificadoPor")
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
@@ -338,6 +345,9 @@ namespace VisualInspector.Datos.Migraciones
                     b.Property<byte[]>("Recorte")
                         .IsRequired()
                         .HasColumnType("mediumblob");
+
+                    b.Property<int?>("TubosRetenidos")
+                        .HasColumnType("int");
 
                     b.Property<string>("Validacion")
                         .IsRequired()

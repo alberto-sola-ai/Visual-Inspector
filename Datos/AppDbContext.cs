@@ -122,6 +122,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             diferencia.Property(d => d.Evidencia).HasPrecision(9, 2);
             diferencia.Property(d => d.Recorte).HasColumnType("mediumblob");   // hasta 16 MB; los recortes ocupan ~30 KB
             diferencia.Property(d => d.Comentario).HasMaxLength(500);
+            // Se guarda con las palabras, por ejemplo "ParadaLinea, RetencionProducto", para leerlo bien en la base de datos
+            diferencia.Property(d => d.Actuaciones).HasConversion<string>().HasMaxLength(100);
             diferencia.Property(d => d.CreadoPor).HasMaxLength(256);
             diferencia.Property(d => d.ModificadoPor).HasMaxLength(256);
         });

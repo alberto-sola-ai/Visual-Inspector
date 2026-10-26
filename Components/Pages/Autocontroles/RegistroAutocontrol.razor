@@ -1,4 +1,5 @@
 @using VisualInspector.Servicios.Vision
+@inject ServicioAutocontroles ServicioAutocontroles
 
 @* Lo que quedó registrado de un autocontrol. Solo lectura: un registro de fabricación no se cambia *@
 <h2 class="h4 mt-5">Registro del autocontrol</h2>
@@ -56,6 +57,58 @@
                             }
                             <span class="ms-2">@(d.EnMuestra1 && d.EnMuestra2 ? "Las dos muestras" : d.EnMuestra1 ? "Muestra 1" : "Muestra 2")</span>
                             · @d.AnchoMm.ToString("N0") × @d.AltoMm.ToString("N0") mm
+                            @if (d.Validacion == ValidacionDiferencia.Incidencia)
+                            {
+                                <div class="mt-1"><strong>Qué se hizo:</strong> @ServicioAutocontroles.DescribirActuaciones(d.Actuaciones)</div>
+                                @if (TieneCifras(d))
+                                {
+                                    @* Minutos y tubos aproximados; quien puede hacer autocontroles los puede corregir *@
+                                    <div class="mt-1">
+                                        @if (d.Actuaciones!.Value.HasFlag(ActuacionIncidencia.ParadaLinea))
+                                        {
+                                            <span class="me-3">Parada: <strong>@(d.MinutosParada?.ToString("N0") ?? "sin dato") min</strong></span>
+                                        }
+                                        @if (d.Actuaciones!.Value.HasFlag(ActuacionIncidencia.RetencionProducto))
+                                        {
+                                            <span class="me-3">Tubos retenidos: <strong>@(d.TubosRetenidos?.ToString("N0") ?? "sin dato")</strong></span>
+                                        }
+                                        <span class="text-secondary">(aproximado)</span>
+                                        @if (PuedeCorregir && editando != d.Id)
+                                        {
+                                            <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys" Context="contextoCorregir">
+                                                <button type="button" class="btn btn-link btn-sm py-0" @onclick="() => EmpezarCorreccion(d)">Corregir</button>
+                                            </AuthorizeView>
+                                        }
+                                    </div>
+                                    @if (editando == d.Id)
+                                    {
+                                        <div class="d-flex flex-wrap align-items-end gap-3 mt-2">
+                                            @if (d.Actuaciones!.Value.HasFlag(ActuacionIncidencia.ParadaLinea))
+                                            {
+                                                <div>
+                                                    <label class="form-label small mb-0" for="@($"corr-min-{d.Id}")">Minutos de parada</label>
+                                                    <input id="@($"corr-min-{d.Id}")" type="number" min="1" max="@ServicioAutocontroles.MaximoMinutosParada_wys"
+                                                           class="form-control form-control-sm" style="width: 9rem" @bind="minutosEditados" @bind:event="oninput" />
+                                                </div>
+                                            }
+                                            @if (d.Actuaciones!.Value.HasFlag(ActuacionIncidencia.RetencionProducto))
+                                            {
+                                                <div>
+                                                    <label class="form-label small mb-0" for="@($"corr-tub-{d.Id}")">Tubos retenidos</label>
+                                                    <input id="@($"corr-tub-{d.Id}")" type="number" min="1" max="@ServicioAutocontroles.MaximoTubosRetenidos_wys"
+                                                           class="form-control form-control-sm" style="width: 9rem" @bind="tubosEditados" @bind:event="oninput" />
+                                                </div>
+                                            }
+                                            <button type="button" class="btn btn-primary btn-sm" @onclick="() => GuardarCorreccionAsync(d)" disabled="@estaGuardando">Guardar</button>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" @onclick="() => editando = null" disabled="@estaGuardando">Cancelar</button>
+                                        </div>
+                                        @if (errorCorreccion is not null)
+                                        {
+                                            <div class="form-text text-danger">@errorCorreccion</div>
+                                        }
+                                    }
+                                }
+                            }
                             @if (!string.IsNullOrEmpty(d.Comentario))
                             {
                                 @* El comentario se muestra como texto (Blazor lo escapa): nunca como HTML *@
@@ -83,6 +136,52 @@
 @code {
     [Parameter, EditorRequired]
     public DatosRegistro Registro { get; set; } = default!;
+
+    // Un autocontrol anulado ya no se corrige
+    [Parameter]
+    public bool PuedeCorregir { get; set; }
+
+    // Avisa a la ficha para que vuelva a leer los datos después de corregir
+    [Parameter]
+    public EventCallback OnImpactoCorregido { get; set; }
+
+    private int? editando;
+    private int? minutosEditados;
+    private int? tubosEditados;
+    private string? errorCorreccion;
+    private bool estaGuardando;
+
+    /// <summary>
+    /// Dice si la incidencia tuvo parada o retención, que son las que llevan cifras aproximadas.
+    /// </summary>
+    private static bool TieneCifras(DiferenciaRegistrada d) =>
+        d.Actuaciones is { } a && (a.HasFlag(ActuacionIncidencia.ParadaLinea) || a.HasFlag(ActuacionIncidencia.RetencionProducto));
+
+    /// <summary>
+    /// Abre el formulario de corrección con las cifras actuales.
+    /// </summary>
+    private void EmpezarCorreccion(DiferenciaRegistrada d)
+    {
+        editando = d.Id;
+        minutosEditados = d.MinutosParada;
+        tubosEditados = d.TubosRetenidos;
+        errorCorreccion = null;
+    }
+
+    /// <summary>
+    /// Guarda las cifras corregidas. El servicio vuelve a comprobar el permiso y que tengan sentido.
+    /// </summary>
+    private async Task GuardarCorreccionAsync(DiferenciaRegistrada d)
+    {
+        estaGuardando = true;
+        errorCorreccion = await ServicioAutocontroles.CorregirImpactoAsync(d.Id, minutosEditados, tubosEditados);
+        estaGuardando = false;
+        if (errorCorreccion is null)
+        {
+            editando = null;
+            await OnImpactoCorregido.InvokeAsync();
+        }
+    }
 
     private static string Porcentaje(decimal? valor) => valor is null ? "-" : $"{valor.Value:N0} %";
 }

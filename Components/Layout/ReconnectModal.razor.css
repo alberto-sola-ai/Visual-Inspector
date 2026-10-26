@@ -21,7 +21,9 @@
 
 
 #components-reconnect-modal {
-    background-color: white;
+    /* Colores del tema (diurno o nocturno): con fondo blanco fijo, el texto claro del modo nocturno no se leería */
+    background-color: var(--wys-fondo, white);
+    color: var(--wys-texto, black);
     width: 20rem;
     margin: 20vh auto;
     padding: 2rem;
