@@ -10,9 +10,34 @@ namespace VisualInspector.Servicios;
 /// Una fila del listado de autocontroles.
 /// </summary>
 /// <param name="FechaInicioOrden">Fecha del primer control de la orden, para calcular el tiempo transcurrido.</param>
+/// <param name="EstadoOrden">Si la orden sigue en fabricación o está finalizada.</param>
+/// <param name="EsUltimoDeOrden">Es el último autocontrol (sin contar los anulados) de su orden.</param>
+/// <param name="TieneRegistrados">La orden tiene algún autocontrol registrado (sin contar los anulados).</param>
 public sealed record FilaAutocontrol(
     int Id, string CodigoOrden, DateTime FechaControl, int NumeroControl, DateTime FechaInicioOrden,
-    EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado, string CreadoPor, bool EstaAnulado, string? Linea);
+    EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado, string CreadoPor, bool EstaAnulado, string? Linea,
+    EstadoOrden EstadoOrden = EstadoOrden.EnFabricacion, bool EsUltimoDeOrden = false, bool TieneRegistrados = false)
+{
+    /// <summary>
+    /// Tiempo que lleva la orden desde su último autocontrol, solo en la fila de ese último autocontrol
+    /// y solo si la orden sigue en fabricación y tiene algún autocontrol registrado; si no, null
+    /// (decisión de Alberto, 30/10/2026). Es lo que enseña la columna de tiempo.
+    /// </summary>
+    public TimeSpan? TiempoDesdeUltimoControl(DateTime ahora)
+    {
+        if (!EsUltimoDeOrden || EstaAnulado || EstadoOrden != EstadoOrden.EnFabricacion || !TieneRegistrados)
+            return null;
+        var transcurrido = ahora - FechaControl;
+        return transcurrido < TimeSpan.Zero ? TimeSpan.Zero : transcurrido;
+    }
+
+    /// <summary>
+    /// Lo mismo, pero solo cuando ya han pasado las horas recomendadas (4): con eso la pantalla pone
+    /// el icono de alerta. Si no hay que avisar, null.
+    /// </summary>
+    public TimeSpan? TiempoSinControl(DateTime ahora) =>
+        TiempoDesdeUltimoControl(ahora) is { } t && t.TotalHours >= ServicioAutocontroles.HorasRecomendadasEntreControles_wys ? t : null;
+}
 
 /// <summary>
 /// Por qué, quién y cuándo se anuló un autocontrol.
@@ -81,8 +106,14 @@ public sealed record PrevisionControl(string Nombre, DateTime? FechaUltimo, stri
 /// Una orden que sigue en fabricación, para sugerirla al crear un autocontrol nuevo y no tener
 /// que escribir otra vez la orden ni elegir la línea.
 /// </summary>
-/// <param name="SiguienteControl">El control que tocaría ahora ("Control 3"…).</param>
+/// <param name="SiguienteControl">El autocontrol que tocaría ahora ("RPI 3"…).</param>
 public sealed record OrdenAbierta(string Codigo, string? Linea, string? Litografia, DateTime UltimoControl, string SiguienteControl);
+
+/// <summary>
+/// Una orden que se finalizaría sola al crear un autocontrol en su línea.
+/// </summary>
+/// <param name="SinRegistrar">Autocontroles de la orden que no se llegaron a registrar: se borrarían.</param>
+public sealed record OrdenACerrar(string Codigo, int SinRegistrar);
 
 /// <summary>
 /// Resultado de crear un autocontrol: su número si ha ido bien, o el error para el usuario.
@@ -125,14 +156,14 @@ public sealed partial class ServicioAutocontroles(
     }
 
     /// <summary>
-    /// Dice cómo se llama un control según su número: "Control 1 (inicial)", "Control 2"…
+    /// Dice cómo se llama un autocontrol según su número: "RPI 1 (inicial)", "RPI 2"… (decisión de Alberto, 30/10/2026: «RPI» en lugar de «Control»)
     /// </summary>
     public static string NombreControl(int numeroControl) =>
-        numeroControl == 1 ? "Control 1 (inicial)" : $"Control {numeroControl}";
+        numeroControl == 1 ? "RPI 1 (inicial)" : $"RPI {numeroControl}";
 
     /// <summary>
     /// Nombre del control con el tiempo que pasó de verdad desde el primero de la orden, por
-    /// ejemplo "Control 2 · +3 h 50 min". El primero se queda solo con su nombre.
+    /// ejemplo "RPI 2 · +3 h 50 min". El primero se queda solo con su nombre.
     /// </summary>
     public static string NombreControlConTiempo(int numeroControl, DateTime fechaControl, DateTime fechaInicioOrden) =>
         fechaControl > fechaInicioOrden
@@ -145,6 +176,12 @@ public sealed partial class ServicioAutocontroles(
     /// </summary>
     public static string TiempoDesdeInicio(DateTime fechaControl, DateTime fechaInicioOrden) =>
         fechaControl > fechaInicioOrden ? $"+{FormatearDuracion(fechaControl - fechaInicioOrden)}" : "";
+
+    /// <summary>
+    /// Escribe un tiempo como horas y minutos: "05 h : 10 min", "26 h : 05 min" (las horas pueden pasar de 24).
+    /// </summary>
+    public static string FormatearHorasMinutos(TimeSpan duracion) =>
+        $"{(int)duracion.TotalHours:00} h : {duracion.Minutes:00} min";
 
     /// <summary>
     /// Escribe un tiempo de forma sencilla: "45 min", "3 h 50 min", "26 h".
@@ -289,7 +326,13 @@ public sealed partial class ServicioAutocontroles(
             .Take(MaximoFilasListado_wys)
             .Select(a => new FilaAutocontrol(a.Id, a.OrdenFabricacion.Codigo, a.FechaControl,
                 a.NumeroControl, a.OrdenFabricacion.Autocontroles.Min(x => x.FechaControl),
-                a.Estado, a.Resultado, a.CreadoPor, a.EstaAnulado, a.OrdenFabricacion.Linea))
+                a.Estado, a.Resultado, a.CreadoPor, a.EstaAnulado, a.OrdenFabricacion.Linea,
+                a.OrdenFabricacion.Estado,
+                // El último de su orden: el más reciente de los que no están anulados
+                !a.EstaAnulado && a.FechaControl == a.OrdenFabricacion.Autocontroles
+                    .Where(x => !x.EstaAnulado).Max(x => (DateTime?)x.FechaControl),
+                // La orden tiene algún autocontrol registrado (los anulados no cuentan)
+                a.OrdenFabricacion.Autocontroles.Any(x => !x.EstaAnulado && x.Estado == EstadoAutocontrol.Registrado)))
             .ToListAsync();
     }
 
@@ -572,8 +615,8 @@ public sealed partial class ServicioAutocontroles(
         valor is null ? null : Math.Round((decimal)Math.Clamp(valor.Value, 0, 100), 2);
 
     /// <summary>
-    /// Dice qué control tocaría ahora para una orden ("Control 1 (inicial)" si es nueva,
-    /// "Control 2" si ya tiene el inicial…) y cuándo se hizo el último, para enseñarlo antes de
+    /// Dice qué autocontrol tocaría ahora para una orden ("RPI 1 (inicial)" si es nueva,
+    /// "RPI 2" si ya tiene el inicial…) y cuándo se hizo el último, para enseñarlo antes de
     /// crearlo. Devuelve null si el código no es válido.
     /// </summary>
     public async Task<PrevisionControl?> PrevisualizarControlAsync(string? codigoOrden)
@@ -633,21 +676,23 @@ public sealed partial class ServicioAutocontroles(
 
     /// <summary>
     /// Busca las órdenes que se cerrarían solas al crear un autocontrol de la orden indicada en esa
-    /// línea: las que siguen en fabricación en la misma línea, que no son la indicada y que ya tienen
-    /// algún autocontrol registrado (sin ninguno no habría nada que mostrar en su trazabilidad).
-    /// Una línea solo fabrica una orden a la vez: al empezar otra, la anterior ha terminado.
+    /// línea: todas las que siguen en fabricación en la misma línea y no son la indicada, tengan o no
+    /// autocontroles registrados. Una línea solo fabrica una orden a la vez: al empezar otra, la
+    /// anterior ha terminado (decisión de Alberto, 30/10/2026). Trae sus autocontroles para poder
+    /// borrar los que no se llegaron a registrar.
     /// </summary>
     private static async Task<List<OrdenFabricacion>> BuscarOrdenesACerrarAsync(AppDbContext datos, string codigoOrden, string linea) =>
         await datos.OrdenesFabricacion
-            .Where(o => o.Activa && o.Estado == EstadoOrden.EnFabricacion && o.Linea == linea && o.Codigo != codigoOrden
-                && o.Autocontroles.Any(a => !a.EstaAnulado && a.Estado == EstadoAutocontrol.Registrado))
+            .Include(o => o.Autocontroles).ThenInclude(a => a.Diferencias)
+            .Where(o => o.Activa && o.Estado == EstadoOrden.EnFabricacion && o.Linea == linea && o.Codigo != codigoOrden)
             .ToListAsync();
 
     /// <summary>
-    /// Dice qué órdenes se cerrarán solas al crear un autocontrol de esta orden en esta línea, para
-    /// avisar al operario antes de crearlo. Devuelve sus códigos (vacío si no se cierra ninguna).
+    /// Dice qué órdenes se cerrarán solas al crear un autocontrol de esta orden en esta línea, y
+    /// cuántos autocontroles sin registrar se borrarán de cada una, para avisar al operario antes de
+    /// crearlo. Devuelve una lista vacía si no se cierra ninguna.
     /// </summary>
-    public async Task<IReadOnlyList<string>> ListarOrdenesACerrarAsync(string? codigoOrden, string? linea)
+    public async Task<IReadOnlyList<OrdenACerrar>> ListarOrdenesACerrarAsync(string? codigoOrden, string? linea)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
 
@@ -661,7 +706,28 @@ public sealed partial class ServicioAutocontroles(
 
         await using var datos = await fabricaDatos.CreateDbContextAsync();
         var ordenes = await BuscarOrdenesACerrarAsync(datos, codigo, lineaElegida);
-        return ordenes.Select(o => o.Codigo).Order().ToList();
+        return ordenes
+            .OrderBy(o => o.Codigo)
+            .Select(o => new OrdenACerrar(o.Codigo, o.Autocontroles.Count(a => a.Estado != EstadoAutocontrol.Registrado)))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Borra los autocontroles de la orden que no se llegaron a registrar, con sus diferencias, como
+    /// quien tira las hojas en blanco de un cuaderno que se cierra: ya no se podrían registrar y solo
+    /// confundirían. Los registrados no se tocan. Devuelve lo que se ha borrado para anotarlo en el
+    /// diario de seguridad. Lo usan el cierre automático y el de «Finalizar orden».
+    /// </summary>
+    public static List<string> BorrarSinRegistrar(AppDbContext datos, OrdenFabricacion orden)
+    {
+        var borrados = new List<string>();
+        foreach (var autocontrol in orden.Autocontroles.Where(a => a.Estado != EstadoAutocontrol.Registrado).ToList())
+        {
+            borrados.Add($"{NombreControl(autocontrol.NumeroControl)} del {autocontrol.FechaControl:dd/MM/yyyy HH:mm} (creado por {autocontrol.CreadoPor})");
+            datos.Diferencias.RemoveRange(autocontrol.Diferencias);
+            datos.Autocontroles.Remove(autocontrol);
+        }
+        return borrados;
     }
 
     /// <summary>
@@ -669,9 +735,11 @@ public sealed partial class ServicioAutocontroles(
     /// en el cuaderno de la orden. Si la orden aún no existe, la crea. La fecha y hora las pone
     /// el servidor, y el número (1 = inicial, 2, 3…) se calcula solo. La línea elegida (obligatoria)
     /// queda como línea de la orden. Si en esa línea había otra orden en fabricación, se finaliza
-    /// sola (decisión de Alberto, 26/10/2026): el operario ya fue avisado en la pantalla.
+    /// sola y se borran sus autocontroles sin registrar, pero solo si el operario lo ha aceptado
+    /// (<paramref name="aceptaCierre"/>): sin esa aceptación no se hace nada (decisiones de Alberto,
+    /// 26/10/2026 y 30/10/2026). El servidor lo exige aunque la pantalla se haya saltado.
     /// </summary>
-    public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? linea, string? observaciones)
+    public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? linea, string? observaciones, bool aceptaCierre = false)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
 
@@ -720,6 +788,15 @@ public sealed partial class ServicioAutocontroles(
                     return new(null, "Esa orden de fabricación está finalizada. Para añadirle autocontroles, pide al administrador que la reabra.");
                 }
 
+                // Una línea solo puede tener una orden en fabricación: si hay otras, hace falta que el
+                // operario haya aceptado cerrarlas antes de crear nada
+                var cerradas = await BuscarOrdenesACerrarAsync(datos, codigo, lineaElegida);
+                if (cerradas.Count > 0 && !aceptaCierre)
+                {
+                    return new(null, $"La línea {lineaElegida} ya tiene en fabricación la orden {string.Join(", ", cerradas.Select(c => c.Codigo).Order())}. " +
+                        "Hay que aceptar que se finalice para poder crear el autocontrol.");
+                }
+
                 // La orden se queda con la línea de su último autocontrol
                 orden.Linea = lineaElegida;
 
@@ -734,13 +811,15 @@ public sealed partial class ServicioAutocontroles(
                 };
                 datos.Autocontroles.Add(autocontrol);
 
-                // La orden anterior de esta línea ha terminado: se finaliza en la misma operación
-                var cerradas = await BuscarOrdenesACerrarAsync(datos, codigo, lineaElegida);
+                // La orden anterior de esta línea ha terminado: se finaliza en la misma operación y se
+                // borran sus autocontroles sin registrar. Se prepara qué anotar en el diario antes de guardar
+                var borradosPorOrden = new Dictionary<string, List<string>>();
                 foreach (var anterior in cerradas)
                 {
                     anterior.Estado = EstadoOrden.Finalizada;
                     anterior.FechaFin = DateTime.Now;
                     anterior.FinalizadaPor = $"{nombreOperario} (cierre automático)";
+                    borradosPorOrden[anterior.Codigo] = BorrarSinRegistrar(datos, anterior);
                 }
 
                 await datos.SaveChangesAsync();
@@ -749,6 +828,11 @@ public sealed partial class ServicioAutocontroles(
                 {
                     await registroSeguridad.RegistrarAsync(AccionesSeguridad.CierreAutomaticoOrden_wys,
                         $"Correcto: orden {anterior.Codigo} (línea {lineaElegida}) al crear un autocontrol de la orden {codigo}");
+                    foreach (var borrado in borradosPorOrden[anterior.Codigo])
+                    {
+                        await registroSeguridad.RegistrarAsync(AccionesSeguridad.EliminacionAutocontrol_wys,
+                            $"Correcto: orden {anterior.Codigo}, {borrado}, sin registrar, borrado al cerrar la orden automáticamente");
+                    }
                 }
 
                 return new(autocontrol.Id, null);

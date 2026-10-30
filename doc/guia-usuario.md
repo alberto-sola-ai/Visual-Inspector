@@ -39,8 +39,8 @@ Si estás un rato sin usar la aplicación, la sesión se cierra sola y tendrás 
 En la barra de arriba tienes:
 
 - **Autocontroles**: la lista de todos los autocontroles hechos, con buscador. Aquí está el botón
-  «Nuevo Autocontrol RPI».
-- **Órdenes de Fabricación**: la lista de órdenes y su ficha.
+  «Nuevo Autocontrol».
+- **Histórico**: la lista de órdenes de fabricación y su ficha.
 - **Calidad**: un menú con **Trazabilidad** e **Impacto productivo**.
 - **Administración**: solo si eres administrador.
 - Un conmutador con un sol y una luna para cambiar entre **modo diurno y nocturno**. Se recuerda
@@ -55,18 +55,25 @@ Un autocontrol son tres pasos: crearlo, cargar los archivos y validar las difere
 
 ### Paso 1. Crear el autocontrol
 
-1. Entra en **Autocontroles** y pulsa **Nuevo Autocontrol RPI**.
+1. Entra en **Autocontroles** y pulsa **Nuevo Autocontrol**.
 2. Elige la orden. Arriba salen las **órdenes de fabricación abiertas**: pulsa una y se rellenan
    solas la orden y la línea. Si el último control de una orden fue hace 4 horas o más, sale
-   destacada en amarillo porque ya toca otro.
+   destacada en amarillo porque ya toca otro. Lo mismo ves en la lista de **Autocontroles**: una columna
+   **Tiempo AC** (tiempo desde el último autocontrol) dice cuánto hace del último autocontrol de cada
+   orden en fabricación (por ejemplo `03 h : 50 min`; en rojo desde las 4 horas) y, delante del número de la orden, aparece un
+   **icono de alerta** (un triángulo de aviso) cuando ya han pasado 4 horas o más. Solo sale en el último
+   autocontrol de órdenes en fabricación que tienen algún autocontrol registrado: no en órdenes
+   finalizadas ni en las que aún no tienen ninguno registrado. La lista se actualiza sola cada minuto.
+   Las columnas van en este orden: Línea, Orden de fabricación (con el icono delante), Tiempo AC,
+   Control, Fecha y hora, Estado, Resultado y Realizado por.
 3. Si es una orden nueva, escríbela: son **exactamente 10 cifras, solo números**. El campo ya trae
    escrito el inicio habitual de las órdenes; añade el resto.
 4. Elige la **línea** (L1, L2…). Es obligatoria.
 5. Si quieres, escribe observaciones.
 6. Pulsa **Crear autocontrol**.
 
-La fecha y la hora las pone la aplicación. El número del control también: Control 1 es el inicial,
-y los siguientes son Control 2, Control 3… Puedes hacer uno cuando lo consideres necesario; se
+La fecha y la hora las pone la aplicación. El número del autocontrol también: **RPI 1** es el inicial,
+y los siguientes son **RPI 2**, **RPI 3**… Puedes hacer uno cuando lo consideres necesario; se
 recomienda uno cada 4 horas, pero es solo un aviso.
 
 ### Paso 2. Cargar el patrón y las muestras
@@ -209,7 +216,7 @@ patrón equivocado.
 
 ## Órdenes de fabricación
 
-En **Órdenes de Fabricación** ves la lista de órdenes con su litografía, línea, cuántos
+En **Histórico** (la pantalla se titula «Histórico de OFs») ves la lista de órdenes con su litografía, línea, cuántos
 autocontroles tienen, cuántos con incidencias y si siguen en fabricación o están finalizadas. Se
 busca por el número de la orden (basta con las últimas cifras) o por la litografía.
 
@@ -220,10 +227,14 @@ Al abrir una orden ves todos sus autocontroles en orden, con el tiempo que pasó
 
 Cuando termina la fabricación, pulsa **Finalizar orden** en su ficha y confirma. Para poder
 finalizarla debe tener **al menos un autocontrol registrado**. Una orden finalizada ya no admite
-autocontroles nuevos, y los que estaban sin registrar ya no se pueden registrar.
+autocontroles nuevos. Los autocontroles que estuvieran **sin registrar se borran** al finalizar,
+porque ya no se podrían registrar; la ventana de confirmación te dice cuántos son.
 
-Una línea fabrica una orden a la vez: **al crear un autocontrol de una orden nueva en una línea, la
-orden anterior de esa línea se finaliza sola**. La aplicación te avisa antes de crearlo.
+Una línea fabrica una orden a la vez: **al crear un autocontrol de una orden nueva en una línea que ya
+tiene otra orden en fabricación, la anterior se finaliza**. Al pulsar **Crear autocontrol** la
+aplicación te dice qué orden se finalizará (y cuántos autocontroles sin registrar se borrarán) y te
+pide que lo aceptes con **Sí, finalizar y crear el autocontrol**. Si pulsas **No, volver**, no se
+hace nada. Si la línea tenía más de una orden abierta, se finalizan todas.
 
 ### Reabrir una orden
 

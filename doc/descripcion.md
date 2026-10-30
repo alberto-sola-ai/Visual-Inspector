@@ -24,7 +24,7 @@ y [master/02-definicion-mvp.md](master/02-definicion-mvp.md).
 - Usuarios de la aplicación (usuario, nombre completo, rol, permisos, último acceso).
 - Parámetros de la aplicación.
 - Órdenes de fabricación (código de 10 cifras) y sus autocontroles (fecha y hora, número:
-  Control 1 (inicial), Control 2…, estado, observaciones, resultado y diferencias validadas).
+  RPI 1 (inicial), RPI 2…, estado, observaciones, resultado y diferencias validadas).
 - Del patrón y las muestras solo se guarda su huella SHA-256 y un recorte de cada diferencia:
   los archivos no se guardan.
 

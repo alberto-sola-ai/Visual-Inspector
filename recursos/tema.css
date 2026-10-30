@@ -44,12 +44,16 @@
   --wys-velo-rgb: 255, 255, 255;
   --wys-velo-opacidad: .6;
   /* Conmutador diurno / nocturno de la barra: fondo de la píldora, su borde y la bola (sol o luna) */
-  --wys-conmutador-fondo: linear-gradient(90deg, #2C5CC4 0%, #3D9CF0 55%, #5CCBFB 100%);
-  --wys-conmutador-borde: rgba(255, 255, 255, .6);
-  --wys-conmutador-bola: radial-gradient(circle at 35% 30%, #FFE45E 0%, #FFC800 70%);
+  /* De día, la píldora recorre los azules de la identidad (Pantone 7685, 287 y 654) y el sol es un oro pálido,
+     nada saturado, con el símbolo en ámbar suave */
+  --wys-conmutador-fondo: linear-gradient(90deg, var(--wys-azul-brillante) 0%, var(--wys-azul-medio) 55%, var(--wys-azul-oscuro) 100%);
+  --wys-conmutador-borde: var(--wys-gris-azulado-claro);
+  --wys-conmutador-bola: radial-gradient(circle at 35% 30%, #FFF3C4 0%, #F2D679 80%);
+  --wys-conmutador-sol: #D9A21B;
   /* Fondo y texto de los títulos de columna de las tablas: amarillo claro con texto oscuro */
   --wys-tabla-cabecera: #FFF4C2;
   --wys-tabla-cabecera-texto: #1F1A05;
+  --wys-tabla-separador: #B8A13A;   /* línea entre los títulos de columna: un amarillo más oscuro que el fondo */
 
   --wys-fuente: "Lato", "Segoe UI", Arial, sans-serif;
 
@@ -139,6 +143,7 @@ h3 { font-weight: 300; }
   --wys-conmutador-bola: radial-gradient(circle at 35% 30%, #F4F7FF 0%, #D9E2F7 100%);
   --wys-tabla-cabecera: #4B4116;  /* amarillo oscuro apagado con texto claro, para no deslumbrar de noche */
   --wys-tabla-cabecera-texto: #FFF1B8;
+  --wys-tabla-separador: #B09C45;
   --wys-velo-opacidad: .93;      /* la foto de fondo es clara: el velo oscuro casi la tapa para que el texto claro se lea siempre */
 
   --bs-body-bg: #11171E;

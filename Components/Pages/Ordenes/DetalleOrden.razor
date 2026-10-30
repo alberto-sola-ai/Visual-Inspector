@@ -6,7 +6,7 @@
 
 @* Ficha de la orden: sus autocontroles en orden de tiempo, el informe y la finalización *@
 <h1>Orden de fabricación</h1>
-<p><a href="ordenes">Órdenes</a> › @ficha?.Codigo</p>
+<p><a href="ordenes">Histórico de OFs</a> › @ficha?.Codigo</p>
 
 @if (!string.IsNullOrEmpty(mensaje))
 {
@@ -87,6 +87,16 @@ else
         <div class="alert alert-warning mt-3" role="alert">
             Al finalizar la orden ya no se podrán hacer autocontroles nuevos en ella y el informe dejará de ser
             provisional. ¿Finalizar la orden @ficha.Codigo?
+            @if (SinRegistrar > 0)
+            {
+                @* Los autocontroles sin registrar ya no se podrían registrar: se borran al finalizar *@
+                <div class="mt-2">
+                    <strong>
+                        @(SinRegistrar == 1 ? "Hay 1 autocontrol sin registrar y se borrará." : $"Hay {SinRegistrar} autocontroles sin registrar y se borrarán.")
+                    </strong>
+                    Si alguien lo está registrando ahora mismo, perderá su trabajo.
+                </div>
+            }
             <div class="mt-2 d-flex gap-2">
                 <button class="btn btn-danger btn-sm" @onclick="FinalizarAsync" disabled="@estaFinalizando">Sí, finalizar</button>
                 <button class="btn btn-outline-primary btn-sm" @onclick="() => esConfirmando = false">Cancelar</button>
@@ -161,6 +171,9 @@ else
     private FichaOrden? ficha;
     private bool noExiste;
     private bool esConfirmando;
+
+    // Autocontroles de la orden que no se llegaron a registrar: se borran al finalizarla
+    private int SinRegistrar => ficha?.Autocontroles.Count(a => a.Estado != EstadoAutocontrol.Registrado) ?? 0;
     private bool estaFinalizando;
     private bool esConfirmandoReabrir;
     private bool estaReabriendo;

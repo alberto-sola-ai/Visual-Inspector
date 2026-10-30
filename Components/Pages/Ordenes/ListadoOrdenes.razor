@@ -3,12 +3,16 @@
 @inject ServicioOrdenes ServicioOrdenes
 @inject ServicioAutocontroles ServicioAutocontroles
 
-<PageTitle>Órdenes de fabricación · Visual Inspector</PageTitle>
+<PageTitle>Histórico de OFs · Visual Inspector</PageTitle>
 
 @* Listado de órdenes de fabricación, con su litografía, autocontroles e incidencias *@
-<h1>Órdenes de fabricación</h1>
+@* Cabecera: título y búsqueda a la izquierda y, a la derecha, una ilustración decorativa inclinada (la misma
+   idea que en la lista de autocontroles) *@
+<div class="vi-listado-cabecera">
+    <div class="vi-listado-cabecera__izquierda vi-listado-cabecera__izquierda--ancha">
+        <h1>Histórico de OFs</h1>
 
-<div class="d-flex gap-2 align-items-end my-3" style="max-width: 48rem">
+        <div class="d-flex gap-2 align-items-end my-3">
     <div class="flex-grow-1">
         <label class="form-label" for="filtroOrden">Orden de fabricación</label>
         <input id="filtroOrden" class="form-control" inputmode="numeric" maxlength="10"
@@ -28,6 +32,12 @@
         <span>La orden ya trae escrito el inicio habitual (@prefijo): añade el resto, o bórralo para buscar solo por las últimas cifras.</span>
     }
 </p>
+    </div>
+
+    <div class="vi-listado-cabecera__escena vi-listado-cabecera__escena--historico" aria-hidden="true">
+        <img src="recursos/app/historico.png" class="vi-listado-cabecera__ilustracion" alt="" />
+    </div>
+</div>
 
 @if (filas is null)
 {

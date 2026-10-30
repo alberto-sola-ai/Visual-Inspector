@@ -136,8 +136,9 @@ public sealed partial class ServicioOrdenes(
     /// Finaliza la orden al terminar la fabricación, como quien cierra el cuaderno de la orden:
     /// guarda la fecha y quién la cierra, y a partir de ahí no admite autocontroles nuevos.
     /// No se puede finalizar si no hay ningún autocontrol registrado (los anulados no cuentan).
-    /// Sí se puede con autocontroles sin registrar: no se sabe cuántos se harán en una orden y esos
-    /// controles quedan en la orden como "sin registrar" (decisión de Alberto, 26/10/2026).
+    /// Sí se puede con autocontroles sin registrar: no se sabe cuántos se harán en una orden. Esos
+    /// controles se borran al finalizar, porque ya no se podrían registrar (decisión de Alberto,
+    /// 30/10/2026, igual que en el cierre automático), y queda apuntado en el diario de seguridad.
     /// Devuelve un mensaje de error para el usuario, o null si va bien.
     /// </summary>
     public async Task<string?> FinalizarAsync(int id)
@@ -145,7 +146,9 @@ public sealed partial class ServicioOrdenes(
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
 
         await using var datos = await fabricaDatos.CreateDbContextAsync();
-        var orden = await datos.OrdenesFabricacion.Include(o => o.Autocontroles).FirstOrDefaultAsync(o => o.Id == id);
+        var orden = await datos.OrdenesFabricacion
+            .Include(o => o.Autocontroles).ThenInclude(a => a.Diferencias)
+            .FirstOrDefaultAsync(o => o.Id == id);
         if (orden is null)
             return "La orden ya no existe.";
         if (orden.Estado == EstadoOrden.Finalizada)
@@ -157,7 +160,15 @@ public sealed partial class ServicioOrdenes(
         orden.Estado = EstadoOrden.Finalizada;
         orden.FechaFin = DateTime.Now;
         orden.FinalizadaPor = await usuarioActual.ObtenerNombreAsync();
+        // Los autocontroles sin registrar se borran en la misma operación
+        var borrados = ServicioAutocontroles.BorrarSinRegistrar(datos, orden);
         await datos.SaveChangesAsync();
+
+        foreach (var borrado in borrados)
+        {
+            await registroSeguridad.RegistrarAsync(AccionesSeguridad.EliminacionAutocontrol_wys,
+                $"Correcto: orden {orden.Codigo}, {borrado}, sin registrar, borrado al finalizar la orden");
+        }
         return null;
     }
 

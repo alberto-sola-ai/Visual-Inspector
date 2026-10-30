@@ -1,18 +1,18 @@
 @page "/autocontroles"
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
+@implements IDisposable
 @inject ServicioAutocontroles ServicioAutocontroles
 
 <PageTitle>Autocontroles · Visual Inspector</PageTitle>
 
 @* Listado de los autocontroles realizados, del más reciente al más antiguo *@
-<div class="d-flex align-items-center justify-content-between">
-    <h1>Autocontroles</h1>
-    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
-        <a href="autocontroles/nuevo" class="btn btn-primary">Nuevo Autocontrol RPI</a>
-    </AuthorizeView>
-</div>
+@* Cabecera: a la izquierda el título y la búsqueda; en medio una foto del escáner, difuminada por los
+   lados para que se funda con el fondo; a la derecha el botón de nuevo autocontrol *@
+<div class="vi-listado-cabecera">
+    <div class="vi-listado-cabecera__izquierda">
+        <h1>Autocontroles</h1>
 
-<div class="d-flex gap-2 align-items-end my-3" style="max-width: 32rem">
+        <div class="d-flex gap-2 align-items-end my-3">
     <div class="flex-grow-1">
         <label class="form-label" for="filtro">Buscar por orden de fabricación</label>
         <input id="filtro" class="form-control" inputmode="numeric" maxlength="10"
@@ -29,6 +29,19 @@
         <span>Ya trae escrito el inicio habitual (@prefijo): añade el resto, o bórralo para buscar solo por las últimas cifras.</span>
     }
 </p>
+    </div>
+
+    @* Escena decorativa: la foto del escáner con una lupa transparente encima del sobre, como si se estuviera
+       inspeccionando la muestra. Todo el conjunto va inclinado *@
+    <div class="vi-listado-cabecera__escena" aria-hidden="true">
+        <img src="recursos/app/escaner.jpg" class="vi-listado-cabecera__imagen" alt="" />
+        <img src="recursos/app/lupa.png" class="vi-listado-cabecera__lupa" alt="" />
+    </div>
+
+    <AuthorizeView Policy="@Permisos.AutocontrolesRealizar_wys">
+        <a href="autocontroles/nuevo" class="btn btn-primary vi-listado-cabecera__accion">Nuevo Autocontrol</a>
+    </AuthorizeView>
+</div>
 
 @if (filas is null)
 {
@@ -43,10 +56,11 @@ else
     <table class="table table-hover align-middle">
         <thead>
             <tr>
-                <th>Orden de fabricación</th>
                 <th>Línea</th>
-                <th>Fecha y hora</th>
+                <th>Orden de fabricación</th>
+                <th title="Tiempo desde el último autocontrol (AC) de la orden, en horas y minutos">Tiempo AC</th>
                 <th>Control</th>
+                <th>Fecha y hora</th>
                 <th>Estado</th>
                 <th>Resultado</th>
                 <th>Realizado por</th>
@@ -55,14 +69,35 @@ else
         <tbody>
             @foreach (var a in filas)
             {
+                var sinControl = a.TiempoSinControl(ahora);
                 <tr>
-                    <td><a href="@($"autocontroles/{a.Id}")">@a.CodigoOrden</a></td>
                     <td>@(a.Linea ?? "-")</td>
-                    <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        @* El icono va delante del número de orden; el hueco fijo mantiene los números alineados
+                           aunque unas filas lleven icono y otras no *@
+                        <span class="vi-alerta-hueco">
+                            @if (sinControl is { } tiempo)
+                            {
+                                @* Orden en fabricación que lleva 4 horas o más sin un autocontrol nuevo *@
+                                <img src="recursos/iconos/color/alerta.png" class="vi-alerta-control" alt="Alerta"
+                                     title="@($"Hace {ServicioAutocontroles.FormatearDuracion(tiempo)} sin un nuevo autocontrol")" />
+                            }
+                        </span>
+                        <a href="@($"autocontroles/{a.Id}")">@a.CodigoOrden</a>
+                    </td>
+                    <td>
+                        @* Solo en el último autocontrol de una orden en fabricación con algún autocontrol
+                           registrado. En rojo cuando ya han pasado las 4 horas recomendadas *@
+                        @if (a.TiempoDesdeUltimoControl(ahora) is { } desdeUltimo)
+                        {
+                            <span class="@(sinControl is not null ? "text-danger fw-bold" : "")">@ServicioAutocontroles.FormatearHorasMinutos(desdeUltimo)</span>
+                        }
+                    </td>
                     <td>
                         @ServicioAutocontroles.NombreControl(a.NumeroControl)
                         <span class="small text-secondary">@ServicioAutocontroles.TiempoDesdeInicio(a.FechaControl, a.FechaInicioOrden)</span>
                     </td>
+                    <td>@a.FechaControl.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@(a.EstaAnulado ? "Anulado" : ServicioAutocontroles.NombreEstado(a.Estado))</td>
                     <td>
                         @if (a.EstaAnulado)
@@ -84,12 +119,25 @@ else
         </tbody>
     </table>
     <p class="small text-secondary">Se muestran como máximo los 200 más recientes. Usa la búsqueda para encontrar los anteriores.</p>
+    <p class="small text-secondary">
+        <img src="recursos/iconos/color/alerta.png" class="vi-alerta-control" alt="" />
+        Orden en fabricación que lleva @ServicioAutocontroles.HorasRecomendadasEntreControles_wys horas o más sin un autocontrol nuevo.
+        La lista se actualiza sola @(MinutosRefresco_wys == 1 ? "cada minuto" : $"cada {MinutosRefresco_wys} minutos").
+    </p>
 }
 
 @code {
+    // Cada cuántos minutos se vuelve a cargar la lista sola, para que el icono de alerta aparezca a tiempo (decisión de Alberto, 30/10/2026: cada minuto)
+    private const int MinutosRefresco_wys = 1;
+
     private List<FilaAutocontrol>? filas;
     private string filtroOrden = "";
     private string prefijo = "";
+    // Lo último que se buscó de verdad: el refresco automático repite esa búsqueda, no lo que se esté escribiendo
+    private string filtroAplicado = "";
+    // La hora con la que se calculan las alertas: la de la última carga de la lista
+    private DateTime ahora = DateTime.Now;
+    private CancellationTokenSource? parada;
 
     /// <summary>
     /// Carga los últimos autocontroles al abrir la pantalla, sin filtrar, y deja el campo de la
@@ -107,7 +155,61 @@ else
     /// </summary>
     private async Task BuscarAsync()
     {
-        filas = await ServicioAutocontroles.ListarAsync(filtroOrden);
+        filtroAplicado = filtroOrden;
+        await CargarAsync();
+    }
+
+    private async Task CargarAsync()
+    {
+        filas = await ServicioAutocontroles.ListarAsync(filtroAplicado);
+        ahora = DateTime.Now;
+    }
+
+    /// <summary>
+    /// Pone en marcha el refresco automático (cada minuto). Se hace después del primer dibujo y no
+    /// al inicializar, porque la pantalla se prepara antes en el servidor y allí no debe haber reloj.
+    /// </summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender) return;
+        parada = new CancellationTokenSource();
+        _ = RefrescarCadaTantoAsync(parada.Token);
+    }
+
+    /// <summary>
+    /// Cada minuto vuelve a cargar la lista con el mismo filtro, hasta que se sale de la pantalla.
+    /// </summary>
+    private async Task RefrescarCadaTantoAsync(CancellationToken cancelar)
+    {
+        using var reloj = new PeriodicTimer(TimeSpan.FromMinutes(MinutosRefresco_wys));
+        try
+        {
+            while (await reloj.WaitForNextTickAsync(cancelar))
+            {
+                await InvokeAsync(async () =>
+                {
+                    try
+                    {
+                        await CargarAsync();
+                    }
+                    catch (Exception e) when (e is not AccesoDenegadoException)
+                    {
+                        // Un fallo puntual no debe parar el refresco: se vuelve a intentar al minuto siguiente
+                    }
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Se ha salido de la pantalla: es lo normal
+        }
+    }
+
+    public void Dispose()
+    {
+        parada?.Cancel();
+        parada?.Dispose();
     }
 
     /// <summary>

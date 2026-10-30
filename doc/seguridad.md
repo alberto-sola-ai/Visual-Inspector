@@ -70,8 +70,11 @@ diario de seguridad. El informe en PDF solo se descarga con permiso para ver aut
 vuelve a comprobar en cada descarga.
 
 Una línea de fabricación hace una orden a la vez: al empezar otra en la misma línea, la anterior
-se finaliza sola. La pantalla avisa antes de crear el autocontrol y cada cierre automático queda
-apuntado en el diario de seguridad (quién creó el autocontrol que lo provocó y qué orden se cerró).
+se finaliza. La pantalla avisa y pide aceptarlo expresamente antes de crear el autocontrol, y el servidor
+no hace nada sin esa aceptación. Al finalizar una orden (a mano o por el cierre automático) se borran sus autocontroles que no
+se llegaron a registrar, porque ya no se podrían registrar. Cada cierre automático y cada autocontrol
+borrado quedan apuntados en el diario de seguridad (quién provocó el cierre, qué orden se cerró y qué
+control se borró).
 El cuadro de trazabilidad de las órdenes cerradas solo se ve con permiso para ver autocontroles, y
 el servidor lo comprueba en cada consulta.
 

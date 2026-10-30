@@ -98,7 +98,7 @@ corregir**, con un comentario. Todo queda registrado. Al **finalizar la fabricac
 orden: autocontroles, diferencias, validaciones e incidencias.
 
 ```
-AUTOCONTROL (Control 1 (inicial), Control 2… cuando lo decide el operario; se recomienda cada 4 h)
+AUTOCONTROL (RPI 1 (inicial), RPI 2… cuando lo decide el operario; se recomienda cada 4 h)
   Cargar patrón + 2 muestras ─► comparar ─► lista de posibles diferencias
                                                 │
                      FORMULARIO DE VALIDACIÓN (diferencias agrupadas por motivo)
@@ -127,12 +127,16 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
 
 - Finaliza la orden quien puede hacer autocontroles (`Autocontroles.Realizar`), y solo si tiene
   al menos un autocontrol registrado (desde la 0.14.0 puede haber otros sin registrar: no se sabe
-  cuántos se harán en una orden). Después no admite autocontroles nuevos ni registrar los que
-  quedaron pendientes.
-- **Cierre automático (0.14.0):** una línea fabrica una orden a la vez. Al crear un autocontrol de
-  una orden en la línea L1, las demás órdenes en fabricación de L1 que ya tienen algún autocontrol
-  registrado se finalizan solas (`FinalizadaPor` = «nombre (cierre automático)»). La pantalla de
-  «Nuevo autocontrol» avisa antes. Cada cierre se apunta en `Log-Wys-Seg` (`CierreAutomaticoOrden`).
+  cuántos se harán en una orden). Los que quedaron sin registrar se **borran** al finalizar
+  (0.19.0): ya no se podrían registrar. Después no admite autocontroles nuevos.
+- **Cierre automático (0.14.0, regla ampliada en 0.19.0):** una línea fabrica una orden a la vez. Al crear
+  un autocontrol de una orden en la línea L1, **todas** las demás órdenes en fabricación de L1 (tengan o
+  no autocontroles registrados) se finalizan solas (`FinalizadaPor` = «nombre (cierre automático)») y se
+  **borran sus autocontroles sin registrar**. «Nuevo autocontrol» lo avisa y exige una **aceptación
+  expresa** («Sí, finalizar y crear…»); el servidor también la exige (`CrearAsync(…, aceptaCierre)`), así
+  que sin ella no se crea ni se cierra nada. Una orden que se queda sin autocontroles queda vacía y
+  finalizada. Cada cierre se apunta en `Log-Wys-Seg` (`CierreAutomaticoOrden`) y cada autocontrol borrado
+  también (`EliminacionAutocontrol`).
 - Solo el administrador (`Administracion`) puede **reabrirla** (0.8.0): vuelve a «En
   fabricación», se borran la fecha de fin y quién la finalizó, y el informe vuelve a ser
   provisional. Quién y cuándo la reabrió queda en `ModificadoPor`/`FechaModificacion` y en
@@ -158,7 +162,7 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
 
 | Cifra | Cómo se calcula |
 |---|---|
-| Autocontroles completados (6/7) | registrados entre los iniciados (los iniciados que quedaron sin registrar cuentan como no completados) |
+| Autocontroles completados (6/7) | registrados entre los iniciados. Desde la 0.19.0 los sin registrar se borran al cerrar la orden, así que en órdenes cerradas casi siempre será todo |
 | Muestras escaneadas (12/14) | muestras con huella guardada entre 2 por cada autocontrol iniciado |
 | Incidencias detectadas | diferencias que el operario marcó como incidencia |
 | Correcciones verificadas | incidencia que, en el siguiente autocontrol registrado de la orden, ya no se repite con el mismo motivo (decisión de Alberto, 26/10/2026); las del último control no se pueden comprobar |
@@ -294,7 +298,7 @@ rechazo.
 | No se guardan los archivos completos | Decisión de Alberto (22/10/2026): se procesan en memoria; queda el registro, la huella SHA-256 de cada archivo y un recorte pequeño de cada diferencia |
 | Validación humana de cada diferencia | Decisión de Alberto (22/10/2026): la aplicación propone, la persona decide (correcta / incidencia). Las incidencias solo se registran |
 | Informe de fabricación en pantalla y PDF WYS | Decisión de Alberto (22/10/2026). PDF con PDFsharp-MigraDoc 6.2.4, la última con licencia MIT: no actualizar (desde la 6.5.0 es AGPL) |
-| Finalizar la orden | Decisión de Alberto (22/10/2026): la finaliza quien hace autocontroles, nunca con autocontroles sin registrar; antes, el informe es provisional |
+| Finalizar la orden | Decisión de Alberto (22/10/2026): la finaliza quien hace autocontroles; antes, el informe es provisional. Desde el 30/10/2026, los autocontroles sin registrar se borran al finalizar |
 | Reabrir la orden | Decisión de Alberto (22/10/2026): solo el administrador, sin motivo ni tabla de historial de momento |
 | Anular o eliminar autocontroles | Decisión de Alberto (22/10/2026): solo el administrador. Anular deja rastro con motivo; eliminar lo borra de la orden y del informe, y solo queda apuntado en el diario de seguridad |
 | Colores mantenidos, color no analizado | Decisión de Alberto (22/10/2026): todo se ve y se guarda en color; no se mide el tono. Por dentro, la localización de puntos puede usar una copia en gris que no se muestra |

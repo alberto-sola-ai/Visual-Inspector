@@ -1,5 +1,150 @@
 # Registro de cambios
 
+## 0.19.20 — 2026-10-30
+- **Histórico de OFs**: la ilustración se hace **más pequeña** (de 14 x 10,5 a 9,5 x 7,1 rem), **más discreta**
+  (intensidad del 65 % en lugar del 92 %) y se coloca **junto al botón Buscar** en lugar de en el borde derecho de
+  la pantalla.
+
+## 0.19.19 — 2026-10-30
+- **Conmutador diurno/nocturno, modo diurno**: la píldora usa ahora los azules de la identidad WYS (degradado de
+  Pantone 7685 a 287 y 654, con borde gris azulado claro) en lugar de los azules celestes de antes, y el sol es
+  un **oro pálido** menos intenso, con el símbolo en ámbar suave (`--wys-conmutador-sol`). El modo nocturno no
+  cambia. Colores en `recursos/tema.css`.
+
+## 0.19.18 — 2026-10-30
+- **Histórico de OFs**: nueva ilustración decorativa (carpeta de órdenes con una lupa sobre un tubo y un reloj de
+  historial; `recursos/app/historico.png`) a la derecha de la cabecera, con la misma inclinación de 6 grados que la
+  de la lista de autocontroles. La imagen original tenía fondo blanco opaco: se ha pasado a **transparente** (solo el
+  fondo exterior; los folios blancos se conservan) para que se integre también de noche, donde lleva un halo claro
+  suave. Reducida a 480 px (160 KB). La cabecera pasa a dos zonas (título y búsqueda, e ilustración); se oculta por
+  debajo de 1150 px.
+
+## 0.19.17 — 2026-10-30
+- La pantalla de la opción «Histórico» pasa a titularse **«Histórico de OFs»** (encabezado y pestaña del
+  navegador), y las rutas de migas «Órdenes ›» de la ficha de la orden y del informe también dicen ahora
+  «Histórico de OFs ›». Guía de usuario actualizada.
+
+## 0.19.16 — 2026-10-30
+- La opción del menú «Órdenes de Fabricación» pasa a llamarse **«Histórico»**. La dirección (`/ordenes`) y los
+  permisos no cambian, y la pantalla a la que lleva mantiene su título «Órdenes de fabricación». Guía de
+  usuario actualizada.
+
+## 0.19.15 — 2026-10-30
+- La lupa de la foto del escáner se hace **más pequeña** (de 8,3 a 6,8 rem) y se **desplaza hacia la izquierda**
+  (la lente, de unos 5 rem, queda sobre la parte izquierda del sobre). El mango ya no se acerca a la tabla.
+
+## 0.19.14 — 2026-10-30
+- Lista de Autocontroles: se añade una **lupa transparente** (`recursos/app/lupa.png`, PNG con fondo y cristal
+  transparentes, 29 KB) sobre el sobre de la foto del escáner, como si se estuviera inspeccionando la muestra.
+  La foto y la lupa forman una escena que va inclinada 6 grados y cuyo tamaño pasa a 24 x 8,5 rem (la lupa,
+  de 8,3 rem, con la lente de unos 6 rem sobre el sobre). De noche la lupa lleva un halo claro para que el aro
+  azul no se pierda. Sigue siendo solo decorativa y se oculta por debajo de 1150 px.
+
+## 0.19.13 — 2026-10-30
+- El botón de la lista de Autocontroles pasa a llamarse **«Nuevo Autocontrol»** (antes «Nuevo Autocontrol RPI»).
+  La pantalla a la que lleva mantiene su título «Nuevo Autocontrol RPI». Guía de usuario actualizada.
+
+## 0.19.12 — 2026-10-30
+- El botón «Nuevo Autocontrol RPI» de la lista tiene las esquinas **muy redondeadas** (forma de píldora) y
+  algo más de relleno a los lados. Solo ese botón: el resto de botones de la aplicación no cambian.
+
+## 0.19.11 — 2026-10-30
+- **«RPI» en lugar de «Control».** Los autocontroles se llaman ahora **RPI 1 (inicial), RPI 2, RPI 3…** (antes
+  «Control 1 (inicial)», «Control 2»…) en todas partes: lista de autocontroles, ficha, orden, informe en
+  pantalla y PDF, trazabilidad, avisos y diario de seguridad (las entradas antiguas del diario conservan el
+  texto de entonces). Es solo el nombre: el número y los datos guardados no cambian. Los títulos de columna
+  «Control» se mantienen.
+- La foto del escáner de la lista se **inclina más** (6 grados) y se **acerca al botón** «Nuevo Autocontrol
+  RPI» (queda a la derecha del hueco, con medio rem de margen).
+- Guía de usuario, arquitectura y descripción actualizadas.
+
+## 0.19.10 — 2026-10-30
+- La foto del escáner de la lista de Autocontroles se hace más **apaisada** (23 x 8,1 rem; antes 20 x 8,5) y
+  se **inclina 3 grados** (`transform: rotate(-3deg)`), como una foto dejada sobre la mesa. Se vuelve a
+  recortar el original en panorámico (720 x 253 px) en lugar de estirarlo, para no deformarla.
+
+## 0.19.9 — 2026-10-30
+- Lista de Autocontroles: la foto del escáner se sustituye por una **más ilustrativa** (sobre en el cristal del
+  escáner y, al lado, la hoja del patrón). Recortada en apaisado y reducida a 28 KB (`recursos/app/escaner.jpg`).
+  Como la imagen ocupa casi todo el ancho, el difuminado de los lados se reduce (14 %) para no borrar el
+  escáner ni la hoja. Mismo tamaño (20 x 8,5 rem). Ya no sale ninguna marca real.
+
+## 0.19.8 — 2026-10-30
+- La foto del escáner de la lista de Autocontroles sube a un tamaño intermedio (20 x 8,5 rem y 80 % de
+  intensidad): la 0.19.7 la había dejado demasiado pequeña. La marca del sobre sigue sin poder leerse.
+
+## 0.19.7 — 2026-10-30
+- La foto del escáner de la lista de Autocontroles se reduce a la **mitad** (14 x 6,25 rem), se centra en el
+  hueco entre la búsqueda y el botón y baja de intensidad (70 %) para que no resalte. El archivo
+  `escaner.jpg` pasa a 440 px de ancho (11 KB): la marca del sobre queda solo representativa, no legible.
+
+## 0.19.6 — 2026-10-30
+- Lista de Autocontroles: nueva **foto del escáner** (`recursos/app/escaner.jpg`, recortada y reducida a 50 KB)
+  entre la búsqueda y el botón «Nuevo Autocontrol RPI». Va difuminada por los lados (y algo por arriba y
+  abajo) con una máscara de transparencia, así se funde con el fondo de día y de noche. La cabecera pasa a
+  tres zonas: título y búsqueda, foto y botón. En pantallas de menos de 1150 px la foto se oculta. Es
+  solo decorativa (sin texto alternativo ni enlace).
+
+## 0.19.5 — 2026-10-30
+- Los títulos de columna de todas las tablas llevan ahora un **separador vertical visible** entre columna y
+  columna (solo en la cabecera). El color está en `recursos/tema.css` (`--wys-tabla-separador`), uno para el
+  modo diurno y otro para el nocturno.
+
+## 0.19.4 — 2026-10-30
+- Lista de Autocontroles: la columna «Tiempo sin control (hh:mm)» pasa a llamarse **Tiempo AC** (con una ayuda
+  al pasar el ratón) y el tiempo se escribe como **00 h : 00 min** (por ejemplo `03 h : 50 min`, `26 h : 05 min`).
+
+## 0.19.3 — 2026-10-30
+- Lista de Autocontroles: nuevo orden de columnas: **Línea, Orden de fabricación (con el icono de alerta
+  delante), Tiempo sin control, Control, Fecha y hora, Estado, Resultado y Realizado por**. El icono ocupa
+  un hueco fijo para que los números de orden queden alineados. «Fecha y hora» se mantiene (no estaba en la
+  lista pedida; se puede quitar si no hace falta).
+
+## 0.19.2 — 2026-10-30
+- Lista de Autocontroles: el **icono de alerta es más grande** (1,9 rem) y hay una columna nueva, **Tiempo
+  sin control (hh:mm)**, con el tiempo desde el último autocontrol de cada orden (`03:50`, `26:05`; en rojo
+  desde las 4 horas). Solo sale en la fila del último autocontrol de una orden **en fabricación con algún
+  autocontrol registrado**; no en órdenes finalizadas ni sin ninguno registrado (decisión de Alberto,
+  30/10/2026). El icono de alerta sigue la misma regla para no contradecirse.
+- 8 pruebas nuevas (107 de 107 correctas). Guía de usuario actualizada.
+
+## 0.19.1 — 2026-10-30
+- La lista de Autocontroles se actualiza sola **cada minuto** (antes cada 10), para que el icono de alerta
+  de las 4 horas salga casi a la hora exacta. Es la constante `MinutosRefresco_wys` de
+  `ListadoAutocontroles.razor`. Cada refresco repite la última búsqueda; la guía de usuario lo recoge.
+
+## 0.19.0 — 2026-10-30
+- **Icono de alerta en la lista de Autocontroles.** La fila del último autocontrol de cada orden que sigue
+  en fabricación muestra el icono corporativo de alerta si lleva **4 horas o más** sin un autocontrol nuevo
+  (al pasar el ratón: «Hace 5 h 10 min sin un nuevo autocontrol»). No sale en órdenes finalizadas ni en
+  autocontroles anulados. La lista **se actualiza sola cada 10 minutos**, repitiendo la última búsqueda.
+- **Una sola orden en fabricación por línea, con aceptación expresa.** Al pulsar «Crear autocontrol» de una
+  orden nueva en una línea que ya tiene otra orden en fabricación, la pantalla pide confirmar («Sí, finalizar
+  y crear el autocontrol» / «No, volver»). El servidor también lo exige (`CrearAsync(…, aceptaCierre)`).
+  La regla se aplica ahora a **todas** las órdenes en fabricación de la línea, tengan o no autocontroles
+  registrados (antes solo a las que tenían alguno registrado, y podía haber dos abiertas).
+- **Se borran los autocontroles sin registrar** de la orden que se finaliza, tanto en el cierre automático
+  como en «Finalizar orden» (con su aviso del número que se borrará): ya no se podrían registrar. Los
+  registrados no se tocan. Una orden que se queda sin autocontroles queda vacía y finalizada. Cada borrado se
+  apunta en el diario de seguridad (`EliminacionAutocontrol`).
+- Efecto a tener en cuenta: el cuadro de trazabilidad «Autocontroles completados» ya no contará como
+  incompletos los que se borran al cerrar la orden.
+- 13 pruebas nuevas (`PruebasCierreDeLinea.cs`); 99 de 99 correctas. Guía de usuario, arquitectura y
+  seguridad actualizadas.
+
+## 0.18.6 — 2026-10-30
+- Pantalla de entrada: el logo nuevo lleva fondo blanco, así que va sobre una tarjeta blanca redondeada
+  del ancho del formulario (antes se veía como un rectángulo de esquinas vivas sobre la foto). Es igual
+  de día y de noche, por lo que se quita la regla que solo lo hacía de noche.
+
+## 0.18.5 — 2026-10-30
+- **Nuevo logo de Visual Inspector** (ojo con lupa que compara dos muestras, en azul y rojo WYS). Se
+  sustituye en todos los sitios donde se usaba, en `recursos/app/`: el logo completo de la pantalla de
+  entrada (`visual-inspector-logo.png`), el símbolo de la cabecera (`visual-inspector-simbolo.png`, ahora
+  rectangular, sin deformar), el icono de la pestaña (`favicon-32.png`) y el icono de apple-touch
+  (`icono-180.png`). Recortados sin márgenes y con fondo blanco, así que de noche siguen sobre la placa
+  blanca. El logo de WYS no se toca.
+
 ## 0.18.4 — 2026-10-26
 - Autocontrol, comparación: al cambiar la tolerancia **con validaciones hechas** sale un aviso («Has
   validado N diferencias (M incidencias)… ¿Cambiar de todas formas?») con «Sí, cambiar» y «No, seguir

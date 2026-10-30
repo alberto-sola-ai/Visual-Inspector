@@ -109,9 +109,16 @@ h1:focus {
 .vi-entrada__logo {
     display: block;
     width: 100%;
-    max-width: 20rem;
-    height: auto;
+    height: 12rem;
     margin: 0 auto 1.5rem;
+    padding: .75rem;
+    box-sizing: border-box;
+    object-fit: contain;
+    /* El logo lleva fondo blanco: va sobre una tarjeta blanca redondeada, como el formulario, y se ve
+       igual de día y de noche */
+    background: #fff;
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .5rem;
 }
 
 /* Título WYS (mayúsculas, azul oscuro, Lato Black; lo pone tema.css) a un tamaño menor */
@@ -360,6 +367,11 @@ h1:focus {
     border-bottom-color: var(--wys-gris-azulado-claro);
 }
 
+/* Separadores verticales visibles entre los títulos de columna (solo en la cabecera, no en el cuerpo) */
+.table > thead > tr > th + th {
+    border-left: 1px solid var(--wys-tabla-separador);
+}
+
 /* Trazabilidad: cuadro de mando de una orden cerrada (cifras clave y dos barras de progreso) */
 .vi-cuadro {
     background: var(--wys-fondo);
@@ -591,14 +603,6 @@ h1:focus {
     display: inline;
 }
 
-/* Los logos de la aplicación llevan letras azul oscuro sobre fondo transparente: de noche se ponen
-   sobre una placa blanca para que se lean, sin tocar el dibujo */
-[data-bs-theme="dark"] .vi-entrada__logo {
-    background: #fff;
-    border-radius: .5rem;
-    padding: 1rem;
-    box-sizing: border-box;
-}
 
 [data-bs-theme="dark"] .vi-simbolo-app {
     background: #fff;
@@ -646,6 +650,15 @@ h1:focus {
 .vi-conmutador__bola svg {
     width: 1.15rem;
     height: 1.15rem;
+}
+
+/* Color del símbolo del sol (variable de recursos/tema.css; las rayas y el círculo usan el mismo) */
+.vi-conmutador__sol circle {
+    fill: var(--wys-conmutador-sol);
+}
+
+.vi-conmutador__sol g {
+    stroke: var(--wys-conmutador-sol);
 }
 
 .vi-conmutador__luna {
@@ -914,4 +927,139 @@ h1:focus {
 .vi-ayuda-icono:focus-visible {
     outline: 2px solid var(--wys-azul-brillante);
     outline-offset: 2px;
+}
+
+/* Icono de alerta de la lista de autocontroles: orden en fabricación sin un autocontrol nuevo desde hace 4 horas */
+.vi-alerta-control {
+    width: 1.9rem;
+    height: 1.9rem;
+    margin-left: .4rem;
+    vertical-align: text-bottom;
+}
+
+/* En la leyenda de debajo de la tabla, el icono va al tamaño del texto */
+.small .vi-alerta-control {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-left: 0;
+    margin-right: .25rem;
+}
+
+/* Hueco fijo para el icono de alerta, delante del número de orden: así los números de orden quedan
+   alineados aunque unas filas lleven el icono y otras no */
+.vi-alerta-hueco {
+    display: inline-block;
+    width: 2.3rem;
+    vertical-align: middle;
+}
+
+.vi-alerta-hueco .vi-alerta-control {
+    margin-left: 0;
+    vertical-align: middle;
+}
+
+/* Lista de autocontroles: título y búsqueda a la izquierda, una foto del escáner en medio y el botón de
+   nuevo autocontrol a la derecha. La foto se difumina por los lados (y un poco por arriba y abajo) con una
+   máscara de transparencia, así se funde con el fondo en modo diurno y nocturno */
+.vi-listado-cabecera {
+    display: flex;
+    align-items: stretch;
+    gap: 1.5rem;
+}
+
+.vi-listado-cabecera__izquierda {
+    flex: 0 0 32rem;
+}
+
+.vi-listado-cabecera__escena {
+    /* Foto del escáner (24 x 8,5 rem) con una lupa encima, pegada al botón «Nuevo Autocontrol» (el margen
+       izquierdo automático la empuja hacia él). Es solo ambiente: no debe resaltar. El conjunto va
+       inclinado como una foto dejada sobre la mesa */
+    position: relative;
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: auto;
+    margin-right: .5rem;
+    width: 24rem;
+    height: 8.5rem;
+    transform: rotate(-6deg);
+    pointer-events: none;
+}
+
+.vi-listado-cabecera__imagen {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+    opacity: .8;
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%),
+                        linear-gradient(to bottom, transparent 0, #000 16%, #000 84%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%),
+                linear-gradient(to bottom, transparent 0, #000 16%, #000 84%, transparent 100%);
+    mask-composite: intersect;
+}
+
+/* Lupa transparente (el cristal deja ver la foto): su lente, de unos 5 rem, cae sobre la parte izquierda del sobre del escáner */
+.vi-listado-cabecera__lupa {
+    position: absolute;
+    left: 1.25rem;
+    top: 1.7rem;
+    width: 6.8rem;
+    height: 6.8rem;
+    filter: drop-shadow(0 .15rem .25rem rgba(0, 0, 0, .35));
+}
+
+[data-bs-theme="dark"] .vi-listado-cabecera__lupa {
+    /* De noche el aro azul se pierde sobre el fondo oscuro: un halo claro lo despega */
+    filter: drop-shadow(0 0 .2rem rgba(255, 255, 255, .6));
+}
+
+.vi-listado-cabecera__accion {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    /* Botón de nuevo autocontrol con las esquinas muy redondeadas (en forma de píldora) */
+    border-radius: 2rem;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+}
+
+/* En pantallas estrechas no hay hueco para la foto */
+@media (max-width: 1150px) {
+    .vi-listado-cabecera__escena {
+        display: none;
+    }
+
+    .vi-listado-cabecera {
+        justify-content: space-between;
+    }
+}
+
+/* Histórico de OFs: la cabecera lleva la misma escena inclinada que la lista de autocontroles, pero con una
+   ilustración (carpeta de órdenes con una lupa sobre un tubo) en lugar de la foto del escáner */
+.vi-listado-cabecera__izquierda--ancha {
+    flex-basis: 48rem;
+}
+
+.vi-listado-cabecera__escena--historico {
+    /* Pequeña y pegada al botón Buscar (sin el margen automático que la llevaba al borde derecho) */
+    width: 9.5rem;
+    height: 7.1rem;
+    margin-left: .5rem;
+    margin-right: 0;
+}
+
+.vi-listado-cabecera__ilustracion {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: .65;
+    filter: drop-shadow(0 .15rem .25rem rgba(0, 0, 0, .2));
+}
+
+[data-bs-theme="dark"] .vi-listado-cabecera__ilustracion {
+    /* De noche el azul oscuro de la carpeta se pierde sobre el fondo: un halo claro suave la despega */
+    filter: drop-shadow(0 0 .25rem rgba(255, 255, 255, .45));
 }

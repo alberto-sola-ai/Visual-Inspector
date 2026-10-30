@@ -23,7 +23,7 @@ else
     <div class="d-flex justify-content-between align-items-start">
         <div>
             <h1 class="mb-1">Informe de fabricación</h1>
-            <p class="mb-1"><a href="ordenes">Órdenes</a> › <a href="@($"ordenes/{o.Id}")">@o.Codigo</a> › Informe</p>
+            <p class="mb-1"><a href="ordenes">Histórico de OFs</a> › <a href="@($"ordenes/{o.Id}")">@o.Codigo</a> › Informe</p>
             @if (informe.EsProvisional)
             {
                 <span class="wys-etiqueta">Provisional · la orden aún no está finalizada</span>
