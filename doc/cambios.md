@@ -1,5 +1,53 @@
 # Registro de cambios
 
+## Documentación — 2026-10-30
+- **Capítulos 03 a 09 del máster** (`doc/master/`): preparación del entorno, primer prototipo, integración de IA,
+  base de datos, testing, mejoras y conclusiones. Estaban vacíos; cada uno explica la necesidad que plantea su título,
+  el concepto y cómo se aplicó en el proyecto, con enfoque de presentación para el máster: sin fechas ni versiones,
+  con cifras globales comprobadas el 30/10/2026 y diciendo también lo que no se ha probado.
+- **`guia-master.md` actualizada**: periodo hasta la 0.20.2, cifras actuales (21 commits, 11 migraciones, 125
+  pruebas, 46 archivos de C# y 57 pantallas), mejoras 0.13 a 0.20, próximos pasos de hoy, glosario con «RPI» y
+  enlaces a los nuevos capítulos. Se corrige que el repositorio de GitHub es **público**, no privado.
+- **`guia-usuario.md`**: se concretan el bloqueo de la cuenta (3 fallos, 15 minutos) y el cierre de sesión por
+  inactividad (30 minutos), datos comprobados en el código. Llegará a la aplicación al reconstruirla.
+
+## 0.20.2 — 2026-10-30
+- **Botones de exportación con icono y junto a Buscar** (decisión de Alberto, 30/10/2026): en lugar de dos botones
+  de texto debajo del filtro, ahora hay dos botones solo con icono (hoja de cálculo para Excel y las letras CSV
+  para CSV), pegados al botón **Buscar** de Trazabilidad y al botón **Ver** de Impacto productivo, con su ayuda
+  al pasar el ratón.
+- **Solo se activan si hay algo que exportar**: en Trazabilidad, si la lista tiene órdenes; en Impacto, si el cuadro
+  tiene incidencias. Si no, se ven apagados. En la ficha de una orden, el botón de Excel siempre está activo.
+- Mientras se prepara el archivo, el botón pulsado muestra una ruedecita. El aviso de error (por ejemplo
+  «demasiadas filas») pasa a salir flotando justo debajo de los botones, con su cruz para cerrarlo, para no
+  descuadrar la fila de filtros. Azul de la identidad WYS, también de noche.
+
+## 0.20.1 — 2026-10-30
+- **Icono de la aplicación que no se actualizaba** (el logo antiguo seguía saliendo en la lista de pestañas o de
+  favoritos del navegador): los navegadores guardan los iconos mucho tiempo. Ahora las direcciones de los iconos de
+  la pestaña y del móvil llevan el número de versión (`?v=…`), así que se vuelven a pedir con cada actualización, y
+  `/favicon.ico`, que los navegadores piden por su cuenta, devuelve el icono nuevo sin exigir sesión (antes
+  redirigía a la pantalla de entrada).
+
+## 0.20.0 — 2026-10-30
+- **Exportación a Excel y CSV** de Trazabilidad e Impacto productivo (botones «Descargar Excel» y «Descargar CSV»):
+  - Trazabilidad, lista de órdenes cerradas: Excel y CSV, con los filtros aplicados (9 columnas).
+  - Trazabilidad, ficha de una orden: Excel de varias hojas (resumen, incidencias por motivo, impacto,
+    producción a revisar y autocontroles).
+  - Impacto productivo: Excel con resumen, por línea, por litografía, por defecto, órdenes (todas, no solo 15) y
+    **detalle de incidencias** (una fila por incidencia, dato nuevo que no estaba en pantalla); el CSV es ese detalle.
+- El CSV va pensado para el Excel en español: UTF-8 con marca, `;` como separador, coma decimal y fechas
+  `dd/MM/aaaa HH:mm`. En el Excel, números y fechas son valores reales (se pueden sumar y ordenar).
+- **Seguridad**: permiso de ver autocontroles, filtros revalidados, tope de 5.000 órdenes y 20.000 incidencias por
+  archivo, **protección contra fórmulas** (los textos que empiezan por =, +, - o @ llevan una comilla delante) y
+  cada exportación apuntada en el diario (`ExportacionDatos`).
+- La descarga la hace un pequeño script propio (`descargar-archivo.js`) a partir de un botón de la pantalla y no de
+  un enlace directo, para que los avisos (por ejemplo «demasiadas filas») salgan junto a los botones.
+- Biblioteca nueva: **MiniExcel 1.46.0** (Apache 2.0, gratuita también para uso comercial), anotada en
+  `generar-versiones.ps1` y en el panel de versiones.
+- 18 pruebas nuevas (125 de 125 correctas): escritor de CSV y de Excel, protección contra fórmulas, permisos,
+  topes y diario.
+
 ## 0.19.20 — 2026-10-30
 - **Histórico de OFs**: la ilustración se hace **más pequeña** (de 14 x 10,5 a 9,5 x 7,1 rem), **más discreta**
   (intensidad del 65 % en lugar del 92 %) y se coloca **junto al botón Buscar** en lugar de en el borde derecho de

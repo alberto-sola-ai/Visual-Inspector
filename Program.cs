@@ -156,6 +156,7 @@ builder.Services.AddScoped<VisualInspector.Servicios.Informes.GeneradorInformePd
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ServicioArchivosAutocontrol>();
 builder.Services.AddScoped<ServicioRegistros>();
 builder.Services.AddScoped<ServicioLimpieza>();
+builder.Services.AddScoped<VisualInspector.Servicios.Exportacion.ServicioExportacion>();
 // Una sola instancia: guarda la guía ya preparada para no leerla en cada visita
 builder.Services.AddSingleton<ServicioAyuda>();
 // Una por sesión abierta: recuerda si el panel de ayuda está abierto al cambiar de pantalla
@@ -249,6 +250,15 @@ app.Use(async (contexto, siguiente) =>
 
 // Los archivos de la web (estilos y el programa de Blazor, _framework/blazor.web.js) se sirven
 // sin exigir sesión: sin ellos la pantalla de entrada se ve mal y los botones no funcionan
+// Los navegadores piden /favicon.ico por su cuenta (lista de pestañas, favoritos, sugerencias de la barra de
+// direcciones): se contesta con el icono de la aplicación y sin exigir sesión, en lugar de mandarlos a la
+// pantalla de entrada, que les dejaba el icono viejo guardado
+app.MapGet("/favicon.ico", (IWebHostEnvironment entorno) =>
+{
+    var ruta = Path.Combine(entorno.ContentRootPath, "recursos", "app", "favicon-32.png");
+    return Results.File(ruta, "image/png", lastModified: File.GetLastWriteTimeUtc(ruta));
+}).AllowAnonymous();
+
 app.MapStaticAssets().AllowAnonymous();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

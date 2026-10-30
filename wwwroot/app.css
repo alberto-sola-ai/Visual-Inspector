@@ -1063,3 +1063,55 @@ h1:focus {
     /* De noche el azul oscuro de la carpeta se pierde sobre el fondo: un halo claro suave la despega */
     filter: drop-shadow(0 0 .25rem rgba(255, 255, 255, .45));
 }
+
+/* Botones de exportar (Excel y CSV): solo el icono, pegados al botón de buscar y del mismo alto. El aviso de
+   error flota justo debajo para no descuadrar la fila de filtros */
+.vi-exportar {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.vi-exportar__boton {
+    display: inline-grid;
+    place-items: center;
+    padding: .25rem .5rem;
+    /* Azul de la identidad WYS (el de Bootstrap por defecto es otro) */
+    --bs-btn-color: var(--wys-azul-titulo);
+    --bs-btn-border-color: var(--wys-azul-titulo);
+    --bs-btn-hover-color: #fff;
+    --bs-btn-hover-bg: var(--wys-azul-oscuro);
+    --bs-btn-hover-border-color: var(--wys-azul-oscuro);
+    --bs-btn-active-color: #fff;
+    --bs-btn-active-bg: var(--wys-azul-oscuro);
+    --bs-btn-active-border-color: var(--wys-azul-oscuro);
+    --bs-btn-disabled-color: var(--wys-azul-titulo);
+    --bs-btn-disabled-border-color: var(--wys-azul-titulo);
+}
+
+.vi-exportar__boton svg {
+    display: block;
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+/* Sin nada que exportar: el icono se ve apagado y el puntero no invita a pulsar */
+.vi-exportar__boton:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+.vi-exportar__aviso {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 5;
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    width: 24rem;
+    margin: .35rem 0 0;
+    padding: .6rem .75rem;
+    box-shadow: 0 .25rem .75rem rgba(0, 0, 0, .2);
+}

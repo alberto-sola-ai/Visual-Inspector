@@ -1,0 +1,115 @@
+@using VisualInspector.Servicios.Exportacion
+@inject IJSRuntime JS
+@inject ILogger<BotonesExportar> Registro
+
+@* Botones con icono para descargar en Excel y en CSV lo que enseña una pantalla. Van pegados al botón de buscar,
+   están desactivados mientras no haya nada que exportar y solo llevan el icono (con su ayuda al pasar el ratón y
+   su etiqueta para lectores de pantalla). El servidor prepara el archivo con los mismos filtros que se ven y
+   wwwroot/js/descargar-archivo.js lo entrega al navegador. Si no se puede (demasiadas filas, por ejemplo), el
+   aviso sale justo debajo de los botones, flotando, para no descuadrar la fila de filtros *@
+<div class="vi-exportar">
+    <button type="button" class="btn btn-outline-primary vi-exportar__boton"
+            title="Descargar en Excel (.xlsx)" aria-label="Descargar en Excel"
+            disabled="@(!Habilitado || estaOcupado)" @onclick="() => DescargarAsync(FormatoExportacion.Excel)">
+        @if (formatoEnCurso == FormatoExportacion.Excel)
+        {
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        }
+        else
+        {
+            @* Hoja de cálculo: documento con una cuadrícula *@
+            <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <path d="M6 2.8h8.6L19.2 7.4v12.8a1.6 1.6 0 0 1-1.6 1.6H6a1.6 1.6 0 0 1-1.6-1.6V4.4A1.6 1.6 0 0 1 6 2.8z"
+                      fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <path d="M14.4 2.8v4.8h4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                <path d="M7.6 12.2h8M7.6 15.2h8M7.6 18.2h8M10.6 12.2v6" fill="none" stroke="currentColor" stroke-width="1.4" />
+            </svg>
+        }
+    </button>
+    @if (PermiteCsv)
+    {
+        <button type="button" class="btn btn-outline-primary vi-exportar__boton"
+                title="Descargar en CSV (texto con columnas separadas por «;»)" aria-label="Descargar en CSV"
+                disabled="@(!Habilitado || estaOcupado)" @onclick="() => DescargarAsync(FormatoExportacion.Csv)">
+            @if (formatoEnCurso == FormatoExportacion.Csv)
+            {
+                <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            }
+            else
+            {
+                @* Archivo CSV: documento con las siglas *@
+                <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                    <path d="M6 2.8h8.6L19.2 7.4v12.8a1.6 1.6 0 0 1-1.6 1.6H6a1.6 1.6 0 0 1-1.6-1.6V4.4A1.6 1.6 0 0 1 6 2.8z"
+                          fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                    <path d="M14.4 2.8v4.8h4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                    <text x="11.8" y="17.4" text-anchor="middle" font-size="6.8" font-weight="900" fill="currentColor"
+                          font-family="Lato, Arial, sans-serif">CSV</text>
+                </svg>
+            }
+        </button>
+    }
+    @if (error is not null)
+    {
+        <div class="alert alert-warning vi-exportar__aviso" role="alert">
+            <span>@error</span>
+            <button type="button" class="btn-close" aria-label="Cerrar el aviso" @onclick="() => error = null"></button>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// Pide al servidor el archivo en el formato elegido (con los filtros que tenga la pantalla en ese momento).
+    /// </summary>
+    [Parameter, EditorRequired] public Func<FormatoExportacion, Task<ResultadoExportacion>> Exportar { get; set; } = default!;
+
+    /// <summary>
+    /// Si es false, solo sale el botón de Excel (cuando el contenido tiene varias hojas y no cabe en un CSV).
+    /// </summary>
+    [Parameter] public bool PermiteCsv { get; set; } = true;
+
+    /// <summary>
+    /// Los botones solo se pueden pulsar cuando hay algo que exportar (por ejemplo, la lista no está vacía).
+    /// </summary>
+    [Parameter] public bool Habilitado { get; set; } = true;
+
+    private FormatoExportacion? formatoEnCurso;
+    private bool estaOcupado => formatoEnCurso is not null;
+    private string? error;
+
+    /// <summary>
+    /// Prepara el archivo y lo descarga. Si no se puede (demasiadas filas, sin permiso…) enseña el aviso.
+    /// </summary>
+    private async Task DescargarAsync(FormatoExportacion formato)
+    {
+        formatoEnCurso = formato;
+        error = null;
+        try
+        {
+            var resultado = await Exportar(formato);
+            if (resultado.Archivo is not { } archivo)
+            {
+                error = resultado.Error;
+                return;
+            }
+
+            using var flujo = new MemoryStream(archivo.Contenido);
+            using var referencia = new DotNetStreamReference(flujo);
+            await JS.InvokeVoidAsync("viDescargarArchivo", archivo.Nombre, referencia, archivo.TipoContenido);
+        }
+        catch (AccesoDenegadoException)
+        {
+            error = "No tienes permiso para exportar estos datos.";
+        }
+        catch (Exception e)
+        {
+            var codigo = CodigoError.Generar();
+            Registro.LogError(e, "Error {Codigo} al exportar", codigo);
+            error = $"Algo no ha ido bien al preparar el archivo. Si se repite, avisa a IT indicando este código: {codigo}.";
+        }
+        finally
+        {
+            formatoEnCurso = null;
+        }
+    }
+}

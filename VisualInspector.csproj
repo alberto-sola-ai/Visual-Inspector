@@ -8,7 +8,7 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- Necesario para los formatos españoles (fechas, números, euros) -->
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.19.20</Version>
+    <Version>0.20.2</Version>
   </PropertyGroup>
 
   <!-- La carpeta recursos/ (logo, fuentes, iconos, tema.css) viaja con la aplicación;
@@ -38,6 +38,7 @@
   -->
   <ItemGroup>
     <PackageReference Include="Markdig" Version="1.5.0" />
+    <PackageReference Include="MiniExcel" Version="1.46.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.21" />

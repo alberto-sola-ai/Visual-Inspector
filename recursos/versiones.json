@@ -1,5 +1,5 @@
 ﻿{
-    "generado":  "2026-10-26T14:14:07",
+    "generado":  "2026-10-30T10:31:10",
     "componentes":  [
                         {
                             "nombre":  ".NET",
@@ -26,8 +26,8 @@
                             "nombre":  "Markdig",
                             "descripcion":  "Convierte la guía de usuario (un archivo de texto en Markdown) en la pantalla Ayuda, sin permitir HTML en bruto. Licencia BSD-2-Clause.",
                             "instalada":  "1.5.0",
-                            "ultima":  "1.5.0",
-                            "recomendacion":  "Al día"
+                            "ultima":  "1.5.1",
+                            "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
@@ -49,6 +49,13 @@
                             "instalada":  "9.0.21",
                             "ultima":  "10.0.14",
                             "recomendacion":  "Recomendada"
+                        },
+                        {
+                            "nombre":  "MiniExcel",
+                            "descripcion":  "Escribe los archivos de Excel (.xlsx) de las exportaciones de Trazabilidad e Impacto productivo. Licencia Apache 2.0.",
+                            "instalada":  "1.46.0",
+                            "ultima":  "1.46.0",
+                            "recomendacion":  "Al día"
                         },
                         {
                             "nombre":  "OpenCvSharp4",

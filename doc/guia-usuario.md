@@ -31,8 +31,9 @@ Si pulsas algo y la aplicación dice que no tienes permiso, pídeselo a un admin
 3. Para cambiarla más adelante, pulsa tu nombre (arriba a la derecha) y elige **Cambiar contraseña**.
    Ahí también está **Mis datos** y **Cerrar sesión**.
 
-Si fallas la contraseña varias veces, la cuenta se bloquea. Pide a un administrador que la desbloquee.
-Si estás un rato sin usar la aplicación, la sesión se cierra sola y tendrás que entrar de nuevo.
+Si fallas la contraseña 3 veces seguidas, la cuenta se bloquea durante 15 minutos. Si no quieres esperar, pide a un
+administrador que la desbloquee.
+Si dejas la aplicación 30 minutos sin usarla, la sesión se cierra sola y tendrás que entrar de nuevo.
 
 ## Cómo está organizada la aplicación
 
@@ -261,12 +262,33 @@ ese motivo.
 Si en una incidencia se retuvo producto, la trazabilidad indica la **producción a revisar**:
 desde el último autocontrol sin incidencias hasta el control en el que se retuvo.
 
+### Descargar en Excel o CSV
+
+En la lista de órdenes cerradas, junto al botón **Buscar**, hay dos botones con icono: el de la hoja de
+cálculo guarda la lista en **Excel** y el que lleva las letras CSV, en **CSV**. Guardan la lista tal como la
+tienes buscada (con los filtros de orden y litografía que hayas aplicado). Solo se pueden pulsar si la lista
+tiene órdenes; si está vacía, se ven apagados. Dentro de una orden, el botón de **Excel** guarda su cuadro en un
+libro de varias hojas: resumen, incidencias por motivo, impacto, producción a revisar y autocontroles.
+
+El CSV está preparado para abrirlo con doble clic en Excel (con acentos y comas decimales bien). Si el
+archivo tiene demasiadas filas, la aplicación lo avisa junto a los botones y hay que afinar los filtros. Cada
+descarga queda apuntada en el diario de seguridad.
+
 ## Impacto productivo
 
 En **Calidad → Impacto productivo** ves cuánto han costado las incidencias: minutos de parada,
 tubos retenidos, número de incidencias y órdenes afectadas. Puedes filtrar por fechas (por defecto,
 los últimos 30 días) y por línea. Hay rankings por orden, línea, diseño (litografía) y tipo de
 defecto, de más a menos impacto. Se actualiza solo con cada autocontrol que se registra.
+
+### Descargar en Excel o CSV
+
+Junto al botón **Ver** hay dos botones con icono, **Excel** (la hoja de cálculo) y **CSV** (las letras CSV), que
+guardan lo que ves, con el mismo periodo y la misma línea. Se apagan si no hay incidencias en el periodo.
+El Excel trae varias hojas: resumen, por línea, por litografía, por defecto, órdenes (todas, no solo las
+15 primeras) y el **detalle de incidencias**, con una fila por incidencia (orden, línea, litografía,
+autocontrol, fecha, motivo, qué se hizo, minutos, tubos, comentario y quién la registró). Ese detalle es lo
+más útil para hacer tus propias tablas dinámicas. El CSV contiene solo ese detalle de incidencias.
 
 ## Preguntas frecuentes
 

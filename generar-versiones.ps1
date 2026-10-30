@@ -21,6 +21,7 @@ $descripciones = @{
     'OpenCvSharp4.runtime.win'                          = 'Parte nativa de OpenCV para Windows. Solo se usa en el equipo de desarrollo. Licencia Apache 2.0.'
     'OpenCvSharp4.official.runtime.linux-x64'           = 'Parte nativa de OpenCV para Linux: la que usa el servidor (Docker). Licencia Apache 2.0.'
     'Markdig'                                           = 'Convierte la guía de usuario (un archivo de texto en Markdown) en la pantalla Ayuda, sin permitir HTML en bruto. Licencia BSD-2-Clause.'
+    'MiniExcel'                                         = 'Escribe los archivos de Excel (.xlsx) de las exportaciones de Trazabilidad e Impacto productivo. Licencia Apache 2.0.'
     'PDFsharp-MigraDoc'                               = 'Genera el informe de fabricación en PDF con la imagen de WYS. Licencia MIT. No actualizar: desde la versión 6.5.0 la licencia pasa a AGPL.'
     'System.Security.Cryptography.Pkcs'                 = 'Firma y cifrado de documentos que usa PDFsharp por dentro. Se fija una versión corregida porque la que trae PDFsharp tiene fallos de seguridad conocidos. Licencia MIT.'
 }

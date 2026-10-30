@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
 @inject ServicioTrazabilidad ServicioTrazabilidad
 @inject ServicioAutocontroles ServicioAutocontroles
+@inject VisualInspector.Servicios.Exportacion.ServicioExportacion ServicioExportacion
 
 <PageTitle>Trazabilidad · Visual Inspector</PageTitle>
 
@@ -21,6 +22,10 @@
                @bind="filtroLitografia" @bind:event="oninput" @onkeydown="AlPulsarTeclaAsync" />
     </div>
     <button class="btn btn-primary" @onclick="BuscarAsync">Buscar</button>
+    @* Descarga de la lista tal como está buscada ahora (lo último que se buscó de verdad, no lo que se esté escribiendo);
+       solo se activa si hay órdenes en la lista *@
+    <BotonesExportar Habilitado="filas is { Count: > 0 }"
+                     Exportar="f => ServicioExportacion.ExportarOrdenesCerradasAsync(filtroOrdenAplicado, filtroLitografiaAplicado, f)" />
 </div>
 <p class="form-text mt-0">
     Todo o parte del número de orden o el principio de la litografía (L + 7 cifras).
@@ -88,6 +93,9 @@ else
     private string filtroOrden = "";
     private string filtroLitografia = "";
     private string prefijo = "";
+    // Lo último que se buscó de verdad: la exportación usa esto
+    private string filtroOrdenAplicado = "";
+    private string filtroLitografiaAplicado = "";
 
     /// <summary>
     /// Carga las órdenes cerradas más recientes al abrir la pantalla, sin filtrar, y deja el campo
@@ -105,6 +113,8 @@ else
     /// </summary>
     private async Task BuscarAsync()
     {
+        filtroOrdenAplicado = filtroOrden;
+        filtroLitografiaAplicado = filtroLitografia;
         filas = await ServicioTrazabilidad.ListarCerradasAsync(filtroOrden, filtroLitografia);
     }
 

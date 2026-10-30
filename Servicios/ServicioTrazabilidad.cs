@@ -109,9 +109,10 @@ public sealed partial class ServicioTrazabilidad(
 
     /// <summary>
     /// Enseña las órdenes cerradas, de la que se cerró más tarde a la más antigua. Se puede buscar
-    /// por el código de la orden o por la litografía (todo o parte).
+    /// por el código de la orden o por la litografía (todo o parte). La pantalla enseña como mucho 100;
+    /// la exportación pide un tope mayor con <paramref name="maximo"/>.
     /// </summary>
-    public async Task<List<FilaTrazabilidad>> ListarCerradasAsync(string? filtroOrden, string? filtroLitografia)
+    public async Task<List<FilaTrazabilidad>> ListarCerradasAsync(string? filtroOrden, string? filtroLitografia, int maximo = MaximoFilasListado_wys)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesVer_wys);
 
@@ -126,7 +127,7 @@ public sealed partial class ServicioTrazabilidad(
 
         var ordenes = await consulta
             .OrderByDescending(o => o.FechaFin)
-            .Take(MaximoFilasListado_wys)
+            .Take(maximo)
             .Select(o => new { o.Id, o.Codigo, o.Litografia, o.Linea, o.FechaFin })
             .ToListAsync();
 

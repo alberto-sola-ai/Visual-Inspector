@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
 @inject ServicioImpacto ServicioImpacto
 @inject ServicioAutocontroles ServicioAutocontroles
+@inject VisualInspector.Servicios.Exportacion.ServicioExportacion ServicioExportacion
 
 <PageTitle>Impacto productivo · Visual Inspector</PageTitle>
 
@@ -31,6 +32,10 @@
         </select>
     </div>
     <button class="btn btn-primary" @onclick="CargarAsync">Ver</button>
+    @* Descarga de lo que se ve ahora (el periodo y la línea del cuadro cargado). En Excel salen todas las hojas; en CSV, el
+       detalle de las incidencias (una fila por incidencia). Solo se activa si el cuadro tiene incidencias *@
+    <BotonesExportar Habilitado="panel is { Incidencias: > 0 }"
+                     Exportar="f => ServicioExportacion.ExportarImpactoAsync(panel!.Desde, panel!.Hasta, panel!.Linea, f)" />
 </div>
 
 @if (panel is null)

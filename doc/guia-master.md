@@ -4,7 +4,7 @@ Documento de apoyo para el Máster de Inteligencia Artificial. Recoge cómo se h
 Visual Inspector desde el primer día, con una IA como copiloto de programación, y sirve de base
 para pasarlo a un documento formal (memoria del TFM, presentación…).
 
-Periodo descrito: del 19/10/2026 (primer commit) al 23/10/2026 (versión 0.12.2).
+Periodo descrito: del 19/10/2026 (primer commit) al 30/10/2026 (versión 0.20.2). Cada tema tiene además su capítulo en [[03-preparacion-entorno]], [[04-primer-prototipo]], [[05-integracion-ia]], [[06-base-de-datos]], [[07-testing]], [[08-mejoras]] y [[09-conclusiones]].
 
 ---
 
@@ -19,9 +19,9 @@ Periodo descrito: del 19/10/2026 (primer commit) al 23/10/2026 (versión 0.12.2)
 | Tecnología | C# · .NET 10 · Blazor Server · MariaDB 11.4 · Docker · OpenCV |
 | Copiloto de IA | Claude Code (Anthropic) dentro de Visual Studio Code |
 | Organización del conocimiento | Bóveda de Obsidian «MasterIA» |
-| Versiones publicadas | De la 0.1.1 a la 0.12.2 (17 commits en GitHub, repositorio privado) |
-| Tamaño | 37 archivos C# (≈4.600 líneas), 50 pantallas Razor (≈3.650 líneas), 9 migraciones de base de datos |
-| Pruebas | 80 pruebas automáticas de seguridad, todas correctas |
+| Versiones | De la 0.1.1 a la 0.20.2. 21 commits en GitHub (hasta la 0.19.20; la serie 0.20 aún no está subida). El repositorio es público |
+| Tamaño | 46 archivos C# (≈7.000 líneas), 57 pantallas Razor (≈5.700 líneas), 11 migraciones de base de datos |
+| Pruebas | 125 pruebas automáticas (seguridad, reglas de negocio y exportación), todas correctas |
 
 ---
 
@@ -82,8 +82,17 @@ Con el MVP terminado, Alberto fue probando la aplicación y pidiendo ajustes. Lo
 | 0.10.7 | Pruebas automáticas de seguridad y corrección de los dos avisos que encontraron |
 | 0.10.8 – 0.11.5 | Menús desplegables, lector de registros para el administrador, «Elegir archivo» que recuerda la carpeta |
 | 0.11.6 – 0.12.2 | Línea de fabricación (para futuros KPI), órdenes abiertas como sugerencia, inicio «10000» ya escrito en el campo de la orden |
+| 0.12.3 – 0.12.5 | Correcciones del acceso con Chrome y preparación para publicar detrás de Nginx Proxy Manager |
+| 0.13.0 – 0.13.4 | Modo diurno y nocturno |
+| 0.14.0 – 0.14.1 | Trazabilidad de las órdenes cerradas y cierre automático por línea |
+| 0.15.0 – 0.16.0 | Qué se hizo con cada incidencia, minutos de parada y tubos retenidos, e impacto productivo |
+| 0.16.1 – 0.16.7 | Menú Calidad, sin pantalla de inicio y conmutador de modo rediseñado |
+| 0.17.0 | Limpieza de datos de prueba para el administrador |
+| 0.18.0 – 0.18.6 | Guía de usuario y ayuda dentro de la aplicación, aviso al cambiar de tolerancia y logo nuevo |
+| 0.19.0 – 0.19.20 | Una sola orden abierta por línea con aceptación, alertas de las cuatro horas, «RPI» en lugar de «Control» y ajustes de diseño |
+| 0.20.0 – 0.20.2 | Exportación a Excel y CSV de trazabilidad e impacto, y el icono de la aplicación sin caché |
 
-El detalle de cada versión está en [cambios.md](cambios.md).
+El detalle de cada versión está en [cambios.md](cambios.md), y las mejoras explicadas por temas en [[08-mejoras]].
 
 ### 3.4 Cronología real
 
@@ -93,6 +102,8 @@ El detalle de cada versión está en [cambios.md](cambios.md).
 | 21/10/2026 | Esqueleto WYS en C# (0.1.1), órdenes y autocontroles (0.2.1) |
 | 22/10/2026 | Visión artificial: carga, localización, comparación, validación e informe (0.4.0 → 0.10.1) |
 | 23/10/2026 | Diseño, pruebas de seguridad, administración, línea de fabricación (0.10.2 → 0.12.2) |
+| 26/10/2026 | Trazabilidad, impacto productivo, modo nocturno, limpieza de datos y ayuda (0.12.3 → 0.18.4) |
+| 30/10/2026 | Una sola orden por línea, alertas, exportación a Excel y CSV y ajustes de diseño (0.18.5 → 0.20.2) |
 
 ---
 
@@ -285,8 +296,8 @@ MasterIA/                         ← bóveda de Obsidian
   internos `[[Nota]]`, una carpeta para cada tipo de nota y nada de carpetas innecesarias. La IA
   las respeta al crear notas.
 - **Notas del máster dentro del proyecto**: `doc/master/` guarda la idea, la definición del MVP
-  y un índice de temas (preparación del entorno, prototipo, IA, base de datos, testing, mejoras y
-  conclusiones). Esta guía sirve para rellenarlos.
+  y un capítulo por cada tema (preparación del entorno, prototipo, IA, base de datos, testing, mejoras y
+  conclusiones), que desarrollan esta guía.
 - **Plugin Local REST API** (`obsidian-local-rest-api`): permite que herramientas externas lean
   y escriban notas de la bóveda.
 - **Skills de Obsidian para la IA**, para que escriba notas con la sintaxis propia de Obsidian.
@@ -311,7 +322,7 @@ aplicación pueda mantenerla el equipo de IT. La visión artificial se hace igua
 | C# | Toda la lógica: servicios, seguridad, visión artificial, base de datos, informe PDF |
 | Razor (HTML + C#) | Las pantallas de Blazor |
 | CSS | Estilos propios sobre el tema corporativo WYS |
-| JavaScript | Cinco scripts pequeños propios: ojo de la contraseña, reloj con turno, menús desplegables, «Elegir archivo» que recuerda la carpeta |
+| JavaScript | Siete scripts pequeños propios: ojo de la contraseña, reloj con turno, menús desplegables, «Elegir archivo» que recuerda la carpeta, modo diurno y nocturno, panel de ayuda arrastrable y descarga de archivos exportados |
 | SQL | Lo genera Entity Framework; a mano solo en conversiones de datos dentro de las migraciones |
 | Dockerfile y YAML | Empaquetado y arranque con Docker |
 | PowerShell | Script que genera el informe de versiones y licencias (`generar-versiones.ps1`) |
@@ -339,6 +350,8 @@ aplicación pueda mantenerla el equipo de IT. La visión artificial se hace igua
 | Pomelo.EntityFrameworkCore.MySql | Conectar con MariaDB | MIT |
 | Microsoft.EntityFrameworkCore.* / Identity | Base de datos y usuarios | MIT |
 | Serilog (+ Expressions) | Diarios de errores y de seguridad en `log/` | Apache 2.0 |
+| MiniExcel 1.46.0 | Escribir los archivos de Excel de las exportaciones | Apache 2.0 |
+| Markdig | Mostrar la guía de usuario (Markdown) en la pantalla de ayuda, sin HTML en bruto | BSD-2-Clause |
 | System.Security.Cryptography.Pkcs 10.0.13 | Forzada a una versión corregida (la que traía PDFsharp tenía fallos de seguridad conocidos) | MIT |
 | xUnit + ASP.NET TestHost + EF InMemory | Pruebas automáticas (solo en el equipo, no van en la aplicación) | Apache 2.0 / MIT |
 
@@ -471,7 +484,7 @@ Al terminar cada cambio, la IA emitía una **Revisión de seguridad WYS** con el
 ### 10.2 Pruebas automáticas de seguridad
 
 Se creó un proyecto de pruebas (**xUnit**) en la carpeta `test/`, que se queda en el equipo:
-no se sube a GitHub ni entra en la aplicación. Resultado: **80 de 80 correctas**.
+no se sube a GitHub ni entra en la aplicación. En la versión 0.12.5 eran **86 de 86 correctas**; hoy, con las pruebas de las reglas de negocio y de la exportación, son **125 pruebas, todas correctas**. Cómo se plantearon, qué encontraron y qué no se ha probado está en [[07-testing]].
 
 | Qué se prueba | Ejemplos |
 |---|---|
@@ -534,11 +547,14 @@ Detalle en [pruebas-seguridad.md](pruebas-seguridad.md) y [seguridad.md](segurid
 
 ## 12. Próximos pasos
 
-- **Fase 2: KPI** por litografía, orden y línea de fabricación (eficiencia operativa). La línea
-  ya se registra desde la versión 0.12.0 pensando en esto.
+- **Copias de seguridad** de la base de datos con un procedimiento de recuperación probado: es lo primero antes de usar la aplicación con datos reales.
+- **Prueba completa con un operario** y archivos de producción, y probar la limpieza de datos contra una copia de la base de datos.
+- **Revisar la tolerancia** con más muestras de otros clientes y añadir pruebas automáticas al comparador.
+- **Filtros** de la lista de autocontroles (solo con alerta, por línea, por estado de la orden y por resultado) y el cliente en la orden para analizar el impacto por cliente.
 - Desplegar en un servidor de WYS (pendiente de que IT defina el servidor).
-- Revisar la tolerancia con más muestras de otros clientes.
-- Actualizar a Entity Framework 10 cuando salga Pomelo 10.
+- Actualizar a Entity Framework 10 cuando salga Pomelo 10, y revisar el aviso de seguridad de `MySqlConnector`.
+
+El detalle está en [[08-mejoras]] y [[09-conclusiones]].
 
 ---
 
@@ -550,6 +566,7 @@ Detalle en [pruebas-seguridad.md](pruebas-seguridad.md) y [seguridad.md](segurid
 | Patrón | Diseño gráfico aprobado y firmado por el cliente (PDF) |
 | Litografía | Código del diseño (L + 7 cifras), por ejemplo L2201989 |
 | OF | Orden de fabricación (10 cifras) |
+| RPI | AutoControl Retenido Para Inspección. Los autocontroles de una orden se numeran RPI 1 (inicial), RPI 2… |
 | Línea | Línea de fabricación de la fábrica (L1 … L7) |
 | MVP | Producto mínimo viable |
 | Agente de IA | IA que no solo responde, sino que actúa: lee, escribe y ejecuta |
@@ -567,7 +584,9 @@ Detalle en [pruebas-seguridad.md](pruebas-seguridad.md) y [seguridad.md](segurid
 
 | Qué | Dónde |
 |---|---|
-| Idea y MVP | `doc/master/` |
+| Idea y MVP | `doc/master/` (notas 01 y 02) |
+| Capítulos del máster | `doc/master/` (notas 03 a 09: entorno, prototipo, IA, base de datos, testing, mejoras y conclusiones) |
+| Guía de usuario | `doc/guia-usuario.md` (también dentro de la aplicación, con el icono de ayuda) |
 | Registro de cambios por versión | `doc/cambios.md` |
 | Arquitectura y decisiones | `doc/arquitectura.md` |
 | Seguridad explicada en sencillo | `doc/seguridad.md` |

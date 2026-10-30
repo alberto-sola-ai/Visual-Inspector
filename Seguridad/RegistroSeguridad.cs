@@ -29,6 +29,7 @@ public static class AccionesSeguridad
     public const string EliminacionAutocontrol_wys = "EliminacionAutocontrol";
     public const string LimpiezaDatos_wys = "LimpiezaDatos";
     public const string ConsultaRegistro_wys = "ConsultaRegistro";
+    public const string ExportacionDatos_wys = "ExportacionDatos";
     public const string TokenFormularioNoValido_wys = "TokenFormularioNoValido";
 }
 

@@ -24,6 +24,19 @@ public sealed record PanelImpacto(
     IReadOnlyList<FilaImpacto> PorDefecto, IReadOnlyList<FilaImpacto> Ordenes);
 
 /// <summary>
+/// Una incidencia con todo su detalle, tal como se exporta: una fila por incidencia.
+/// </summary>
+/// <param name="Actuaciones">Qué se hizo en producción, con palabras ("Parada de línea, Retención de producto").</param>
+public sealed record FilaIncidencia(
+    string Orden, string? Linea, string? Litografia, int NumeroControl, DateTime FechaControl, int NumeroDiferencia,
+    string Motivo, string Actuaciones, int? MinutosParada, int? TubosRetenidos, string? Comentario, string? RegistradoPor);
+
+/// <summary>
+/// Las incidencias de un periodo. <paramref name="EstaRecortado"/> es true si había más que el máximo pedido.
+/// </summary>
+public sealed record IncidenciasListadas(IReadOnlyList<FilaIncidencia> Filas, bool EstaRecortado);
+
+/// <summary>
 /// Calcula el cuadro de impacto productivo: no cuenta solo cuántas incidencias hubo, sino cuánto
 /// costaron (minutos de parada y tubos retenidos), para ver qué líneas, diseños y defectos dan más
 /// problemas. Se calcula en el momento con lo ya registrado, así que cada autocontrol que se registra
@@ -41,7 +54,7 @@ public sealed class ServicioImpacto(
     /// Prepara el cuadro de impacto del periodo (ambos días incluidos) y, si se indica, de una línea.
     /// Cuenta las incidencias de autocontroles registrados y no anulados, según la fecha del control.
     /// </summary>
-    public async Task<PanelImpacto> ObtenerAsync(DateTime desde, DateTime hasta, string? linea)
+    public async Task<PanelImpacto> ObtenerAsync(DateTime desde, DateTime hasta, string? linea, int maximoOrdenes = MaximoOrdenes_wys)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesVer_wys);
 
@@ -82,7 +95,52 @@ public sealed class ServicioImpacto(
             Agrupar(incidencias, i => i.Linea ?? "Sin línea", null),
             Agrupar(incidencias, i => i.Litografia ?? "Sin litografía", null),
             Agrupar(incidencias, i => NombreDefecto(i.Motivo), null),
-            Agrupar(incidencias, i => i.Codigo, i => i.OrdenId).Take(MaximoOrdenes_wys).ToList());
+            Agrupar(incidencias, i => i.Codigo, i => i.OrdenId).Take(maximoOrdenes).ToList());
+    }
+
+    /// <summary>
+    /// Lista una a una las incidencias del periodo (las mismas que cuenta el cuadro), con su comentario y
+    /// lo que se hizo, para exportarlas. No lleva los recortes de imagen. Pide una más que el máximo para saber
+    /// si se ha quedado corto, y entonces lo marca en el resultado.
+    /// </summary>
+    public async Task<IncidenciasListadas> ListarIncidenciasAsync(DateTime desde, DateTime hasta, string? linea, int maximo)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesVer_wys);
+
+        if (hasta < desde) (desde, hasta) = (hasta, desde);
+        var inicio = desde.Date;
+        var fin = hasta.Date.AddDays(1);
+        var lineaElegida = (await servicioAutocontroles.ObtenerLineasAsync())
+            .FirstOrDefault(l => string.Equals(l, (linea ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var consulta = datos.Diferencias.AsNoTracking()
+            .Where(d => d.Validacion == ValidacionDiferencia.Incidencia
+                && !d.Autocontrol.EstaAnulado && d.Autocontrol.Estado == EstadoAutocontrol.Registrado
+                && d.Autocontrol.FechaControl >= inicio && d.Autocontrol.FechaControl < fin);
+        if (lineaElegida is not null)
+        {
+            consulta = consulta.Where(d => d.Autocontrol.OrdenFabricacion.Linea == lineaElegida);
+        }
+
+        // Sin los recortes de imagen: pesan mucho y no se exportan
+        var filas = await consulta
+            .OrderBy(d => d.Autocontrol.FechaControl).ThenBy(d => d.Numero)
+            .Take(maximo + 1)
+            .Select(d => new
+            {
+                Orden = d.Autocontrol.OrdenFabricacion.Codigo, d.Autocontrol.OrdenFabricacion.Linea,
+                d.Autocontrol.OrdenFabricacion.Litografia, d.Autocontrol.NumeroControl, d.Autocontrol.FechaControl,
+                d.Numero, d.Motivo, d.Actuaciones, d.MinutosParada, d.TubosRetenidos, d.Comentario, d.Autocontrol.RegistradoPor
+            })
+            .ToListAsync();
+
+        var recortado = filas.Count > maximo;
+        return new IncidenciasListadas(
+            filas.Take(maximo).Select(f => new FilaIncidencia(f.Orden, f.Linea, f.Litografia, f.NumeroControl, f.FechaControl,
+                f.Numero, NombreDefecto(f.Motivo), ServicioAutocontroles.DescribirActuaciones(f.Actuaciones),
+                f.MinutosParada, f.TubosRetenidos, f.Comentario, f.RegistradoPor)).ToList(),
+            recortado);
     }
 
     /// <summary>
@@ -101,7 +159,7 @@ public sealed class ServicioImpacto(
     /// <summary>
     /// Nombre del defecto para el ranking, igual que se ve en el resto de pantallas.
     /// </summary>
-    private static string NombreDefecto(MotivoDiferencia motivo) => motivo switch
+    public static string NombreDefecto(MotivoDiferencia motivo) => motivo switch
     {
         MotivoDiferencia.Mancha => "Mancha o suciedad",
         MotivoDiferencia.Falta => "Falta elemento o tinta",

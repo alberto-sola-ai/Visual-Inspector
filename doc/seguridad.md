@@ -111,6 +111,14 @@ un archivo del servidor (no lo escribe ningún usuario) y se convierte en pantal
 HTML escrito a mano, así que no puede colar código. Lo que se escribe en el buscador solo se
 compara con el texto de la guía y nunca se interpreta como código.
 
+## Las exportaciones, con tope y sin trampas
+Trazabilidad e Impacto productivo permiten descargar sus datos en Excel y en CSV. Hace falta el mismo
+permiso que para verlos, y el servidor lo vuelve a comprobar. Los filtros se limpian antes de usarlos y hay un
+tope de filas por archivo (5.000 órdenes y 20.000 incidencias) para que nadie bloquee el servidor. Los
+comentarios de las incidencias los escriben los operarios: si alguno empieza por =, +, - o @, Excel podría
+leerlo como una fórmula, así que se le pone una comilla delante y nunca se ejecuta. Cada exportación queda
+apuntada en el diario de seguridad (quién, qué y con qué filtros; nunca el contenido).
+
 ## Si algo falla
 Verás un mensaje sencillo con un código. El código ayuda a IT a encontrar el
 problema, sin enseñar detalles que podrían usar personas malintencionadas.

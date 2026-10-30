@@ -2,6 +2,7 @@
 @attribute [Authorize(Policy = Permisos.AutocontrolesVer_wys)]
 @using VisualInspector.Components.Pages.Autocontroles
 @inject ServicioTrazabilidad ServicioTrazabilidad
+@inject VisualInspector.Servicios.Exportacion.ServicioExportacion ServicioExportacion
 
 <PageTitle>Trazabilidad de la orden · Visual Inspector</PageTitle>
 
@@ -20,6 +21,11 @@ else if (panel is null)
 }
 else
 {
+    @* Descarga en Excel (varias hojas: resumen, motivos, impacto, tramos y autocontroles); no hay CSV porque no cabe en una tabla *@
+    <div class="mb-3">
+        <BotonesExportar PermiteCsv="false" Exportar="f => ServicioExportacion.ExportarTrazabilidadOrdenAsync(Id)" />
+    </div>
+
     @if (panel.EsProvisional)
     {
         <div class="alert alert-warning" role="alert">

@@ -17,8 +17,10 @@
        del modo nocturno se mezclan: cabecera blanca con logo y menús blancos, por ejemplo) *@
     <link rel="stylesheet" href="recursos/tema.css?v=@VersionAplicacion.Numero_wys" />
     @* Icono de la pestaña: el símbolo de la aplicación (el manual WYS no permite la "S" sola) *@
-    <link rel="icon" type="image/png" sizes="32x32" href="recursos/app/favicon-32.png" />
-    <link rel="apple-touch-icon" href="recursos/app/icono-180.png" />
+    @* El número de versión al final de la dirección obliga al navegador a pedir el icono de nuevo cuando se
+       cambia el logo: los navegadores guardan los iconos de pestaña mucho tiempo *@
+    <link rel="icon" type="image/png" sizes="32x32" href="recursos/app/favicon-32.png?v=@VersionAplicacion.Numero_wys" />
+    <link rel="apple-touch-icon" href="recursos/app/icono-180.png?v=@VersionAplicacion.Numero_wys" />
     <HeadOutlet @rendermode="ModoPagina" />
 </head>
 
@@ -34,6 +36,8 @@
     <script src="@Assets["js/menu-desplegable.js"]"></script>
     @* Panel de ayuda flotante: se arrastra desde su cabecera *@
     <script src="@Assets["js/ayuda-flotante.js"]"></script>
+    @* Descarga de los archivos de exportación (Excel y CSV) que prepara el servidor *@
+    <script src="@Assets["js/descargar-archivo.js"]"></script>
     @* «Elegir archivo» del autocontrol con la carpeta de patrones o de muestras recordada *@
     <script src="@Assets["js/elegir-archivo.js"]"></script>
 </body>
