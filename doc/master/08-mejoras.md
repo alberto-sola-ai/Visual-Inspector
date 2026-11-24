@@ -6,19 +6,22 @@ El MVP demostró que la idea funciona, pero una aplicación solo se descubre del
 
 ## El concepto
 
-El desarrollo iterativo avanza por ciclos cortos de cambio y prueba, en los que el usuario orienta el resultado. En este proyecto cada ciclo siguió el mismo camino: una petición en lenguaje de fábrica, la opinión de la IA, una lista de comprobación de normas, la confirmación de la persona, el cambio, las pruebas, la documentación y una nueva versión. El registro de cambios acumula más de ochenta entradas y el repositorio tiene más de veinte entregas, todas con su explicación.
+El desarrollo iterativo avanza por ciclos cortos de cambio y prueba, en los que el usuario orienta el resultado. En este proyecto cada ciclo siguió el mismo camino: una petición en lenguaje de fábrica, la opinión de la IA, una lista de comprobación de normas, la confirmación de la persona, el cambio, las pruebas, la documentación y una nueva versión. El registro de cambios acumula casi cien entradas y el repositorio tiene más de veinte entregas, todas con su explicación.
 
 ## Las mejoras, por categorías
 
 | Categoría | Qué se mejoró |
 |---|---|
+| Integración con producción | La orden se elige con un clic desde la planificación de producción, una hoja de cálculo que mantiene la fábrica: por línea, la que está en máquina, las abiertas que faltan por cerrar y las siguientes. La línea la pone la planificación, una ventana de confirmación resume todo antes de crear el autocontrol y el patrón se busca solo en la carpeta de red por la especialidad del producto. Si la hoja o la carpeta fallan, todo sigue funcionando como antes |
 | Flujo de trabajo | Reabrir, anular y eliminar autocontroles con rastro; controles numerados que decide el operario en lugar de horas fijas; línea de fabricación; órdenes abiertas a un clic; cierre de la orden anterior de una línea con aceptación expresa |
 | Calidad del dato | Registrar qué se hizo con cada incidencia, con minutos de parada y tubos retenidos que se pueden corregir después |
 | Análisis | Trazabilidad de cada orden cerrada, cuadro de impacto productivo con rankings por línea, diseño y defecto, y exportación a Excel y CSV con un detalle de incidencias |
 | Operación diaria | Aviso visual de las órdenes que llevan demasiado tiempo sin autocontrol, aviso antes de perder validaciones al cambiar de tolerancia y limpieza de datos de prueba para pasar a producción |
-| Experiencia de uso | Modo diurno y nocturno, menús, reloj con turno, histórico de órdenes, identidad visual y logo propios, e iconos y botones pulidos tras varias vueltas |
+| Experiencia de uso | Modo diurno y nocturno, menús, reloj con turno, histórico de órdenes, identidad visual y logo propios, e iconos y botones pulidos tras varias vueltas; en la planificación, colores con leyenda, barra de tubos fabricados, franja de creación siempre a la vista y refresco automático |
 | Ayuda al usuario | Guía de usuario escrita para los operarios y panel de ayuda flotante con buscador, sin necesidad de IA |
 | Seguridad y puesta en marcha | Pruebas de seguridad, lector de registros para el administrador, correcciones de acceso y preparación para publicar tras un proxy inverso |
+
+La integración con la planificación es el mejor ejemplo de trabajo iterativo: en una sola sesión pasó por más de diez versiones, cada una a partir de lo que el usuario veía en la anterior (todas las líneas en una fila, verde para la orden en máquina, amarillo si ya tiene autocontroles, rojo para la elegida, la especialidad bajo el número de orden…).
 
 Varias mejoras cambiaron de forma por el camino, y eso también es parte del trabajo: el cierre automático de órdenes empezó solo avisando y acabó exigiendo una aceptación expresa también en el servidor, y los autocontroles pasaron de tener horas fijas a numerarse según decide el operario.
 
@@ -26,10 +29,12 @@ Varias mejoras cambiaron de forma por el camino, y eso también es parte del tra
 
 No todo lo probado se quedó. Las carpetas por defecto para patrones y muestras se quitaron al comprobar que el navegador no permite abrir el selector de archivos en una carpeta que indique la aplicación. El borrado de registros se descartó porque permitiría borrar el rastro. Una criticidad automática de las incidencias, un flujo de autorización de Calidad y el análisis por cliente se dejaron fuera a propósito. Y el asistente de ayuda con IA se sustituyó por una solución más sencilla, como se cuenta en [[05-integracion-ia]].
 
+Con la planificación pasó lo mismo. Al principio una orden que no estuviera en la hoja no se podía usar, y se cambió para permitir un autocontrol fuera de planificación eligiendo la línea a mano. Que la aplicación cerrara sola las órdenes que desaparecen de la hoja se descartó: las propone y decide el operario. Filtrar el explorador de archivos del navegador por el nombre del patrón no es posible, así que la lista la prepara el servidor. Y que la aplicación entrara por su cuenta en la carpeta de red de Windows se dejó de lado en favor de que la monte el equipo de sistemas en el servidor.
+
 ## Resultado
 
-La aplicación pasó de un prototipo que comparaba dos muestras a una herramienta con gestión de usuarios y permisos, un flujo completo del autocontrol, información de calidad exportable y ayuda integrada.
+La aplicación pasó de un prototipo que comparaba dos muestras a una herramienta con gestión de usuarios y permisos, un flujo completo del autocontrol, información de calidad exportable, ayuda integrada y conectada con la planificación de producción y con la carpeta de patrones de la empresa.
 
 ## Limitaciones y trabajo futuro
 
-Lo más importante que queda es operativo: copias de seguridad de los datos, una prueba completa con operarios y datos de producción y la revisión de la tolerancia con más proveedores. Después vienen los filtros de la lista de autocontroles, el cliente en la orden para analizar el impacto por cliente, pruebas automáticas del comparador, un servidor definitivo en la empresa y actualizar la capa de acceso a datos cuando haya una versión compatible. La conclusión de este recorrido está en [[09-conclusiones]].
+Lo más importante que queda es operativo: copias de seguridad de los datos, una prueba completa con operarios y datos de producción, poner en marcha las integraciones en el servidor (la clave de la hoja y la carpeta de patrones montada) y la revisión de la tolerancia con más proveedores. Después vienen los filtros de la lista de autocontroles, el cliente en la orden para analizar el impacto por cliente, pruebas automáticas del comparador, un servidor definitivo en la empresa y actualizar la capa de acceso a datos cuando haya una versión compatible. La conclusión de este recorrido está en [[09-conclusiones]].

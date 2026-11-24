@@ -10,7 +10,7 @@ Una prueba automática es un pequeño programa que comprueba una expectativa con
 
 ## Cómo se aplicó
 
-Las pruebas viven en un proyecto aparte, con xUnit, y se quedan en el equipo: no se publican ni van dentro de la aplicación. Son 125 y todas pasan. Se organizan en cuatro familias.
+Las pruebas viven en un proyecto aparte, con xUnit, y se quedan en el equipo: no se publican ni van dentro de la aplicación. Son 167 y todas pasan. Se organizan en cinco familias.
 
 | Familia | Qué comprueba |
 |---|---|
@@ -18,8 +18,11 @@ Las pruebas viven en un proyecto aparte, con xUnit, y se quedan en el equipo: no
 | Aplicación en marcha | Desde fuera, con la aplicación en su contenedor: sin sesión todo manda a la entrada, un formulario falso de otra web se rechaza y la base de datos no es accesible |
 | Reglas de negocio | Las normas propias del producto: la línea de fabricación solo admite valores de la lista, el cierre de una orden exige aceptación, las alertas de tiempo salen cuando corresponde y la exportación respeta permisos y límites |
 | Datos | Las conversiones de la base de datos, probadas antes en una tabla temporal y en los dos sentidos |
+| Integraciones | La lectura de la planificación (filas que no encajan, líneas escritas de otra forma, quién decide la línea con y sin conexión) y la búsqueda del patrón en la carpeta de red (solo los de la especialidad, sin poder pedir otro archivo ni salirse de la carpeta) |
 
 A estas se suma la verificación visual: capturas automáticas con un navegador sin ventana, a varios anchos de pantalla, y maquetas con los estilos reales de la aplicación, de día y de noche. Una IA no puede pulsar los botones como una persona, y estas comprobaciones sirvieron para detectar problemas de diseño que el código no delata, como una cabecera que no cabía o un logo con un recuadro alrededor.
+
+Las integraciones tienen además dos pruebas contra los sistemas reales, la hoja de planificación y la carpeta de patrones, que se ejecutan si están disponibles desde el equipo y se saltan solas si no. Con ellas se confirmó que las columnas reales se leían bien y que cada especialidad en curso encontraba su patrón, y salieron sorpresas que ninguna prueba con datos inventados habría mostrado. Otra prueba comprueba la consulta que llega a la base de datos traduciéndola con el conector real, sin necesidad de conectarse.
 
 También se inspeccionaron por dentro los archivos generados: abrir un libro de Excel de la exportación permitió confirmar que las fechas y los números se guardan como tales y que un texto que empieza por `=` no se ejecuta como fórmula, algo relevante porque los comentarios de las incidencias los escriben los operarios.
 
@@ -29,7 +32,7 @@ Las pruebas de seguridad encontraron dos fallos reales, que se corrigieron: comp
 
 ## Limitaciones y aprendizaje
 
-Una memoria honesta debe decir también lo que no se ha probado. Falta una prueba completa con un operario y archivos de producción, de principio a fin, y medir el rendimiento de la comparación en planta. El comparador de imágenes se ha comprobado con muestras reales, pero no tiene pruebas automáticas propias, y su tolerancia se ajustó con muy pocas muestras. La limpieza de datos, la función más delicada, no se ha ejecutado contra una base de datos real, y la descarga de archivos exportados depende del navegador y no se ha probado con una sesión real.
+Una memoria honesta debe decir también lo que no se ha probado. Falta una prueba completa con un operario y archivos de producción, de principio a fin, y medir el rendimiento de la comparación en planta. El comparador de imágenes se ha comprobado con muestras reales, pero no tiene pruebas automáticas propias, y su tolerancia se ajustó con muy pocas muestras. La limpieza de datos, la función más delicada, no se ha ejecutado contra una base de datos real, y la descarga de archivos exportados depende del navegador y no se ha probado con una sesión real. Tampoco se han visto con una sesión real la pantalla de la planificación por líneas ni la ventana de confirmación: quedan para que las pruebe una persona.
 
 El aprendizaje es doble: probar cuanto antes sale más barato, y cuando algo no se puede comprobar conviene decirlo en lugar de darlo por bueno. Varios problemas solo aparecieron con datos reales o dentro del contenedor, y ninguna prueba automática sustituye a probar la aplicación en su entorno.
 

@@ -18,7 +18,7 @@ El modelo es sencillo y refleja el negocio:
 |---|---|
 | Usuarios, roles y permisos | Quién entra y qué puede hacer; un usuario nuevo no puede nada hasta que se le concede |
 | Parámetros | Ajustes que se cambian sin tocar el programa |
-| Órdenes de fabricación | Cada orden, su litografía, su línea y si está en fabricación o finalizada |
+| Órdenes de fabricación | Cada orden, su litografía, su línea, su especialidad (copiada de la planificación de producción) y si está en fabricación o finalizada |
 | Autocontroles | Cada comprobación de una orden, con el patrón usado, la huella de los archivos, la tolerancia y el resultado |
 | Diferencias | Cada diferencia detectada, con su recorte, la decisión de la persona y qué se hizo en producción |
 
@@ -30,11 +30,11 @@ La segunda es la trazabilidad automática. Todas las tablas guardan quién y cu�
 
 La tercera es proteger el rastro. Las órdenes con autocontroles no se pueden borrar. Para corregir errores hay dos caminos con distinto rastro: anular, que deja el autocontrol marcado y con su motivo, y eliminar, reservado al administrador y apuntado en el diario de seguridad. Las excepciones controladas se hacen en una sola operación, con aviso y con constancia.
 
-La cuarta es calcular en lugar de duplicar. La trazabilidad de cada orden y el impacto productivo no tienen tablas propias: se calculan en el momento con lo ya guardado, por lo que nunca hay cifras desincronizadas.
+La cuarta es calcular en lugar de duplicar. La trazabilidad de cada orden y el impacto productivo no tienen tablas propias: se calculan en el momento con lo ya guardado, por lo que nunca hay cifras desincronizadas. El mismo criterio se aplicó a la planificación de producción, que llega de una hoja de cálculo externa: no se copia a la base de datos, porque la fuente de verdad es la hoja. Solo se guarda en la orden lo que hace falta después, como la especialidad que sirve para encontrar su patrón, y siempre tomado de la hoja, nunca de lo que escriba alguien en la pantalla.
 
 ## Resultado
 
-La estructura creció con el uso real a lo largo de once migraciones, que la aplicación aplica sola al arrancar y que incluyen una conversión de datos probada antes en una tabla temporal. De ese registro salen el informe de fabricación, la trazabilidad, el cuadro de impacto y las exportaciones, todo con una misma fuente de datos.
+La estructura creció con el uso real a lo largo de doce migraciones, que la aplicación aplica sola al arrancar y que incluyen una conversión de datos probada antes en una tabla temporal. De ese registro salen el informe de fabricación, la trazabilidad, el cuadro de impacto y las exportaciones, todo con una misma fuente de datos.
 
 ## Limitaciones y aprendizaje
 
