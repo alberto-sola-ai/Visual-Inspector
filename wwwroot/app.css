@@ -347,8 +347,223 @@ h1:focus {
     background: var(--bs-warning-bg-subtle);
 }
 
-.vi-orden-abierta--elegida {
-    outline: 2px solid var(--wys-azul-brillante);
+
+/* Planificación de producción (hoja de Google): todas las líneas en una sola fila, una columna
+   por línea (el número de columnas lo pone la pantalla) */
+.vi-planificacion {
+    display: grid;
+    gap: .6rem;
+}
+
+.vi-planificacion-linea {
+    display: flex;
+    flex-direction: column;
+    gap: .35rem;
+    min-width: 0;
+}
+
+/* Órdenes de la planificación: compactas para que quepan las 7 líneas; las pendientes, discretas */
+.vi-orden-planificada {
+    padding: .35rem .55rem;
+    border-left-color: var(--wys-gris-2);
+    font-size: .9rem;
+    overflow-wrap: anywhere;
+}
+
+/* La orden cargada en la línea, en verde (el verde de «correcto» que admite la marca) */
+.vi-orden-planificada--en-curso {
+    border-color: var(--bs-success-border-subtle);
+    border-left-color: var(--bs-success);
+    background: var(--bs-success-bg-subtle);
+}
+
+.vi-orden-planificada--en-curso:hover,
+.vi-orden-planificada--en-curso:focus-visible {
+    background: var(--bs-success-border-subtle);
+}
+
+/* Orden abierta en la aplicación que falta por cerrar: tarjeta con su botón Finalizar debajo */
+.vi-orden-por-cerrar {
+    padding: .35rem .55rem;
+    border: 1px solid var(--wys-gris-1);
+    border-left: 4px solid var(--wys-azul-oscuro);
+    border-radius: .375rem;
+    background: var(--wys-fondo);
+    font-size: .9rem;
+    overflow-wrap: anywhere;
+}
+
+.vi-orden-por-cerrar__elegir {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .15rem;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    color: var(--wys-azul-titulo);
+}
+
+/* Leyenda de colores de la planificación: arriba a la derecha, en vertical y en pequeño, con muestras de
+   los mismos colores que las tarjetas */
+.vi-leyenda {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: .1rem;
+    margin: 0;
+    padding: .35rem .6rem;
+    border: 1px solid var(--wys-gris-1);
+    border-radius: .375rem;
+    list-style: none;
+    font-size: .75rem;
+    line-height: 1.3;
+    color: var(--wys-texto-secundario);
+}
+
+.vi-leyenda li {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.vi-leyenda__muestra {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 1.2rem;
+    height: .75rem;
+    border: 1px solid;
+    border-left-width: 3px;
+    border-radius: .15rem;
+}
+
+/* Cada muestra repite los colores de su tarjeta (ver más abajo .vi-orden-planificada--en-curso,
+   .vi-orden--con-controles, .vi-orden-por-cerrar y .vi-orden-abierta--elegida) */
+.vi-leyenda__muestra--en-curso {
+    border-color: var(--bs-success-border-subtle);
+    border-left-color: var(--bs-success);
+    background: var(--bs-success-bg-subtle);
+}
+
+.vi-leyenda__muestra--en-curso-con-controles {
+    border-color: var(--bs-warning-border-subtle);
+    border-left-color: var(--bs-success);
+    background: var(--bs-warning-bg-subtle);
+}
+
+.vi-leyenda__muestra--por-cerrar {
+    border-color: var(--bs-warning-border-subtle);
+    border-left-color: var(--wys-azul-oscuro);
+    background: var(--bs-warning-bg-subtle);
+}
+
+.vi-leyenda__muestra--siguiente {
+    border-color: var(--wys-gris-1);
+    border-left-color: var(--wys-gris-2);
+    background: var(--wys-fondo);
+}
+
+.vi-leyenda__muestra--elegida {
+    border-color: var(--wys-rojo);
+    background: color-mix(in srgb, var(--wys-rojo) 14%, var(--wys-fondo));
+}
+
+.vi-leyenda__barra {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 1.2rem;
+    height: .45rem;
+    border-radius: .2rem;
+    background: var(--wys-azul-brillante);
+}
+
+/* Barra fina de tubos fabricados en la orden en curso, a todo el ancho de la tarjeta */
+.vi-progreso {
+    align-self: stretch;
+    height: .45rem;
+    margin: .15rem 0;
+    background: var(--wys-fondo);
+}
+
+/* La barra, en azul WYS para que destaque sobre el verde de la tarjeta (decisión de Alberto, 24/11/2026).
+   El azul brillante se aclara solo en el modo nocturno */
+.vi-progreso .progress-bar {
+    background: var(--wys-azul-brillante);
+}
+
+/* Franja para crear el autocontrol: se queda fija abajo al bajar por la pantalla. Filete azul
+   arriba para separarla de la planificación, sin sombras (identidad WYS) */
+.vi-franja-crear {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    margin-top: 1rem;
+    border-top: 3px solid var(--wys-azul-oscuro);
+}
+
+/* El botón se alinea con los campos (a la altura de las cajas, no de sus títulos) */
+.vi-franja-crear__acciones {
+    padding-top: 2rem;
+}
+
+/* Datos del autocontrol en la ventana de confirmación: etiqueta a la izquierda, valor a la derecha */
+.vi-confirmacion-datos {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: .35rem 1rem;
+    margin-bottom: 1rem;
+}
+
+.vi-confirmacion-datos dt {
+    font-weight: 400;
+    color: var(--wys-texto-secundario);
+}
+
+.vi-confirmacion-datos dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* Desplegable «Siguientes (n)» al pie de cada línea */
+.vi-planificacion-siguientes > summary {
+    font-size: .85rem;
+    color: var(--wys-azul-brillante);
+    cursor: pointer;
+}
+
+/* Orden que ya tiene autocontroles: fondo amarillo suave (decisión de Alberto, 24/11/2026). El borde
+   izquierdo se mantiene (verde la en curso, azul las abiertas por cerrar) para saber qué es cada una */
+.vi-orden-planificada.vi-orden--con-controles,
+.vi-orden-por-cerrar.vi-orden--con-controles {
+    border-color: var(--bs-warning-border-subtle);
+    background: var(--bs-warning-bg-subtle);
+}
+
+.vi-orden-planificada--en-curso.vi-orden--con-controles {
+    border-left-color: var(--bs-success);
+}
+
+.vi-orden-por-cerrar.vi-orden--con-controles {
+    border-left-color: var(--wys-azul-oscuro);
+}
+
+.vi-orden-planificada.vi-orden--con-controles:hover,
+.vi-orden-planificada.vi-orden--con-controles:focus-visible {
+    background: var(--bs-warning-border-subtle);
+}
+
+/* La orden elegida se marca en rojo WYS, también si es la que está en curso (va al final para mandar
+   sobre el verde y el gris) */
+.vi-orden-abierta.vi-orden-abierta--elegida,
+.vi-orden-abierta.vi-orden-abierta--elegida:hover,
+.vi-orden-abierta.vi-orden-abierta--elegida:focus-visible,
+.vi-orden-por-cerrar.vi-orden-abierta--elegida {
+    border-color: var(--wys-rojo);
+    border-left-color: var(--wys-rojo);
+    background: color-mix(in srgb, var(--wys-rojo) 14%, var(--wys-fondo));
+    outline: none;
 }
 
 /* Recuadro blanco para agrupar campos sobre el fondo de la aplicación */

@@ -133,8 +133,12 @@ FIN DE LA ORDEN ─► finalizar la orden ─► INFORME DE FABRICACIÓN (pantal
   un autocontrol de una orden en la línea L1, **todas** las demás órdenes en fabricación de L1 (tengan o
   no autocontroles registrados) se finalizan solas (`FinalizadaPor` = «nombre (cierre automático)») y se
   **borran sus autocontroles sin registrar**. «Nuevo autocontrol» lo avisa y exige una **aceptación
-  expresa** («Sí, finalizar y crear…»); el servidor también la exige (`CrearAsync(…, aceptaCierre)`), así
-  que sin ella no se crea ni se cierra nada. Una orden que se queda sin autocontroles queda vacía y
+  expresa**: desde la 0.22.1, el **Continuar** de la ventana de confirmación, que lo dice en rojo. El servidor
+  también la exige (`CrearAsync(…, aceptaCierre)`), así que sin ella no se crea ni se cierra nada.
+- **Línea desde la planificación (0.22.0):** con conexión con la hoja de Google (última lectura correcta y de
+  menos de 2 horas), la línea la decide el servidor (`ServicioAutocontroles.AsignarLinea`): la de la hoja o, si
+  no está en ella, la de la orden abierta. Sin conexión, la elige el operario como antes. Ver
+  `doc/planificacion-google.md`. Una orden que se queda sin autocontroles queda vacía y
   finalizada. Cada cierre se apunta en `Log-Wys-Seg` (`CierreAutomaticoOrden`) y cada autocontrol borrado
   también (`EliminacionAutocontrol`).
 - Solo el administrador (`Administracion`) puede **reabrirla** (0.8.0): vuelve a «En

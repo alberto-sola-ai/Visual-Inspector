@@ -22,6 +22,11 @@ public class OrdenFabricacion : EntidadTrazable
 
     public string? Descripcion { get; set; }
 
+    // Especialidad de la orden según la planificación de producción (por ejemplo E2201829). Se guarda al
+    // crear un autocontrol de una orden que está en la hoja, y sirve para buscar su patrón en la carpeta
+    // de patrones (el PDF lleva el número sin la E). Null = orden fuera de planificación o anterior a 0.23.0
+    public string? Especialidad { get; set; }
+
     // Litografía del diseño (L + 7 cifras): la del primer autocontrol registrado de la orden.
     // Si un autocontrol posterior usa otra, se avisa (posible patrón equivocado).
     public string? Litografia { get; set; }

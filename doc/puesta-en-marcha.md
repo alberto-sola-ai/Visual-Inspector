@@ -53,8 +53,15 @@ Antes de dar por buena una versión, pruébala siempre con `docker compose up --
 1. Copia el proyecto al servidor.
 2. Crea el `.env` a partir de `.env.example` con los datos de ese servidor
    (`ASPNETCORE_ENVIRONMENT=Production`, `CREAR_USUARIO_PRUEBA=false`).
-3. Arranca: `docker compose up -d --build`.
-4. Para actualizar a una versión nueva, repite el paso 3: los datos y los registros se conservan
+3. Si se usa la planificación de producción de Google, copia la clave de la cuenta de servicio (un
+   único archivo `.json`) a la carpeta `wys-api-sheet/`, junto a `docker-compose.yml`, y da permiso
+   de lectura al usuario de la aplicación (ver `doc/planificacion-google.md`). Sin ella, la
+   aplicación funciona igual, con la orden escrita a mano.
+   Para buscar el patrón por especialidad, IT monta en el servidor la carpeta de red de patrones en
+   solo lectura y se indica en el `.env` (`PATRONES_CARPETA_SERVIDOR`, ver `doc/patrones.md`). Sin
+   ella, el patrón se elige desde el PC como siempre.
+4. Arranca: `docker compose up -d --build`.
+5. Para actualizar a una versión nueva, repite el paso 4: los datos y los registros se conservan
    en sus volúmenes (`datos-mariadb`, `registros-app` y `claves-app`, que guarda las claves de
    las sesiones para que nadie tenga que volver a entrar tras actualizar).
 

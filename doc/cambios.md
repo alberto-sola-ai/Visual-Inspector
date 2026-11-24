@@ -1,5 +1,194 @@
 # Registro de cambios
 
+## 0.23.0 — 2026-11-24
+- **Patrón desde la carpeta de patrones, filtrado por especialidad** (decisiones de Alberto, 24/11/2026): al cargar
+  los archivos del autocontrol, el hueco **Patrón (PDF)** enseña los PDF de la carpeta de red de patrones que
+  llevan en el nombre la especialidad de la orden sin la E (E2201829 → `L2201829R002 ….pdf`), con la versión más
+  alta primero.
+  - Un clic lo carga y lo revisa igual que desde el PC. **Elegir archivo** sigue debajo.
+  - El navegador no permite filtrar su explorador por nombre: por eso la lista la prepara el servidor.
+- **La especialidad se guarda en la orden** (columna nueva `OrdenesFabricacion.Especialidad`, migración
+  `AnadeEspecialidadOrden`). Se toma de la planificación al crear un autocontrol, nunca de la pantalla. Las
+  órdenes fuera de planificación no la tienen y no se filtra.
+- **Sin errores para el operario**: si no hay especialidad, la carpeta no existe, está vacía, no contesta en 10
+  segundos o no deja leer, se elige desde el PC como siempre. El motivo va a `log/err-log`.
+- Seguridad:
+  - Solo se puede abrir un nombre de la lista encontrada para esa orden: ni otros archivos ni salir de la
+    carpeta.
+  - La carpeta llega al contenedor en solo lectura.
+  - La ruta real no está en el repositorio, sino en el `.env` (`PATRONES_CARPETA_SERVIDOR`).
+- **Parámetro nuevo `CarpetaPatrones`** (Administración → Parámetros) para cambiar la carpeta cuando haga falta:
+  - Si tiene valor, manda sobre la configuración de la instalación; vacío, se usa la del `.env`.
+  - Es la ruta tal como la ve la aplicación: en Docker, una carpeta del contenedor.
+  - Se valida que sea una ruta completa y el cambio queda en `Log-Wys-Seg`.
+  - En Docker, una ruta de Windows (`\\servidor\…` o `C:\…`) se rechaza con un mensaje que explica por qué y qué
+    escribir. Antes el ejemplo del mensaje sugería justo una ruta que no vale.
+- **Descripciones de los parámetros al día**: al arrancar, las de los parámetros que ya existían se actualizan con
+  las del código. El administrador no las edita y el valor no se toca.
+- Pieza nueva `BuscadorPatrones`. La carga de archivos se ha reorganizado para que el PC y la carpeta compartan los
+  mismos pasos.
+- Comprobado el 24/11/2026:
+  - La carpeta de red tiene 2.121 PDF sin subcarpetas, y las 7 especialidades en curso encuentran su patrón.
+  - Desde Docker no deja entrar como invitado: en el servidor, IT debe montarla con un usuario de solo lectura
+    (ver `doc/patrones.md`).
+- Pruebas: 18 nuevas (código de búsqueda, filtro, sin especialidad, sin carpeta, no abrir fuera de la lista,
+  carpeta del parámetro, validación de la ruta y carpeta real): 167 de 167 correctas.
+- Documentación: `doc/patrones.md` (nuevo), `seguridad.md`, `puesta-en-marcha.md`, `.env.example` y
+  `docker-compose.yml`.
+- **Guía de usuario actualizada**: Paso 2 «Cargar el patrón y las muestras».
+
+## 0.22.3 — 2026-11-24
+Decisiones de Alberto, 24/11/2026.
+
+- **Autocontrol fuera de planificación**: si la orden escrita a mano no está en la planificación ni abierta en la
+  aplicación, ya no se bloquea.
+  - Aparece el campo **Línea** con el aviso «No está en la planificación ni abierta: elige la línea…».
+  - La ventana de confirmación lo indica: «elegida a mano: autocontrol fuera de planificación».
+  - El servidor solo acepta la línea elegida en este caso: si la orden está en la hoja o abierta, sigue mandando
+    su línea.
+  - Sustituye al aviso «Esa orden no está en la planificación… ni abierta» de la 0.22.0.
+- **Fondo amarillo en las órdenes que ya tienen autocontroles**, tanto la en curso como las abiertas por cerrar.
+  - El borde izquierdo se mantiene (verde la en curso, azul las abiertas) para distinguirlas.
+  - La en curso sin autocontroles sigue en verde.
+  - La elegida va siempre en rojo, también al pasar el ratón.
+- **Especialidad** (columna nueva `ESPECIALIDAD` de la hoja, por ejemplo E2201359), solo informativa: sale en cada
+  orden (en curso, abiertas por cerrar si están en la hoja y siguientes), justo debajo del número de orden, y en
+  la ventana de confirmación. El número va ahora con «OF:» delante en todas las tarjetas (y «OF» en la ventana). Se lee
+  por el título de la columna, se corta a 30 caracteres y, si la columna falta, no se muestra. Prueba ampliada.
+- **Leyenda de colores** arriba a la derecha de la planificación, en vertical y en pequeño, con una muestra de cada
+  caso: en curso, en curso ya
+  con autocontroles, abierta pendiente de cerrar, siguientes, elegida y barra de tubos fabricados. Usa los mismos
+  colores que las tarjetas, también de noche.
+- **Barra de progreso en azul WYS** (azul brillante, que se aclara solo en el modo nocturno) en lugar de verde,
+  para que destaque sobre la tarjeta verde.
+- Pruebas: actualizada la de cómo se decide la línea; 149 de 149 correctas.
+- **Guía de usuario actualizada**: paso 4 de «Crear el autocontrol» y dos preguntas frecuentes.
+
+## 0.22.2 — 2026-11-24
+Mejoras visuales de **Nuevo Autocontrol** (decisiones de Alberto, 24/11/2026).
+
+- **Barra de progreso** en la orden en curso: una barra verde fina con los tubos fabricados sobre la cantidad, y el
+  porcentaje junto a las cifras (por ejemplo «Fabricados 148.608 de 189.000 (79 %)»).
+- **Franja para crear el autocontrol en una sola fila**: orden, línea (solo sin conexión con la planificación),
+  observaciones y botón **Crear autocontrol**.
+  - Se queda fija abajo al bajar por la pantalla, con un filete azul que la separa (sin sombras, según la
+    identidad WYS).
+  - El RPI que será y el aviso de cierre de la línea van debajo, dentro de la franja.
+  - El desplegable de línea dice «Línea 1»… como el resto de la pantalla.
+- **La pantalla se pone al día sola cada minuto** (planificación y órdenes abiertas), igual que la lista de
+  Autocontroles.
+  - No pregunta a Google: usa la copia del servidor.
+  - Se salta la vuelta si está abierta la ventana de confirmación o se está creando el autocontrol.
+- **Guía de usuario actualizada**: Paso 1 (barra, franja y refresco).
+
+## 0.22.1 — 2026-11-24
+Decisiones de Alberto, 24/11/2026.
+
+- **Ventana de confirmación al pulsar «Crear autocontrol»**: «¿Seguro que quieres crear este autocontrol?» con la
+  orden, la descripción, la línea (y de dónde sale), qué RPI será, la fecha y hora, el último control y las
+  observaciones, y los botones **Continuar** y **Cancelar**.
+  - Si se va a finalizar otra orden de la línea, la ventana lo dice en rojo y **Continuar** lo acepta. Sustituye
+    a los antiguos botones «Sí, finalizar y crear el autocontrol» / «No, volver».
+  - El aviso amarillo bajo la orden se mantiene.
+- **Con conexión con la planificación, el campo «Línea» no se muestra**: la línea se ve en la columna de la orden
+  y en la ventana de confirmación.
+- **El desplegable de línea solo sale si no hay conexión con la planificación**: es decir, si la última lectura
+  falló o tiene más de 2 horas. Antes bastaba con haberla leído alguna vez.
+  - Sin conexión, la línea se elige a mano y se admiten órdenes nuevas, porque una orden cargada después de la
+    última lectura no estaría en la copia.
+  - Las columnas de la planificación siguen visibles con el aviso «No hay conexión con la planificación…».
+  - El servidor aplica la misma regla.
+- El aviso de cierre dice «la línea 3» en lugar de «la línea L3».
+- Pruebas ampliadas: sin conexión (lectura fallida o vieja), la línea se elige a mano.
+- **Guía de usuario actualizada**: pasos 4 y 6 de «Crear el autocontrol», «Finalizar una orden» y una pregunta
+  frecuente. Actualizados también `arquitectura.md` y `planificacion-google.md`.
+
+## 0.22.0 — 2026-11-24
+- **La línea la pone la planificación** (decisión de Alberto, 24/11/2026): toda orden nueva viene con su línea en la
+  hoja, así que en **Nuevo Autocontrol** la línea pasa a ser solo informativa:
+  - si la orden está en la hoja, su línea de la hoja;
+  - si no, la de la orden que sigue abierta en la aplicación.
+- **La orden escrita a mano** tiene que estar en la planificación (también las del desplegable **Siguientes**) o
+  seguir abierta. Si no, sale el aviso «Esa orden no está en la planificación de producción ni abierta…» y no se
+  puede crear el autocontrol.
+- El servidor lo vuelve a comprobar al crear: decide él la línea e ignora la que mande la pantalla.
+- **Si la planificación no está disponible** (apagada, sin clave o sin haberla podido leer nunca), todo sigue como
+  antes: la línea se elige a mano y se pueden crear órdenes nuevas, para no parar la producción. Si se leyó alguna
+  vez pero la última lectura falló, se usa la última copia.
+- En la cabecera de la planificación se indica cada cuánto se actualiza sola («Se actualiza sola cada 15
+  minutos», según el parámetro `MinutosLecturaPlanificacion`).
+- Pruebas: 2 nuevas (cómo se decide la línea y cuándo se elige a mano); 149 de 149 correctas.
+- **Guía de usuario actualizada**: pasos 3 y 4 de «Crear el autocontrol» y dos preguntas frecuentes.
+
+## 0.21.3 — 2026-11-24
+- **Planificación de producción por línea, más clara** (decisiones de Alberto, 24/11/2026). Cada columna enseña:
+  - la orden **en curso** (en verde, con fabricados, cantidad y pendientes);
+  - las órdenes de esa línea que **siguen abiertas** en la aplicación y no son la de curso (borde azul), con su
+    botón **Finalizar orden**;
+  - un desplegable **Siguientes (n)** con el resto de órdenes de la hoja, a modo de consulta, desde el que también
+    se puede elegir una para crear su autocontrol.
+- Sustituye al aviso amarillo «Órdenes abiertas que ya no están en la planificación». **Finalizar orden** sigue
+  saliendo solo si la hoja se leyó bien hace poco y la orden tiene algún autocontrol registrado.
+- En la orden en curso y en las abiertas se indica **cuántos autocontroles lleva**, cuánto hace del último y cuál
+  toca. Si la orden en curso está finalizada en la aplicación, se avisa de que hay que pedir que la reabran.
+- La **orden elegida se marca en rojo** WYS. El amarillo ya avisa de «toca otro control». También cambia en la
+  lista de órdenes abiertas que sale cuando no hay planificación.
+- Los títulos de columna dicen **«Línea 1», «Línea 2»…** en lugar de «Línea L1».
+- Por dentro:
+  - Pieza nueva `OrganizadorPlanificacion`, que reparte las órdenes por línea y se prueba sin pantalla.
+  - `ListarResumenOrdenesAsync` sustituye a `ListarOrdenesFueraDePlanificacionAsync`. Busca los códigos con un
+    `IN (…)` normal; comprobado con el conector de MariaDB.
+  - 3 pruebas nuevas: 147 de 147 correctas.
+- **Guía de usuario actualizada**: Paso 1 y apartado «Órdenes abiertas pendientes de cerrar».
+
+## 0.21.2 — 2026-11-24
+- **Planificación de producción más compacta** (decisión de Alberto, 24/11/2026): todas las líneas en una sola fila
+  (de L1 a L7, una columna por línea). La orden en curso va **en verde** (el verde de «correcto» de Bootstrap, que
+  admite la identidad WYS, también en modo nocturno), sin la etiqueta «En curso». Ya no se muestra la prioridad.
+  Las pendientes llevan solo la orden y la descripción; el detalle (fabricados, cantidad, pendientes y último
+  control) queda solo en la orden en curso. Para el lector de pantalla, la orden en curso sigue diciéndolo.
+- **Guía de usuario actualizada**: Paso 1 de «Cómo hago un autocontrol».
+
+## 0.21.1 — 2026-11-24
+- **Seguridad: MySqlConnector 2.6.1** (decisión de Alberto, 24/11/2026). Pomelo 9 traía la 2.4.0, con un fallo
+  conocido (GHSA-473q-m89c-ghf8, gravedad moderada): con `SslMode` VerifyCA o VerifyFull y sin `SslCa`, el
+  certificado no se comprobaba y la contraseña de la base de datos podía viajar sin protección. **No afectaba** a
+  esta configuración: la conexión no usa esos modos y MariaDB solo es accesible dentro de la red interna de Docker.
+  Aun así, se fuerza la versión corregida en `VisualInspector.csproj` (como ya se hace con
+  `System.Security.Cryptography.Pkcs`) y se anota en `generar-versiones.ps1`. `dotnet list package --vulnerable`
+  ya no da ningún aviso. Comprobado: compila, 144 de 144 pruebas correctas y arranca en Docker conectando con MariaDB.
+
+## 0.21.0 — 2026-11-24
+- **Planificación de producción desde Google Sheets** en **Nuevo Autocontrol** (decisiones de Alberto, 24/11/2026):
+  encima del campo de la orden sale, por línea, la orden **En curso** (prioridad 1, la cargada en la máquina) y las
+  pendientes por prioridad, con su descripción. Un clic rellena la orden y la línea. La orden se puede seguir
+  escribiendo a mano (**O escribe la orden**). En la orden en curso se ven, solo a título informativo, los tubos
+  fabricados, la cantidad y los pendientes. Si la orden ya tiene autocontroles, también cuánto hace del último y
+  cuál toca.
+- La hoja se lee con una **cuenta de servicio de Google de solo lectura** (clave en `wys-api-sheet/`, excluida de
+  Git, de Docker y de la publicación). Un trabajo en segundo plano la lee cada 15 minutos (parámetro nuevo
+  `MinutosLecturaPlanificacion`), y el botón **Actualizar ahora** la lee al momento (como mucho una vez por minuto).
+  Se apaga con el parámetro nuevo `UsarPlanificacion`. Si Google falla, se muestra la última copia con un aviso. Sin
+  clave, la pantalla funciona como antes.
+- La línea «LINEA 1» se traduce a L1. Las columnas se localizan por su título, y se muestra la hora de carga de
+  la hoja («Datos de producción del…»). Las filas que no encajan se descartan y se cuentan en `log/err-log`. El
+  estado sale de la prioridad, no de la columna ESTADO.
+- **Órdenes abiertas que ya no están en la planificación**: se listan con un botón **Finalizar orden** (con
+  confirmación), que hace lo mismo que finalizarla desde su ficha. Solo salen si la hoja se leyó bien hace menos de
+  2 horas, y nunca se cierran solas.
+- Al crear un autocontrol, si la orden no tiene descripción, se copia la de la planificación.
+- Las «órdenes de fabricación abiertas» solo salen ahora cuando no hay planificación.
+- Biblioteca nueva: **Google.Apis.Sheets.v4 1.78.0.4330** (Apache 2.0), anotada en `generar-versiones.ps1`;
+  `recursos/versiones.json` regenerado.
+- Documentación: `doc/planificacion-google.md` (nuevo: columnas, funcionamiento, cómo crear y cambiar la cuenta),
+  `seguridad.md` («La planificación, solo para leer») y `puesta-en-marcha.md` (copiar la clave al servidor).
+  `docker-compose.yml` monta `wys-api-sheet/` en solo lectura, y `.env.example` lo explica.
+- **Guía de usuario actualizada**: Paso 1 de «Cómo hago un autocontrol», apartado nuevo «Órdenes abiertas que ya no
+  están en la planificación» y tres preguntas frecuentes.
+- Pruebas: 19 nuevas de la planificación (144 de 144 correctas) (conversión de filas, líneas, órdenes, hora de carga y antigüedad). Una
+  de ellas lee la hoja real si está la clave: 47 filas, 45 órdenes y ninguna descartada, con una orden en curso
+  en cada línea L1 a L7.
+
 ## Documentación — 2026-10-30
 - **Capítulos 03 a 09 del máster** (`doc/master/`): preparación del entorno, primer prototipo, integración de IA,
   base de datos, testing, mejoras y conclusiones. Estaban vacíos; cada uno explica la necesidad que plantea su título,

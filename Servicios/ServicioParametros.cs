@@ -56,6 +56,50 @@ public sealed class ServicioParametros(
         return null;
     }
 
+    // Hoja de planificación de producción (Google Sheets): si se usa para elegir la orden y cada
+    // cuántos minutos se lee (decisión de Alberto, 24/11/2026: cada 15 minutos)
+    public const string UsarPlanificacion_wys = "UsarPlanificacion";
+    public const string MinutosLecturaPlanificacion_wys = "MinutosLecturaPlanificacion";
+    public const string MinutosLecturaPlanificacionInicial_wys = "15";
+    public const int MinutosLecturaPlanificacionMinimo_wys = 5;
+    public const int MinutosLecturaPlanificacionMaximo_wys = 120;
+
+    // Carpeta de patrones (PDF) tal como la ve la aplicación: en Docker, una carpeta del contenedor (por
+    // ejemplo /app/patrones); si la aplicación corre en Windows, también una ruta de red. Vacío = la de la
+    // configuración (docker-compose / .env). Decisión de Alberto, 24/11/2026
+    public const string CarpetaPatrones_wys = "CarpetaPatrones";
+
+    /// <summary>
+    /// Mira si la carpeta de patrones tiene buena forma: vacía (se usa la de la configuración) o una ruta
+    /// completa (que empiece por / o por una letra de unidad o \\), sin caracteres raros. Devuelve el error o null.
+    /// </summary>
+    public static string? ValidarCarpetaPatrones(string valor)
+    {
+        if (valor.Length == 0)
+            return null;
+        if (valor.Any(char.IsControl) || valor.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            return "La ruta tiene caracteres no válidos.";
+        // En Docker (Linux) la aplicación no puede abrir rutas de red de Windows: se dice claro qué hacer
+        if (!OperatingSystem.IsWindows() && (valor.StartsWith(@"\\") || (valor.Length > 1 && valor[1] == ':')))
+            return "La aplicación funciona en Docker y no puede abrir rutas de Windows (\\\\servidor\\… o C:\\…). " +
+                "La carpeta de red la monta IT en el servidor; aquí se escribe la carpeta tal como la ve la aplicación, " +
+                "por ejemplo /app/patrones. Si no sabes cuál es, déjalo vacío.";
+        if (!Path.IsPathFullyQualified(valor) && !valor.StartsWith('/'))
+            return OperatingSystem.IsWindows()
+                ? "Escribe la ruta completa, por ejemplo \\\\servidor\\carpeta o C:\\patrones."
+                : "Escribe la ruta completa tal como la ve la aplicación, por ejemplo /app/patrones.";
+        return null;
+    }
+
+    /// <summary>
+    /// Convierte el valor del parámetro MinutosLecturaPlanificacion en minutos: si no es un número
+    /// entero, el de por defecto (15); y siempre entre 5 y 120.
+    /// </summary>
+    public static int InterpretarMinutosLecturaPlanificacion(string? valor) =>
+        int.TryParse(valor, out var minutos)
+            ? Math.Clamp(minutos, MinutosLecturaPlanificacionMinimo_wys, MinutosLecturaPlanificacionMaximo_wys)
+            : int.Parse(MinutosLecturaPlanificacionInicial_wys);
+
     public const string ValorSi_wys = "Si";
     public const string ValorNo_wys = "No";
 
@@ -127,7 +171,15 @@ public sealed class ServicioParametros(
                 ? "El inicio de las órdenes solo puede tener cifras, como mucho 9 (la orden completa tiene 10)."
                 : null)
             // Las líneas de fabricación: al menos una, sin repetidas, solo letras y cifras
-            ?? (parametro.Clave == Lineas_wys ? ValidarLineas(valor) : null);
+            ?? (parametro.Clave == Lineas_wys ? ValidarLineas(valor) : null)
+            // Lectura de la hoja de planificación: minutos enteros, ni tan seguido que sature a Google
+            // ni tan espaciado que la lista se quede vieja
+            ?? (parametro.Clave == MinutosLecturaPlanificacion_wys
+                && (!int.TryParse(valor, out var minutos) || minutos < MinutosLecturaPlanificacionMinimo_wys || minutos > MinutosLecturaPlanificacionMaximo_wys)
+                ? $"Indica un número entero de minutos entre {MinutosLecturaPlanificacionMinimo_wys} y {MinutosLecturaPlanificacionMaximo_wys}."
+                : null)
+            // Carpeta de patrones: vacía o una ruta completa
+            ?? (parametro.Clave == CarpetaPatrones_wys ? ValidarCarpetaPatrones(valor) : null);
         if (parametro.Clave == Lineas_wys && error is null)
         {
             // Se guardan siempre igual de limpias: "L1|L2|L3"
@@ -176,13 +228,31 @@ public sealed class ServicioParametros(
                 Descripcion = "Cifras con las que empiezan habitualmente las órdenes de fabricación. Los campos de la orden (nuevo autocontrol y buscadores) vienen rellenos con ellas y se pueden cambiar. Vacío: salen en blanco." },
             new() { Clave = Lineas_wys, Valor = LineasIniciales_wys, Tipo = TipoParametro.Texto,
                 Descripcion = "Líneas de fabricación que se pueden elegir al crear un autocontrol, separadas por | (por ejemplo L1|L2|L3). Solo letras y cifras, sin repetir." },
+            new() { Clave = UsarPlanificacion_wys, Valor = ValorSi_wys, Tipo = TipoParametro.SiNo,
+                Descripcion = "Muestra en «Nuevo autocontrol» las órdenes de la hoja de planificación de producción (Google Sheets) para elegirlas con un clic. Solo funciona si está configurada la cuenta de Google (ver doc/planificacion-google.md). La orden se puede seguir escribiendo a mano." },
+            new() { Clave = MinutosLecturaPlanificacion_wys, Valor = MinutosLecturaPlanificacionInicial_wys, Tipo = TipoParametro.Numero,
+                Descripcion = $"Cada cuántos minutos se lee la hoja de planificación de producción (entre {MinutosLecturaPlanificacionMinimo_wys} y {MinutosLecturaPlanificacionMaximo_wys}). El cambio se aplica a partir de la siguiente lectura." },
+            new() { Clave = CarpetaPatrones_wys, Valor = "", Tipo = TipoParametro.Texto,
+                Descripcion = "Carpeta donde se buscan los patrones (PDF) por su especialidad, tal como la ve la aplicación. En Docker es una carpeta del contenedor (por ejemplo /app/patrones), no una ruta de red de Windows: la carpeta de red la monta IT en el servidor. Vacío: se usa la de la instalación (.env). Ver doc/patrones.md." },
         };
 
-        var existentes = await datos.Parametros.Select(p => p.Clave).ToListAsync();
-        var nuevos = iniciales.Where(p => !existentes.Contains(p.Clave)).ToList();
-        if (nuevos.Count > 0)
+        var existentes = await datos.Parametros.ToListAsync();
+        var nuevos = iniciales.Where(p => existentes.All(e => e.Clave != p.Clave)).ToList();
+        datos.Parametros.AddRange(nuevos);
+
+        // Las descripciones las escribe el equipo (el administrador solo cambia el valor): si se han mejorado
+        // en el código, se ponen al día también en los parámetros que ya existían. El valor no se toca
+        foreach (var existente in existentes)
         {
-            datos.Parametros.AddRange(nuevos);
+            var inicial = iniciales.FirstOrDefault(p => p.Clave == existente.Clave);
+            if (inicial is not null && existente.Descripcion != inicial.Descripcion)
+            {
+                existente.Descripcion = inicial.Descripcion;
+            }
+        }
+
+        if (datos.ChangeTracker.HasChanges())
+        {
             await datos.SaveChangesAsync();
         }
     }

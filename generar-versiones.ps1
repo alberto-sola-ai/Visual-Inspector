@@ -10,6 +10,7 @@ Set-Location $PSScriptRoot
 # uso comercial). Al añadir una biblioteca nueva al proyecto, se añade aquí su línea.
 $descripciones = @{
     'Pomelo.EntityFrameworkCore.MySql'                  = 'Conecta la aplicación con la base de datos MariaDB, donde se guardan usuarios, autocontroles y resultados. Licencia MIT.'
+    'MySqlConnector'                                    = 'Pieza por debajo de Pomelo que habla con MariaDB. Se fija una versión corregida porque la que trae Pomelo 9 tiene un fallo de seguridad conocido. Licencia MIT.'
     'Microsoft.AspNetCore.Identity.EntityFrameworkCore' = 'Guarda en la base de datos los usuarios, sus roles y sus permisos. Licencia MIT.'
     'Microsoft.EntityFrameworkCore.Relational'          = 'Motor de acceso a la base de datos (Entity Framework): lee y guarda los datos sin escribir SQL a mano, lo que evita inyecciones. Licencia MIT.'
     'Microsoft.EntityFrameworkCore.Design'              = 'Herramienta para crear y cambiar las tablas (migraciones). Solo se usa al programar, no en el servidor. Licencia MIT.'
@@ -22,7 +23,8 @@ $descripciones = @{
     'OpenCvSharp4.official.runtime.linux-x64'           = 'Parte nativa de OpenCV para Linux: la que usa el servidor (Docker). Licencia Apache 2.0.'
     'Markdig'                                           = 'Convierte la guía de usuario (un archivo de texto en Markdown) en la pantalla Ayuda, sin permitir HTML en bruto. Licencia BSD-2-Clause.'
     'MiniExcel'                                         = 'Escribe los archivos de Excel (.xlsx) de las exportaciones de Trazabilidad e Impacto productivo. Licencia Apache 2.0.'
-    'PDFsharp-MigraDoc'                               = 'Genera el informe de fabricación en PDF con la imagen de WYS. Licencia MIT. No actualizar: desde la versión 6.5.0 la licencia pasa a AGPL.'
+    'Google.Apis.Sheets.v4'                             = 'Lee la planificación de producción de la hoja de Google (Google Sheets) para elegir la orden con un clic en Nuevo Autocontrol. Entra con una cuenta de servicio de solo lectura. Licencia Apache 2.0.'
+    'PDFsharp-MigraDoc'                             = 'Genera el informe de fabricación en PDF con la imagen de WYS. Licencia MIT. No actualizar: desde la versión 6.5.0 la licencia pasa a AGPL.'
     'System.Security.Cryptography.Pkcs'                 = 'Firma y cifrado de documentos que usa PDFsharp por dentro. Se fija una versión corregida porque la que trae PDFsharp tiene fallos de seguridad conocidos. Licencia MIT.'
 }
 

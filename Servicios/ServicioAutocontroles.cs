@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using VisualInspector.Datos;
 using VisualInspector.Seguridad;
+using VisualInspector.Servicios.Planificacion;
 using VisualInspector.Servicios.Vision;
 
 namespace VisualInspector.Servicios;
@@ -110,6 +111,31 @@ public sealed record PrevisionControl(string Nombre, DateTime? FechaUltimo, stri
 public sealed record OrdenAbierta(string Codigo, string? Linea, string? Litografia, DateTime UltimoControl, string SiguienteControl);
 
 /// <summary>
+/// Lo que la aplicación sabe de una orden, para enseñarlo junto a la planificación: cuántos
+/// autocontroles lleva (sin contar los anulados), cuándo fue el último y cuál toca ahora.
+/// </summary>
+/// <param name="Registrados">Autocontroles registrados (sin contar anulados): sin ninguno no se puede finalizar.</param>
+/// <param name="SiguienteControl">El autocontrol que tocaría ahora ("RPI 3"…).</param>
+public sealed record ResumenOrdenApp(
+    int Id, string Codigo, string? Linea, string? Descripcion, EstadoOrden Estado,
+    int Autocontroles, int Registrados, DateTime? UltimoControl, string SiguienteControl);
+
+/// <summary>
+/// La línea que le toca a una orden cuando hay planificación: la de la hoja o, si no está en ella,
+/// la de la orden abierta en la aplicación.
+/// </summary>
+/// <param name="Linea">La línea que pone la aplicación, o null si la orden no está en la planificación ni
+/// abierta: entonces es un autocontrol fuera de planificación y la línea la elige el operario.</param>
+/// <param name="EsDeLaPlanificacion">La línea sale de la hoja de planificación (si no, de la orden abierta).</param>
+public sealed record LineaAsignada(string? Linea, bool EsDeLaPlanificacion)
+{
+    /// <summary>
+    /// Dice si la orden no está en la planificación ni abierta, y por eso la línea se elige a mano.
+    /// </summary>
+    public bool EsFueraDePlanificacion => Linea is null;
+}
+
+/// <summary>
 /// Una orden que se finalizaría sola al crear un autocontrol en su línea.
 /// </summary>
 /// <param name="SinRegistrar">Autocontroles de la orden que no se llegaron a registrar: se borrarían.</param>
@@ -131,7 +157,8 @@ public sealed partial class ServicioAutocontroles(
     ServicioAutorizacion autorizacion,
     IUsuarioActual usuarioActual,
     RegistroSeguridad registroSeguridad,
-    ServicioParametros parametros)
+    ServicioParametros parametros,
+    ServicioPlanificacion planificacion)
 {
     // Cada cuántas horas se recomienda hacer un autocontrol. Es solo un aviso: el operario
     // decide cuándo hacerlo (decisión de Alberto, 22/10/2026)
@@ -669,6 +696,112 @@ public sealed partial class ServicioAutocontroles(
     }
 
     /// <summary>
+    /// Lo último leído de la hoja de planificación de producción, para elegir la orden con un clic.
+    /// Con <paramref name="actualizarAntes"/> (botón «Actualizar ahora») se vuelve a pedir a Google,
+    /// salvo que se haya hecho hace menos de un minuto.
+    /// </summary>
+    public async Task<EstadoPlanificacion> ObtenerPlanificacionAsync(bool actualizarAntes = false)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
+        if (actualizarAntes)
+        {
+            await planificacion.ActualizarSiHaceFaltaAsync();
+        }
+        return planificacion.Estado;
+    }
+
+    /// <summary>
+    /// Cada cuántos minutos se lee sola la planificación (parámetro MinutosLecturaPlanificacion),
+    /// para decírselo al operario.
+    /// </summary>
+    public async Task<int> ObtenerMinutosLecturaPlanificacionAsync() =>
+        ServicioParametros.InterpretarMinutosLecturaPlanificacion(
+            await parametros.ObtenerValorAsync(ServicioParametros.MinutosLecturaPlanificacion_wys, ServicioParametros.MinutosLecturaPlanificacionInicial_wys));
+
+    /// <summary>
+    /// Dice si la línea la pone la planificación en lugar de elegirla el operario: solo si hay conexión
+    /// con la hoja, es decir, si la última lectura fue bien y es reciente. Si no hay conexión, la línea
+    /// se elige a mano y se admiten órdenes nuevas, porque una orden cargada en producción después de
+    /// la última lectura no estaría en la copia (decisión de Alberto, 24/11/2026).
+    /// </summary>
+    public static bool LineaSaleDeLaPlanificacion(EstadoPlanificacion estado) =>
+        estado.EstaActiva && estado.EsReciente(DateTime.Now);
+
+    /// <summary>
+    /// Decide la línea de una orden cuando hay planificación, como quien mira en el tablón dónde
+    /// está cada orden: si sale en la hoja, su línea de la hoja; si no, la de la orden que sigue
+    /// abierta en la aplicación. Si no está en ningún sitio, devuelve la línea vacía: es un autocontrol
+    /// fuera de planificación y la línea la elige el operario (decisiones de Alberto, 24/11/2026).
+    /// </summary>
+    /// <param name="lineaOrdenAbierta">Línea de la orden si existe en la aplicación y sigue abierta; si no, null.</param>
+    public static LineaAsignada AsignarLinea(EstadoPlanificacion estado, string codigo, string? lineaOrdenAbierta, IReadOnlyList<string> lineas)
+    {
+        var planificada = estado.Ordenes.FirstOrDefault(o => o.Codigo == codigo);
+        if (planificada is not null)
+        {
+            return new(planificada.Linea, true);
+        }
+        var linea = lineas.FirstOrDefault(l => string.Equals(l, lineaOrdenAbierta, StringComparison.OrdinalIgnoreCase));
+        return new(linea, false);
+    }
+
+    /// <summary>
+    /// La línea que le toca a la orden escrita o elegida, para enseñarla en pantalla (o, si está fuera de
+    /// planificación, para pedir que se elija). Devuelve null si no hay conexión con la planificación (la
+    /// línea se elige a mano como siempre) o si la orden aún no tiene 10 cifras.
+    /// </summary>
+    public async Task<LineaAsignada?> ObtenerLineaAsignadaAsync(string? codigoOrden)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
+
+        var estado = planificacion.Estado;
+        var codigo = (codigoOrden ?? "").Trim();
+        if (!LineaSaleDeLaPlanificacion(estado) || !FormatoOrden().IsMatch(codigo))
+        {
+            return null;
+        }
+
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var lineaAbierta = await datos.OrdenesFabricacion.AsNoTracking()
+            .Where(o => o.Codigo == codigo && o.Activa && o.Estado == EstadoOrden.EnFabricacion)
+            .Select(o => o.Linea)
+            .FirstOrDefaultAsync();
+        return AsignarLinea(estado, codigo, lineaAbierta, await ObtenerLineasAsync());
+    }
+
+    /// <summary>
+    /// Lo que la aplicación sabe de las órdenes que salen junto a la planificación: todas las que
+    /// siguen en fabricación y, además, las indicadas (las que están en curso en la hoja), estén
+    /// como estén. Es como mirar el cuaderno de cada orden para decir cuántos controles lleva.
+    /// </summary>
+    public async Task<IReadOnlyList<ResumenOrdenApp>> ListarResumenOrdenesAsync(IReadOnlyCollection<string> codigosAdemas)
+    {
+        await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
+
+        // Solo códigos de 10 cifras: lo demás no puede ser una orden. Van escritos en la consulta como
+        // una lista IN (…) normal, que MariaDB entiende sin trucos (Entity Framework los escapa igual)
+        var codigos = codigosAdemas.Where(c => FormatoOrden().IsMatch(c)).Distinct().ToList();
+        await using var datos = await fabricaDatos.CreateDbContextAsync();
+        var ordenes = await datos.OrdenesFabricacion.AsNoTracking()
+            .Where(o => (o.Activa && o.Estado == EstadoOrden.EnFabricacion) || EF.Constant(codigos).Contains(o.Codigo))
+            .Select(o => new
+            {
+                o.Id, o.Codigo, o.Linea, o.Descripcion, o.Estado,
+                // Los anulados se ven en la ficha, pero no cuentan
+                Autocontroles = o.Autocontroles.Count(a => !a.EstaAnulado),
+                Registrados = o.Autocontroles.Count(a => !a.EstaAnulado && a.Estado == EstadoAutocontrol.Registrado),
+                Ultimo = o.Autocontroles.Max(a => (DateTime?)a.FechaControl),
+                UltimoNumero = o.Autocontroles.Max(a => (int?)a.NumeroControl)
+            })
+            .ToListAsync();
+
+        return ordenes
+            .Select(o => new ResumenOrdenApp(o.Id, o.Codigo, o.Linea, o.Descripcion, o.Estado,
+                o.Autocontroles, o.Registrados, o.Ultimo, NombreControl((o.UltimoNumero ?? 0) + 1)))
+            .ToList();
+    }
+
+    /// <summary>
     /// Las líneas de fabricación que se pueden elegir (parámetro Lineas: L1, L2…).
     /// </summary>
     public async Task<IReadOnlyList<string>> ObtenerLineasAsync() =>
@@ -750,10 +883,14 @@ public sealed partial class ServicioAutocontroles(
             return new(null, "La orden de fabricación debe tener exactamente 10 cifras, solo números.");
         }
 
-        // La línea es obligatoria y solo vale una de la lista del parámetro Lineas
-        var lineaElegida = (await ObtenerLineasAsync())
-            .FirstOrDefault(l => string.Equals(l, (linea ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
-        if (lineaElegida is null)
+        // Con planificación, la línea la pone la aplicación (la de la hoja o la de la orden abierta) y lo
+        // que mande la pantalla no cuenta. Sin planificación, la elige el operario: es obligatoria y solo
+        // vale una de la lista del parámetro Lineas
+        var lineas = await ObtenerLineasAsync();
+        var estadoPlanificacion = planificacion.Estado;
+        var lineaDeLaPlanificacion = LineaSaleDeLaPlanificacion(estadoPlanificacion);
+        var lineaElegida = lineas.FirstOrDefault(l => string.Equals(l, (linea ?? "").Trim(), StringComparison.OrdinalIgnoreCase));
+        if (!lineaDeLaPlanificacion && lineaElegida is null)
         {
             return new(null, "Elige la línea de fabricación.");
         }
@@ -788,6 +925,24 @@ public sealed partial class ServicioAutocontroles(
                     return new(null, "Esa orden de fabricación está finalizada. Para añadirle autocontroles, pide al administrador que la reabra.");
                 }
 
+                if (lineaDeLaPlanificacion)
+                {
+                    // Aquí la orden, si ya existía, sigue abierta (las finalizadas o desactivadas ya se han
+                    // rechazado). Si está en la hoja o abierta, manda su línea y la de la pantalla no cuenta.
+                    // Si no, es un autocontrol fuera de planificación: vale la línea elegida por el operario
+                    var asignada = AsignarLinea(estadoPlanificacion, codigo, orden.Id == 0 ? null : orden.Linea, lineas);
+                    if (asignada.Linea is not null)
+                    {
+                        lineaElegida = asignada.Linea;
+                    }
+                    else if (lineaElegida is null)
+                    {
+                        return new(null, "Esa orden no está en la planificación: elige la línea de fabricación.");
+                    }
+                }
+                // Sin planificación ya se comprobó arriba que el operario eligió una línea válida
+                ArgumentNullException.ThrowIfNull(lineaElegida);
+
                 // Una línea solo puede tener una orden en fabricación: si hay otras, hace falta que el
                 // operario haya aceptado cerrarlas antes de crear nada
                 var cerradas = await BuscarOrdenesACerrarAsync(datos, codigo, lineaElegida);
@@ -799,6 +954,20 @@ public sealed partial class ServicioAutocontroles(
 
                 // La orden se queda con la línea de su último autocontrol
                 orden.Linea = lineaElegida;
+
+                // Si la orden no tiene descripción y la hoja de planificación sí, se copia de ahí. Se
+                // toma de la copia del servidor, nunca de lo que mande la pantalla
+                var planificada = planificacion.Estado.Ordenes.FirstOrDefault(o => o.Codigo == codigo);
+                if (string.IsNullOrWhiteSpace(orden.Descripcion))
+                {
+                    orden.Descripcion = planificada?.Descripcion;
+                }
+                // La especialidad también sale solo de la hoja (sirve para buscar el patrón). Si la hoja
+                // la trae, se guarda o se pone al día; si no, se deja la que tuviera
+                if (planificada?.Especialidad is { } especialidad)
+                {
+                    orden.Especialidad = especialidad;
+                }
 
                 var numero = orden.Id == 0 ? 1 : await CalcularNumeroSiguienteAsync(datos, orden.Id);
                 var autocontrol = new Autocontrol

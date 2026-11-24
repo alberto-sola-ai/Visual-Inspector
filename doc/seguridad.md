@@ -88,6 +88,24 @@ aparte, en la "caja fuerte" del servidor (archivo `.env`, que nunca se sube a Gi
 Las claves con las que la aplicación sella las sesiones se guardan en su propio cajón
 (volumen `claves-app`), que tampoco se sube a GitHub ni viaja dentro de la aplicación.
 
+## La planificación, solo para leer
+La aplicación lee la planificación de producción de una hoja de Google con una «cuenta robot»
+(cuenta de servicio) que solo tiene permiso de **lector** y solo sobre esa hoja. Su llave es un
+archivo que vive en la carpeta `wys-api-sheet/` del servidor: no se sube a GitHub, no entra en la
+imagen de Docker ni en la publicación, y el contenedor la ve en solo lectura. Aunque alguien la
+robara, no podría cambiar la hoja ni ver otros documentos. Lo que llega de la hoja no se da por
+bueno: cada línea, orden y cantidad se comprueba, y lo que no encaja se aparta. La aplicación nunca
+cierra órdenes por su cuenta: solo propone finalizar las que ya no están en la planificación, y
+solo si la hoja se leyó bien hace poco.
+
+## Los patrones, solo para mirar
+La aplicación puede buscar el patrón de cada autocontrol en la carpeta de patrones de la red, que
+llega al servidor en solo lectura. Nunca escribe ni borra nada en ella. Solo enseña los PDF que llevan
+la especialidad de la orden, y solo deja abrir uno de esa lista: nadie puede pedir otro archivo ni
+salirse de la carpeta. La especialidad sale de la planificación, nunca de lo que escriba el usuario. Si
+la carpeta no se puede leer, no se enseña ningún detalle técnico: se elige el patrón desde el PC. La
+ruta real de la carpeta no está en el código ni en GitHub, sino en el `.env` del servidor.
+
 ## Un diario de lo importante
 La aplicación apunta en un diario (Log-Wys-Seg) quién entra, quién falla, quién se bloquea y
 quién cambia usuarios, permisos o parámetros, con la hora y desde qué equipo. Nunca apunta

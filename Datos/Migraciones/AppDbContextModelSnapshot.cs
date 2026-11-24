@@ -395,6 +395,10 @@ namespace VisualInspector.Datos.Migraciones
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("Especialidad")
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasMaxLength(20)

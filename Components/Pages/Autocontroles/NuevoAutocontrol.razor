@@ -1,6 +1,9 @@
-@page "/autocontroles/nuevo"
+﻿@page "/autocontroles/nuevo"
 @attribute [Authorize(Policy = Permisos.AutocontrolesRealizar_wys)]
+@using VisualInspector.Servicios.Planificacion
+@implements IDisposable
 @inject ServicioAutocontroles ServicioAutocontroles
+@inject ServicioOrdenes ServicioOrdenes
 @inject NavigationManager Navegacion
 
 <PageTitle>Nuevo Autocontrol RPI · Visual Inspector</PageTitle>
@@ -15,124 +18,375 @@
     <div class="alert alert-danger" role="alert">@error</div>
 }
 
-<div class="row">
-    <div class="col-6">
-        @* Órdenes que siguen en fabricación: un clic rellena la orden y la línea *@
-        @if (ordenesAbiertas.Count > 0)
-        {
-            <div class="mb-4">
-                <h2 class="h5 mb-1">Órdenes de fabricación abiertas</h2>
-                <p class="form-text mt-0 mb-2">Pulsa una para hacerle el siguiente control; se rellenan solas la orden y la línea.</p>
-                <div class="vi-ordenes-abiertas">
-                    @foreach (var o in ordenesAbiertas)
+@* Planificación de producción (hoja de Google): por línea, la orden en curso (prioridad 1) y las
+   que vienen detrás. Un clic rellena la orden y la línea; la orden se puede seguir escribiendo a mano *@
+@if (planificacion.EstaActiva && planificacion.TieneDatos)
+{
+    <section class="mb-4">
+        @* Cabecera: a la izquierda el título, las horas y el botón; a la derecha, la leyenda de colores en
+           pequeño y en vertical (decisión de Alberto, 24/11/2026) *@
+        <div class="d-flex justify-content-between align-items-start gap-4 mb-2">
+            <div>
+                <div class="d-flex align-items-baseline flex-wrap gap-3 mb-1">
+                    <h2 class="h5 mb-0">Planificación de producción</h2>
+                    <span class="form-text mt-0">
+                        @if (planificacion.FechaCargaHoja is { } carga)
+                        {
+                            <span>Datos de producción del @carga.ToString("dd/MM/yyyy 'a las' HH:mm") · </span>
+                        }
+                        Leída el @planificacion.FechaLectura!.Value.ToString("dd/MM/yyyy 'a las' HH:mm") ·
+                        Se actualiza sola cada @minutosLectura minutos
+                    </span>
+                    <button type="button" class="btn btn-outline-primary btn-sm" @onclick="ActualizarPlanificacionAsync" disabled="@(estaOcupado || estaActualizando)">
+                        @(estaActualizando ? "Actualizando…" : "Actualizar ahora")
+                    </button>
+                </div>
+                @if (!planificacion.EsReciente(DateTime.Now))
+                {
+                    <div class="alert alert-warning py-2 mb-1" role="alert">
+                        No hay conexión con la planificación: se muestra la última que se leyó. Comprueba que la orden es la
+                        correcta y elige la línea a mano.
+                    </div>
+                }
+                <p class="form-text mt-0 mb-0">
+                    Pulsa una orden para hacerle el autocontrol: se rellenan solas la orden y la línea.
+                </p>
+            </div>
+
+            @* Leyenda de colores de las tarjetas, con los mismos colores que ellas, también en el modo nocturno *@
+            <ul class="vi-leyenda" aria-label="Leyenda de colores">
+                <li><span class="vi-leyenda__muestra vi-leyenda__muestra--en-curso"></span>En curso en la máquina</li>
+                <li><span class="vi-leyenda__muestra vi-leyenda__muestra--en-curso-con-controles"></span>En curso, ya con autocontroles</li>
+                <li><span class="vi-leyenda__muestra vi-leyenda__muestra--por-cerrar"></span>Abierta, pendiente de cerrar</li>
+                <li><span class="vi-leyenda__muestra vi-leyenda__muestra--siguiente"></span>Siguientes (desplegable)</li>
+                <li><span class="vi-leyenda__muestra vi-leyenda__muestra--elegida"></span>Elegida</li>
+                <li><span class="vi-leyenda__barra"></span>Tubos fabricados</li>
+            </ul>
+        </div>
+        @* Todas las líneas en una sola fila, una columna por línea: la orden en curso (verde, con el
+           detalle), las abiertas por cerrar y, en un desplegable, las que vienen detrás. La elegida se
+           marca en rojo (decisiones de Alberto, 24/11/2026) *@
+        <div class="vi-planificacion" style="grid-template-columns: repeat(@Math.Max(columnas.Count, 1), minmax(0, 1fr))">
+            @foreach (var columna in columnas)
+            {
+                <div class="vi-planificacion-linea">
+                    <h3 class="h6 mb-1">@NombreLinea(columna.Linea)</h3>
+
+                    @if (columna.EnCurso is { } enCurso)
                     {
-                        var transcurrido = DateTime.Now - o.UltimoControl;
-                        var yaToca = transcurrido.TotalHours >= ServicioAutocontroles.HorasRecomendadasEntreControles_wys;
-                        <button type="button" class="vi-orden-abierta @(yaToca ? "vi-orden-abierta--toca" : "") @(codigoOrden == o.Codigo ? "vi-orden-abierta--elegida" : "")"
-                                @onclick="() => ElegirOrdenAsync(o)" disabled="@estaOcupado">
-                            <span>
-                                <strong>@o.Codigo</strong>
-                                · @(o.Linea ?? "sin línea")
-                                @if (o.Litografia is not null)
-                                {
-                                    <span> · @o.Litografia</span>
-                                }
-                            </span>
+                        var datos = columna.DatosEnCurso;
+                        @* Fondo amarillo si ya tiene autocontroles (decisión de Alberto, 24/11/2026) *@
+                        <button type="button" class="vi-orden-abierta vi-orden-planificada vi-orden-planificada--en-curso @(datos?.Autocontroles > 0 ? "vi-orden--con-controles" : "") @(codigoOrden == enCurso.Codigo ? "vi-orden-abierta--elegida" : "")"
+                                title="En curso en la línea" @onclick="() => ElegirAsync(enCurso.Codigo, enCurso.Linea)" disabled="@estaOcupado">
+                            @* El verde ya lo dice a la vista; esto lo lee el lector de pantalla *@
+                            <span class="visually-hidden">En curso:</span>
+                            @* «OF:» delante del número y la especialidad justo debajo (decisiones de Alberto, 24/11/2026) *@
+                            <strong>OF: @enCurso.Codigo</strong>
+                            @if (enCurso.Especialidad is not null)
+                            {
+                                <span class="small">Especialidad @enCurso.Especialidad</span>
+                            }
+                            @if (enCurso.Descripcion is not null)
+                            {
+                                <span class="small">@enCurso.Descripcion</span>
+                            }
+                            @* Barra de lo fabricado sobre el total de la orden (decisión de Alberto, 24/11/2026) *@
+                            @if (Porcentaje(enCurso) is { } porcentaje)
+                            {
+                                <span class="progress vi-progreso" role="progressbar" aria-label="Tubos fabricados"
+                                      aria-valuenow="@((int)porcentaje)" aria-valuemin="0" aria-valuemax="100">
+                                    <span class="progress-bar" style="width: @porcentaje.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                                </span>
+                            }
                             <span class="small">
-                                Último control hace @ServicioAutocontroles.FormatearDuracion(transcurrido < TimeSpan.Zero ? TimeSpan.Zero : transcurrido)
-                                → <strong>@o.SiguienteControl</strong>
+                                Fabricados @Cifra(enCurso.Fabricados) de @Cifra(enCurso.Cantidad)@(Porcentaje(enCurso) is { } p ? $" ({p:0} %)" : "")
                             </span>
+                            <span class="small">Pendientes @Cifra(enCurso.Pendientes)</span>
+                            <span class="small">@TextoAutocontroles(datos)</span>
+                            @if (datos?.Estado == EstadoOrden.Finalizada)
+                            {
+                                <span class="small fw-bold">Finalizada en la aplicación: pide al administrador que la reabra.</span>
+                            }
                         </button>
                     }
-                </div>
-            </div>
-            <h2 class="h5 mb-2">O escribe la orden</h2>
-        }
 
-        <div class="mb-3">
+                    @foreach (var abierta in columna.PorCerrar)
+                    {
+                        <div class="vi-orden-por-cerrar @(abierta.Autocontroles > 0 ? "vi-orden--con-controles" : "") @(codigoOrden == abierta.Codigo ? "vi-orden-abierta--elegida" : "")">
+                            <button type="button" class="vi-orden-por-cerrar__elegir" title="Abierta, pendiente de cerrar"
+                                    @onclick="() => ElegirAsync(abierta.Codigo, abierta.Linea)" disabled="@estaOcupado">
+                                <span class="visually-hidden">Pendiente de cerrar:</span>
+                                <strong>OF: @abierta.Codigo</strong>
+                                @if (EspecialidadDe(abierta.Codigo) is { } especialidad)
+                                {
+                                    <span class="small">Especialidad @especialidad</span>
+                                }
+                                @if (DescripcionDe(abierta) is { } descripcion)
+                                {
+                                    <span class="small">@descripcion</span>
+                                }
+                                <span class="small">@TextoAutocontroles(abierta)</span>
+                            </button>
+                            @* Finalizar solo si la hoja está al día (para no cerrar por un fallo de Google)
+                               y si la orden tiene algún autocontrol registrado (si no, no se puede) *@
+                            @if (planificacion.EsReciente(DateTime.Now) && abierta.Registrados > 0)
+                            {
+                                @if (ordenAFinalizar == abierta.Id)
+                                {
+                                    <div class="small fw-bold mt-1">¿Finalizar? Ya no admitirá autocontroles y se borrarán los no registrados.</div>
+                                    <div class="d-flex gap-1 mt-1">
+                                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => FinalizarOrdenAsync(abierta.Id)" disabled="@estaOcupado">Sí, finalizar</button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" @onclick="() => ordenAFinalizar = null" disabled="@estaOcupado">No</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-outline-danger btn-sm mt-1" @onclick="() => ordenAFinalizar = abierta.Id" disabled="@estaOcupado">Finalizar orden</button>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (columna.Siguientes.Count > 0)
+                    {
+                        @* Desplegable a modo de consulta: también se puede elegir una para crear su autocontrol *@
+                        <details class="vi-planificacion-siguientes">
+                            <summary>Siguientes (@columna.Siguientes.Count)</summary>
+                            <div class="vi-planificacion-linea mt-1">
+                                @foreach (var siguiente in columna.Siguientes)
+                                {
+                                    <button type="button" class="vi-orden-abierta vi-orden-planificada @(codigoOrden == siguiente.Codigo ? "vi-orden-abierta--elegida" : "")"
+                                            @onclick="() => ElegirAsync(siguiente.Codigo, siguiente.Linea)" disabled="@estaOcupado">
+                                        <strong>OF: @siguiente.Codigo</strong>
+                                        @if (siguiente.Especialidad is not null)
+                                        {
+                                            <span class="small">Especialidad @siguiente.Especialidad</span>
+                                        }
+                                        @if (siguiente.Descripcion is not null)
+                                        {
+                                            <span class="small">@siguiente.Descripcion</span>
+                                        }
+                                    </button>
+                                }
+                            </div>
+                        </details>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+}
+else if (planificacion.EstaActiva)
+{
+    <div class="alert alert-warning py-2" role="alert">
+        Todavía no se ha podido leer la planificación de producción. Escribe la orden a mano o pulsa
+        <button type="button" class="btn btn-link btn-sm p-0 align-baseline" @onclick="ActualizarPlanificacionAsync" disabled="@(estaOcupado || estaActualizando)">volver a intentarlo</button>.
+    </div>
+}
+
+@* Si no hay planificación, se sugieren las órdenes que siguen en fabricación: un clic rellena la
+   orden y la línea *@
+@if (!(planificacion.EstaActiva && planificacion.TieneDatos) && ordenesAbiertas.Count > 0)
+{
+    <div class="row mb-3">
+        <div class="col-6">
+            <h2 class="h5 mb-1">Órdenes de fabricación abiertas</h2>
+            <p class="form-text mt-0 mb-2">Pulsa una para hacerle el siguiente control; se rellenan solas la orden y la línea.</p>
+            <div class="vi-ordenes-abiertas">
+                @foreach (var o in ordenesAbiertas)
+                {
+                    var transcurrido = DateTime.Now - o.UltimoControl;
+                    var yaToca = transcurrido.TotalHours >= ServicioAutocontroles.HorasRecomendadasEntreControles_wys;
+                    <button type="button" class="vi-orden-abierta @(yaToca ? "vi-orden-abierta--toca" : "") @(codigoOrden == o.Codigo ? "vi-orden-abierta--elegida" : "")"
+                            @onclick="() => ElegirOrdenAsync(o)" disabled="@estaOcupado">
+                        <span>
+                            <strong>OF: @o.Codigo</strong>
+                            · @(o.Linea is null ? "sin línea" : NombreLinea(o.Linea))
+                            @if (o.Litografia is not null)
+                            {
+                                <span> · @o.Litografia</span>
+                            }
+                        </span>
+                        <span class="small">
+                            Último control hace @ServicioAutocontroles.FormatearDuracion(transcurrido < TimeSpan.Zero ? TimeSpan.Zero : transcurrido)
+                            → <strong>@o.SiguienteControl</strong>
+                        </span>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@* Franja para crear el autocontrol, en una sola fila: orden, línea (solo sin conexión con la
+   planificación), observaciones y botón. Se queda fija abajo al bajar por la pantalla, para no tener que
+   buscarla después de elegir la orden (decisión de Alberto, 24/11/2026) *@
+<div class="vi-panel vi-franja-crear">
+    <div class="row g-3 align-items-start">
+        <div class="col-3">
             <label class="form-label" for="orden">Orden de fabricación</label>
             @* El campo viene relleno con el inicio habitual de las órdenes (parámetro PrefijoOrden):
-               el operario escribe el resto y, si hace falta, lo cambia como cualquier texto *@
+               el operario elige la orden arriba o escribe el resto *@
             <input id="orden" class="form-control form-control-lg" maxlength="@ServicioAutocontroles.CifrasOrden_wys" inputmode="numeric"
                    autocomplete="off" autofocus
                    value="@codigoOrden" @oninput="CambiarOrdenAsync" />
             <div class="form-text">
-                Exactamente 10 cifras, solo números.
-                @if (prefijo.Length > 0)
-                {
-                    <span>Ya viene escrito el inicio habitual (@prefijo): añade el resto o cámbialo si la orden empieza distinto.</span>
-                }
-                Si la orden aún no existe, se crea en este momento.
+                10 cifras, solo números@(prefijo.Length > 0 ? $"; ya trae el inicio habitual ({prefijo})" : "").
+                @(EsLineaDeLaPlanificacion
+                    ? "Elígela arriba o escríbela."
+                    : "Si la orden aún no existe, se crea en este momento.")
             </div>
+            @if (lineaAsignada?.EsFueraDePlanificacion == true)
+            {
+                <div class="text-warning-emphasis small mt-1" role="status">
+                    No está en la planificación ni abierta: elige la línea para hacer un autocontrol fuera de planificación.
+                </div>
+            }
         </div>
 
-        @if (prevision is not null)
+        @* Con conexión con la planificación, la línea no se enseña: la pone la aplicación (la de la hoja o
+           la de la orden abierta) y se ve en la columna de la orden y en la ventana de confirmación. Solo se
+           elige (obligatoria) si no hay conexión o si la orden escrita a mano está fuera de planificación
+           (decisión de Alberto, 24/11/2026). Sin conexión, si la orden ya tiene autocontroles, viene elegida
+           la del último *@
+        @if (EsCampoLineaVisible)
         {
-            <p>
-                Será el <span class="wys-etiqueta">@prevision.Nombre</span> de esta orden,
-                con fecha y hora de ahora.
-            </p>
-            <AvisoProximoControl FechaUltimo="prevision.FechaUltimo" />
-        }
-
-        @* Línea de fabricación (obligatoria): si la orden ya tiene autocontroles, viene elegida la
-           del último. La orden se queda con la línea elegida *@
-        <div class="mb-3" style="max-width: 16rem">
-            <label class="form-label" for="linea">Línea</label>
-            <select id="linea" class="form-select form-select-lg" value="@linea" @onchange="CambiarLineaAsync">
-                <option value="">Elige la línea</option>
-                @foreach (var l in lineas)
-                {
-                    <option value="@l">@l</option>
-                }
-            </select>
-            <div class="form-text">Obligatoria. En una orden que ya tiene autocontroles viene elegida la de su último control.</div>
-        </div>
-
-        @* Una línea fabrica una orden a la vez: al empezar otra, la anterior de esa línea se finaliza.
-           Se avisa aquí y, al pulsar Crear, hay que aceptarlo expresamente *@
-        @if (ordenesACerrar.Count > 0)
-        {
-            <div class="alert @(esConfirmandoCierre ? "alert-danger" : "alert-warning")" role="alert">
-                La línea @linea ya tiene @(ordenesACerrar.Count == 1 ? "otra orden" : "otras órdenes") en fabricación:
-                <strong>@string.Join(", ", ordenesACerrar.Select(o => o.Codigo))</strong>.
-                Si sigues, @(ordenesACerrar.Count == 1 ? "se finalizará" : "se finalizarán") y ya no
-                @(ordenesACerrar.Count == 1 ? "admitirá" : "admitirán") autocontroles nuevos, salvo que el administrador
-                @(ordenesACerrar.Count == 1 ? "la reabra" : "las reabra").
-                @foreach (var o in ordenesACerrar.Where(o => o.SinRegistrar > 0))
-                {
-                    @* Los autocontroles sin registrar ya no se podrían registrar: se borran *@
-                    <div class="mt-2">
-                        <strong>
-                            La orden @o.Codigo tiene @(o.SinRegistrar == 1 ? "1 autocontrol sin registrar y se borrará" : $"{o.SinRegistrar} autocontroles sin registrar y se borrarán").
-                        </strong>
-                        Si alguien lo está registrando ahora mismo, perderá su trabajo.
-                    </div>
-                }
-                @if (esConfirmandoCierre)
-                {
-                    <div class="mt-3 fw-bold">¿Estás seguro? No se puede deshacer.</div>
-                    <div class="mt-2 d-flex gap-2">
-                        <button class="btn btn-danger btn-sm" @onclick="CrearAsync" disabled="@estaOcupado">Sí, finalizar y crear el autocontrol</button>
-                        <button class="btn btn-outline-primary btn-sm" @onclick="() => esConfirmandoCierre = false" disabled="@estaOcupado">No, volver</button>
-                    </div>
-                }
+            <div class="col-2">
+                <label class="form-label" for="linea">Línea</label>
+                <select id="linea" class="form-select form-select-lg" value="@linea" @onchange="CambiarLineaAsync">
+                    <option value="">Elige la línea</option>
+                    @foreach (var l in lineas)
+                    {
+                        <option value="@l">@NombreLinea(l)</option>
+                    }
+                </select>
+                <div class="form-text">Obligatoria.</div>
             </div>
         }
 
-        <div class="mb-3">
+        <div class="col">
             <label class="form-label" for="observaciones">Observaciones (opcional)</label>
-            <textarea id="observaciones" class="form-control" rows="3"
+            <textarea id="observaciones" class="form-control" rows="2"
                       maxlength="@ServicioAutocontroles.LongitudMaximaObservaciones_wys"
                       @bind="observaciones"></textarea>
         </div>
 
-        <button class="btn btn-primary btn-lg" @onclick="CrearAsync" disabled="@(estaOcupado || esConfirmandoCierre || prevision is null || string.IsNullOrEmpty(linea))">
-            Crear autocontrol
-        </button>
-        <a href="autocontroles" class="btn btn-link">Cancelar</a>
+        <div class="col-auto d-flex flex-column align-items-stretch gap-1 vi-franja-crear__acciones">
+            <button class="btn btn-primary btn-lg" @onclick="PedirConfirmacion" disabled="@(estaOcupado || esConfirmando || prevision is null || string.IsNullOrEmpty(linea))">
+                Crear autocontrol
+            </button>
+            <a href="autocontroles" class="btn btn-link btn-sm">Cancelar</a>
+        </div>
     </div>
+
+    @if (prevision is not null)
+    {
+        <div class="d-flex flex-wrap align-items-center gap-3 mt-2">
+            <span>
+                Será el <span class="wys-etiqueta">@prevision.Nombre</span> de esta orden, con fecha y hora de ahora.
+            </span>
+            <AvisoProximoControl FechaUltimo="prevision.FechaUltimo" />
+        </div>
+    }
+
+    @* Una línea fabrica una orden a la vez: al empezar otra, la anterior de esa línea se finaliza.
+       Se avisa aquí y se vuelve a decir en la ventana de confirmación de Crear autocontrol *@
+    @if (ordenesACerrar.Count > 0)
+    {
+        <div class="alert alert-warning mt-2 mb-0" role="alert">
+            La @NombreLinea(linea).ToLower() ya tiene @(ordenesACerrar.Count == 1 ? "otra orden" : "otras órdenes") en fabricación:
+            <strong>@string.Join(", ", ordenesACerrar.Select(o => o.Codigo))</strong>.
+            Si sigues, @(ordenesACerrar.Count == 1 ? "se finalizará" : "se finalizarán") y ya no
+            @(ordenesACerrar.Count == 1 ? "admitirá" : "admitirán") autocontroles nuevos, salvo que el administrador
+            @(ordenesACerrar.Count == 1 ? "la reabra" : "las reabra").
+            @foreach (var o in ordenesACerrar.Where(o => o.SinRegistrar > 0))
+            {
+                @* Los autocontroles sin registrar ya no se podrían registrar: se borran *@
+                <div class="mt-2">
+                    <strong>
+                        La orden @o.Codigo tiene @(o.SinRegistrar == 1 ? "1 autocontrol sin registrar y se borrará" : $"{o.SinRegistrar} autocontroles sin registrar y se borrarán").
+                    </strong>
+                    Si alguien lo está registrando ahora mismo, perderá su trabajo.
+                </div>
+            }
+        </div>
+    }
 </div>
+
+@* Ventana de confirmación antes de crear el autocontrol, con todos sus datos para revisarlos.
+   Si se va a finalizar otra orden de la línea, se dice aquí también (decisión de Alberto, 24/11/2026) *@
+@if (esConfirmando && prevision is not null)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="titulo-confirmacion">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="titulo-confirmacion">¿Seguro que quieres crear este autocontrol?</h2>
+                </div>
+                <div class="modal-body">
+                    <dl class="vi-confirmacion-datos">
+                        <dt>OF</dt>
+                        <dd><strong>@codigoOrden</strong></dd>
+                        @if (EspecialidadDe(codigoOrden) is { } especialidadElegida)
+                        {
+                            <dt>Especialidad</dt>
+                            <dd>@especialidadElegida</dd>
+                        }
+                        @if (DescripcionOrdenElegida() is { } descripcion)
+                        {
+                            <dt>Descripción</dt>
+                            <dd>@descripcion</dd>
+                        }
+                        <dt>Línea</dt>
+                        <dd>
+                            @NombreLinea(linea)
+                            @if (lineaAsignada is not null)
+                            {
+                                <span class="small text-body-secondary">
+                                    (@(lineaAsignada.EsFueraDePlanificacion ? "elegida a mano: autocontrol fuera de planificación"
+                                        : lineaAsignada.EsDeLaPlanificacion ? "según la planificación" : "la de la orden abierta"))
+                                </span>
+                            }
+                        </dd>
+                        <dt>Autocontrol</dt>
+                        <dd><span class="wys-etiqueta">@prevision.Nombre</span></dd>
+                        <dt>Fecha y hora</dt>
+                        <dd>Las del momento de continuar (ahora, @DateTime.Now.ToString("dd/MM/yyyy HH:mm"))</dd>
+                        @if (prevision.FechaUltimo is { } ultimo)
+                        {
+                            <dt>Último control</dt>
+                            <dd>@ultimo.ToString("dd/MM/yyyy HH:mm")</dd>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(observaciones))
+                        {
+                            <dt>Observaciones</dt>
+                            <dd>@observaciones</dd>
+                        }
+                    </dl>
+                    @if (ordenesACerrar.Count > 0)
+                    {
+                        <div class="alert alert-danger mb-0" role="alert">
+                            Al continuar se @(ordenesACerrar.Count == 1 ? "finalizará la orden" : "finalizarán las órdenes")
+                            <strong>@string.Join(", ", ordenesACerrar.Select(o => o.Codigo))</strong> de esta línea.
+                            @if (ordenesACerrar.Sum(o => o.SinRegistrar) is > 0 and var sinRegistrar)
+                            {
+                                <span>Se @(sinRegistrar == 1 ? "borrará 1 autocontrol sin registrar" : $"borrarán {sinRegistrar} autocontroles sin registrar").</span>
+                            }
+                            No se puede deshacer.
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary" @onclick="() => esConfirmando = false" disabled="@estaOcupado">Cancelar</button>
+                    <button type="button" class="btn @(ordenesACerrar.Count > 0 ? "btn-danger" : "btn-primary")" @onclick="CrearAsync" disabled="@estaOcupado">
+                        @(estaOcupado ? "Creando…" : "Continuar")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private string codigoOrden = "";
@@ -143,23 +397,252 @@
     private string? observaciones;
     private PrevisionControl? prevision;
     private IReadOnlyList<OrdenACerrar> ordenesACerrar = [];
-    // El operario ha pulsado Crear y falta que acepte finalizar las órdenes anteriores de la línea
-    private bool esConfirmandoCierre;
+    // El operario ha pulsado Crear y está abierta la ventana de confirmación
+    private bool esConfirmando;
     private string? error;
     private bool estaOcupado;
+    private EstadoPlanificacion planificacion = EstadoPlanificacion.Inactiva_wys;
+    // Lo que se enseña de cada línea: en curso, abiertas por cerrar y siguientes
+    private IReadOnlyList<ColumnaPlanificacion> columnas = [];
+    // Orden que el operario ha pedido finalizar y falta que lo confirme
+    private int? ordenAFinalizar;
+    private bool estaActualizando;
+    // Línea que pone la aplicación a la orden cuando hay planificación (o el aviso si no está en ella)
+    private LineaAsignada? lineaAsignada;
+    // Cada cuántos minutos se lee sola la planificación (para decirlo en pantalla)
+    private int minutosLectura;
+    // La pantalla abierta recoge cada minuto lo último que tiene el servidor (planificación y órdenes
+    // abiertas), sin pulsar nada (decisión de Alberto, 24/11/2026)
+    private const int MinutosRefrescoPantalla_wys = 1;
+    private CancellationTokenSource? parada;
+
+    /// <summary>
+    /// Dice si la línea la pone la planificación (solo informativa) en lugar de elegirla el operario.
+    /// </summary>
+    private bool EsLineaDeLaPlanificacion => ServicioAutocontroles.LineaSaleDeLaPlanificacion(planificacion);
+
+    /// <summary>
+    /// Dice si se enseña el campo para elegir la línea: sin conexión con la planificación, o si la orden
+    /// escrita a mano está fuera de planificación (no está en la hoja ni abierta).
+    /// </summary>
+    private bool EsCampoLineaVisible => !EsLineaDeLaPlanificacion || lineaAsignada?.EsFueraDePlanificacion == true;
 
     /// <summary>
     /// Al abrir la pantalla, el campo de la orden viene relleno con el inicio habitual de las
     /// órdenes (parámetro PrefijoOrden), para que el operario solo escriba el resto, y se cargan
-    /// las líneas que se pueden elegir (parámetro Lineas) y las órdenes que siguen en fabricación.
+    /// las líneas que se pueden elegir (parámetro Lineas), las órdenes que siguen en fabricación
+    /// y la planificación de producción.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
         prefijo = await ServicioAutocontroles.ObtenerPrefijoOrdenAsync();
         codigoOrden = prefijo;
         lineas = await ServicioAutocontroles.ObtenerLineasAsync();
-        ordenesAbiertas = await ServicioAutocontroles.ListarOrdenesAbiertasAsync();
+        minutosLectura = await ServicioAutocontroles.ObtenerMinutosLecturaPlanificacionAsync();
+        await CargarOrdenesAsync(actualizarPlanificacion: false);
     }
+
+    /// <summary>
+    /// Pone en marcha el refresco automático. Se hace después del primer dibujo y no al inicializar,
+    /// porque la pantalla se prepara antes en el servidor y allí no debe haber reloj.
+    /// </summary>
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender) return;
+        parada = new CancellationTokenSource();
+        _ = RefrescarCadaTantoAsync(parada.Token);
+    }
+
+    /// <summary>
+    /// Cada minuto vuelve a cargar la planificación y las órdenes, como quien echa un vistazo al tablón,
+    /// hasta que se sale de la pantalla. No pregunta a Google: usa la copia que el servidor ya tiene.
+    /// Si el operario está confirmando o creando, se salta esa vuelta para no cambiarle los datos.
+    /// </summary>
+    private async Task RefrescarCadaTantoAsync(CancellationToken cancelar)
+    {
+        using var reloj = new PeriodicTimer(TimeSpan.FromMinutes(MinutosRefrescoPantalla_wys));
+        try
+        {
+            while (await reloj.WaitForNextTickAsync(cancelar))
+            {
+                await InvokeAsync(async () =>
+                {
+                    if (esConfirmando || estaOcupado || estaActualizando)
+                    {
+                        return;
+                    }
+                    try
+                    {
+                        await CargarOrdenesAsync(actualizarPlanificacion: false);
+                        await ActualizarAvisoCierreAsync();
+                    }
+                    catch (Exception e) when (e is not AccesoDenegadoException)
+                    {
+                        // Un fallo puntual no debe parar el refresco: se vuelve a intentar al minuto siguiente
+                    }
+                    StateHasChanged();
+                });
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Se ha salido de la pantalla: es lo normal
+        }
+    }
+
+    public void Dispose()
+    {
+        parada?.Cancel();
+        parada?.Dispose();
+    }
+
+    /// <summary>
+    /// Carga la planificación (la copia que ya tiene el servidor, o recién pedida a Google) y las
+    /// órdenes que siguen en fabricación, y lo reparte por líneas para enseñarlo.
+    /// </summary>
+    private async Task CargarOrdenesAsync(bool actualizarPlanificacion)
+    {
+        planificacion = await ServicioAutocontroles.ObtenerPlanificacionAsync(actualizarPlanificacion);
+        ordenesAbiertas = await ServicioAutocontroles.ListarOrdenesAbiertasAsync();
+        if (planificacion.EstaActiva && planificacion.TieneDatos)
+        {
+            var codigosEnCurso = planificacion.Ordenes.Where(o => o.EstaEnCurso).Select(o => o.Codigo).ToList();
+            var enApp = await ServicioAutocontroles.ListarResumenOrdenesAsync(codigosEnCurso);
+            columnas = OrganizadorPlanificacion.Organizar(planificacion.Ordenes, enApp, lineas);
+        }
+        else
+        {
+            columnas = [];
+        }
+        // La planificación puede haber cambiado: se vuelve a mirar la línea de la orden ya escrita
+        await ActualizarLineaAsignadaAsync();
+    }
+
+    /// <summary>
+    /// Con planificación, pide al servidor la línea de la orden escrita o elegida y la usa. Si la orden
+    /// está fuera de planificación, la línea se queda vacía para que el operario la elija a propósito
+    /// (y, si ya la había elegido para esa misma situación, se respeta).
+    /// </summary>
+    private async Task ActualizarLineaAsignadaAsync()
+    {
+        var yaEraFueraDePlanificacion = lineaAsignada?.EsFueraDePlanificacion == true;
+        lineaAsignada = await ServicioAutocontroles.ObtenerLineaAsignadaAsync(codigoOrden);
+        if (!EsLineaDeLaPlanificacion)
+        {
+            return;
+        }
+        if (lineaAsignada?.Linea is { } lineaDeLaApp)
+        {
+            linea = lineaDeLaApp;
+        }
+        else if (!(lineaAsignada?.EsFueraDePlanificacion == true && yaEraFueraDePlanificacion))
+        {
+            linea = "";
+        }
+    }
+
+    /// <summary>
+    /// Botón «Actualizar ahora»: vuelve a pedir la planificación a Google sin esperar a la lectura
+    /// automática.
+    /// </summary>
+    private async Task ActualizarPlanificacionAsync()
+    {
+        estaActualizando = true;
+        try
+        {
+            await CargarOrdenesAsync(actualizarPlanificacion: true);
+        }
+        finally
+        {
+            estaActualizando = false;
+        }
+    }
+
+    /// <summary>
+    /// Elige una orden de la planificación: rellena la orden y la línea de su columna, y enseña qué
+    /// control será, igual que si se hubiera escrito. La orden elegida se marca en rojo.
+    /// </summary>
+    private async Task ElegirAsync(string codigo, string? lineaOrden)
+    {
+        error = null;
+        codigoOrden = codigo;
+        prevision = await ServicioAutocontroles.PrevisualizarControlAsync(codigoOrden);
+        if (lineaOrden is not null && lineas.Contains(lineaOrden))
+        {
+            linea = lineaOrden;
+        }
+        // Con planificación manda la línea que dice el servidor (la de la hoja o la de la orden abierta)
+        await ActualizarLineaAsignadaAsync();
+        await ActualizarAvisoCierreAsync();
+    }
+
+    /// <summary>
+    /// Finaliza una orden abierta que ya no se está fabricando, después de que el operario lo confirme.
+    /// </summary>
+    private async Task FinalizarOrdenAsync(int idOrden)
+    {
+        error = null;
+        estaOcupado = true;
+        try
+        {
+            error = await ServicioOrdenes.FinalizarAsync(idOrden);
+            ordenAFinalizar = null;
+            await CargarOrdenesAsync(actualizarPlanificacion: false);
+            await ActualizarAvisoCierreAsync();
+        }
+        finally
+        {
+            estaOcupado = false;
+        }
+    }
+
+    /// <summary>
+    /// Escribe una cantidad de tubos con el formato español (1.234), o un guion si la hoja no la trae.
+    /// </summary>
+    private static string Cifra(int? valor) => valor?.ToString("N0") ?? "-";
+
+    /// <summary>
+    /// Qué parte de la orden está ya fabricada, de 0 a 100, para la barra. Null si la hoja no trae los
+    /// fabricados o la cantidad.
+    /// </summary>
+    private static double? Porcentaje(OrdenPlanificada orden) =>
+        orden is { Fabricados: { } fabricados, Cantidad: > 0 and var cantidad }
+            ? Math.Clamp(fabricados * 100.0 / cantidad, 0, 100)
+            : null;
+
+    /// <summary>
+    /// El título de cada columna: «Línea 1» en lugar de «Línea L1» (decisión de Alberto, 24/11/2026).
+    /// </summary>
+    private static string NombreLinea(string linea) =>
+        linea.Length > 1 && linea[0] is 'L' or 'l' && linea[1..].All(char.IsAsciiDigit)
+            ? $"Línea {linea[1..]}"
+            : $"Línea {linea}";
+
+    /// <summary>
+    /// Cuántos autocontroles lleva la orden y, si tiene, cuánto hace del último y cuál toca ahora.
+    /// </summary>
+    private static string TextoAutocontroles(ResumenOrdenApp? orden)
+    {
+        if (orden is null || orden.Autocontroles == 0 || orden.UltimoControl is null)
+        {
+            return "Sin autocontroles todavía";
+        }
+        var transcurrido = DateTime.Now - orden.UltimoControl.Value;
+        var cuantos = orden.Autocontroles == 1 ? "1 autocontrol" : $"{orden.Autocontroles} autocontroles";
+        return $"{cuantos} · último hace {ServicioAutocontroles.FormatearDuracion(transcurrido < TimeSpan.Zero ? TimeSpan.Zero : transcurrido)} → {orden.SiguienteControl}";
+    }
+
+    /// <summary>
+    /// La descripción de una orden abierta: la de la planificación si sale en ella, o la que guarda la aplicación.
+    /// </summary>
+    private string? DescripcionDe(ResumenOrdenApp orden) =>
+        planificacion.Ordenes.FirstOrDefault(o => o.Codigo == orden.Codigo)?.Descripcion ?? orden.Descripcion;
+
+    /// <summary>
+    /// La especialidad de una orden según la planificación (solo informativa), o null si no sale en ella.
+    /// </summary>
+    private string? EspecialidadDe(string codigo) =>
+        planificacion.Ordenes.FirstOrDefault(o => o.Codigo == codigo)?.Especialidad;
 
     /// <summary>
     /// Elige una orden en fabricación de la lista: rellena la orden y su línea y enseña qué
@@ -192,14 +675,15 @@
     private async Task ActualizarAvisoCierreAsync()
     {
         // Si cambia la orden o la línea, lo que el operario iba a aceptar ya no es lo mismo
-        esConfirmandoCierre = false;
+        esConfirmando = false;
         ordenesACerrar = await ServicioAutocontroles.ListarOrdenesACerrarAsync(codigoOrden, linea);
     }
 
     /// <summary>
     /// Cada vez que se escribe en la orden, deja solo las cifras y, cuando hay 10, enseña qué
-    /// control será (RPI 1 (inicial), RPI 2…) y cuánto hace del último. Si la orden ya
-    /// tiene línea (la de su último autocontrol), la deja elegida.
+    /// control será (RPI 1 (inicial), RPI 2…) y cuánto hace del último. Con planificación, la línea
+    /// la pone la aplicación; sin ella, si la orden ya tiene línea (la de su último autocontrol), la
+    /// deja elegida.
     /// </summary>
     private async Task CambiarOrdenAsync(ChangeEventArgs e)
     {
@@ -211,27 +695,31 @@
         {
             linea = lineaOrden;
         }
+        // Con planificación, la línea la pone el servidor; si la orden no está en ella, sale el aviso
+        await ActualizarLineaAsignadaAsync();
         await ActualizarAvisoCierreAsync();
     }
 
     /// <summary>
-    /// Crea el autocontrol y abre su ficha. El botón se bloquea mientras tanto para que un
-    /// doble clic no cree dos.
+    /// Botón «Crear autocontrol»: antes de crear nada, abre la ventana con los datos del autocontrol
+    /// para que el operario los revise y diga Continuar o Cancelar.
+    /// </summary>
+    private void PedirConfirmacion()
+    {
+        error = null;
+        esConfirmando = true;
+    }
+
+    /// <summary>
+    /// Botón «Continuar» de la ventana: crea el autocontrol y abre su ficha. Si en la ventana se
+    /// avisaba de que se finalizaría otra orden de la línea, al continuar queda aceptado. El botón se
+    /// bloquea mientras tanto para que un doble clic no cree dos.
     /// </summary>
     private async Task CrearAsync()
     {
         error = null;
-
-        // Si hay órdenes que se finalizarían, primero hay que aceptarlo: la primera pulsación solo
-        // enseña la confirmación y la segunda («Sí, finalizar…») crea de verdad
-        if (ordenesACerrar.Count > 0 && !esConfirmandoCierre)
-        {
-            esConfirmandoCierre = true;
-            return;
-        }
-
         estaOcupado = true;
-        var resultado = await ServicioAutocontroles.CrearAsync(codigoOrden, linea, observaciones, aceptaCierre: esConfirmandoCierre);
+        var resultado = await ServicioAutocontroles.CrearAsync(codigoOrden, linea, observaciones, aceptaCierre: ordenesACerrar.Count > 0);
         if (resultado.Id is not null)
         {
             Navegacion.NavigateTo($"autocontroles/{resultado.Id}");
@@ -239,9 +727,18 @@
         }
 
         error = resultado.Error;
-        // Si algo ha cambiado (por ejemplo otra persona abrió una orden en la línea), se vuelve a
-        // mirar qué se finalizaría y se pide de nuevo la aceptación
+        // Si algo ha cambiado (por ejemplo otra persona abrió una orden en la línea), se cierra la
+        // ventana y se vuelve a mirar qué se finalizaría, para que el operario lo revise de nuevo
         await ActualizarAvisoCierreAsync();
         estaOcupado = false;
     }
+
+    /// <summary>
+    /// La descripción de la orden elegida para la ventana de confirmación: la de la planificación o,
+    /// si no sale en ella, la que guarda la aplicación. Null si no hay ninguna.
+    /// </summary>
+    private string? DescripcionOrdenElegida() =>
+        planificacion.Ordenes.FirstOrDefault(o => o.Codigo == codigoOrden)?.Descripcion
+        ?? columnas.SelectMany(c => c.PorCerrar).FirstOrDefault(o => o.Codigo == codigoOrden)?.Descripcion
+        ?? columnas.Select(c => c.DatosEnCurso).FirstOrDefault(o => o?.Codigo == codigoOrden)?.Descripcion;
 }

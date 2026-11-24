@@ -161,7 +161,13 @@ builder.Services.AddScoped<VisualInspector.Servicios.Exportacion.ServicioExporta
 builder.Services.AddSingleton<ServicioAyuda>();
 // Una por sesión abierta: recuerda si el panel de ayuda está abierto al cambiar de pantalla
 builder.Services.AddScoped<EstadoAyuda>();
+// Hoja de planificación de producción (Google Sheets): una sola copia para toda la aplicación, que
+// un trabajo en segundo plano refresca cada cierto tiempo (parámetro MinutosLecturaPlanificacion)
+builder.Services.AddSingleton<VisualInspector.Servicios.Planificacion.ServicioPlanificacion>();
+builder.Services.AddHostedService<VisualInspector.Servicios.Planificacion.ProcesoPlanificacion>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.LocalizadorMuestras>();
+// Busca el patrón de cada autocontrol en la carpeta de patrones (solo lectura), por su especialidad
+builder.Services.AddScoped<VisualInspector.Servicios.Vision.BuscadorPatrones>();
 builder.Services.AddScoped<VisualInspector.Servicios.Vision.ComparadorMuestras>();
 
 // En producción la aplicación se publica detrás de Nginx Proxy Manager, que pone el certificado.

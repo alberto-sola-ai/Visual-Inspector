@@ -12,6 +12,9 @@ log/
 # Claves que firman las sesiones (son secretos)
 claves/
 
+# Clave de la cuenta de servicio de Google que lee la hoja de planificación (es un secreto)
+[Ww]ys-api-[Ss]heet/
+
 # Compilados y publicaciones
 bin/
 obj/

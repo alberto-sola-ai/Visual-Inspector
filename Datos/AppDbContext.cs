@@ -59,6 +59,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> opciones, IUsuarioActua
             orden.HasIndex(o => o.Codigo).IsUnique();
             orden.Property(o => o.Codigo).HasMaxLength(10);
             orden.Property(o => o.Descripcion).HasMaxLength(200);
+            orden.Property(o => o.Especialidad).HasMaxLength(30);
             orden.Property(o => o.Litografia).HasMaxLength(8);
             orden.Property(o => o.Estado).HasConversion<string>().HasMaxLength(20);
             orden.Property(o => o.FinalizadaPor).HasMaxLength(256);

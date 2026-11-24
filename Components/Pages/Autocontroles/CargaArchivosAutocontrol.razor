@@ -1,13 +1,15 @@
 @using VisualInspector.Servicios.Vision
 @inject ServicioArchivosAutocontrol ServicioArchivos
 @inject LocalizadorMuestras Localizador
+@inject BuscadorPatrones Buscador
 @inject ILogger<CargaArchivosAutocontrol> Registro
 
 @* Carga del patrón y las dos muestras desde el PC y localización de cada muestra en el patrón.
    Nada se guarda: los archivos viven solo en memoria mientras esta pantalla está abierta *@
 <h2 class="h4 mt-5">Patrón y muestras</h2>
 <p class="text-secondary small">
-    Elige los archivos desde tu PC. No se guardan en la aplicación: se descartan al salir de esta pantalla.
+    Elige los archivos desde tu PC (el patrón, también de la carpeta de patrones). No se guardan en la aplicación:
+    se descartan al salir de esta pantalla.
     Patrón en PDF; muestras en JPG, PNG o TIFF escaneadas a 300 ppp, en cualquier orientación. Máximo 50 MB por archivo.
 </p>
 
@@ -17,6 +19,40 @@
         <div class="col-4">
             <div class="vi-panel h-100">
                 <h3 class="h6">@hueco.Titulo</h3>
+                @if (hueco.EsPatron && encontrados.Codigo is not null)
+                {
+                    @* Patrones de la carpeta de red cuyo nombre lleva la especialidad de la orden sin la E. Si la
+                       orden no tiene especialidad (fuera de planificación) no sale nada y se elige desde el PC
+                       (decisión de Alberto, 24/11/2026) *@
+                    @if (encontrados.Archivos.Count > 0)
+                    {
+                        <p class="small mb-1">Patrones de la especialidad <strong>@encontrados.Especialidad</strong> en la carpeta de patrones:</p>
+                        <div class="list-group mb-2">
+                            @foreach (var nombre in encontrados.Archivos)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action small text-break @(hueco.Archivo?.NombreArchivo == nombre ? "active" : "")"
+                                        @onclick="() => CargarDeCarpetaAsync(nombre)" disabled="@(hueco.EstaCargando || estaLocalizando)">
+                                    @nombre
+                                </button>
+                            }
+                        </div>
+                        <p class="small text-secondary mb-1">O elige otro archivo desde tu PC:</p>
+                    }
+                    else if (encontrados.EsCarpetaDisponible)
+                    {
+                        <p class="small text-secondary mb-1">
+                            No hay ningún patrón con @encontrados.Codigo (especialidad @encontrados.Especialidad) en la carpeta de
+                            patrones. Elígelo desde tu PC:
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="small text-secondary mb-1">
+                            No se ha podido leer la carpeta de patrones. Elige el patrón desde tu PC
+                            (en el nombre lleva @encontrados.Codigo):
+                        </p>
+                    }
+                }
                 @* data-carpeta-recordada: wwwroot/js/elegir-archivo.js abre el explorador en la última
                    carpeta de patrones o de muestras usada (la primera vez, «Mis documentos») *@
                 <InputFile class="form-control form-control-sm" accept="@hueco.Aceptar"
@@ -152,6 +188,8 @@
     private readonly Hueco muestra2 = new("Muestra 2", ".jpg,.jpeg,.png,.tif,.tiff,image/jpeg,image/png,image/tiff", esPatron: false);
     private Hueco[] huecos => [patron, muestra1, muestra2];
 
+    // Patrones encontrados en la carpeta de patrones para la especialidad de la orden
+    private PatronesEncontrados encontrados = PatronesEncontrados.Ninguno_wys;
     private bool esNombreLeido = true;
     private bool estaLocalizando;
     private IReadOnlyList<ResultadoLocalizacion>? resultados;
@@ -174,29 +212,67 @@
         && !string.IsNullOrWhiteSpace(VersionPatron);
 
     /// <summary>
-    /// Recibe el archivo elegido, lo manda revisar al servidor y enseña su vista o el motivo
-    /// por el que no vale. Si cambia algún archivo, la localización anterior deja de valer.
+    /// Al abrir la pantalla busca en la carpeta de patrones los de la especialidad de la orden. Si algo
+    /// falla, no se enseña la lista y el patrón se elige desde el PC como siempre.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            encontrados = await Buscador.BuscarAsync(AutocontrolId);
+        }
+        catch (Exception error) when (error is not AccesoDenegadoException)
+        {
+            Registro.LogWarning(error, "No se han podido buscar los patrones del autocontrol {Id}", AutocontrolId);
+            encontrados = PatronesEncontrados.Ninguno_wys;
+        }
+    }
+
+    /// <summary>
+    /// Recibe el archivo elegido desde el PC, lo manda revisar al servidor y enseña su vista o el
+    /// motivo por el que no vale. Si cambia algún archivo, la localización anterior deja de valer.
     /// </summary>
     private async Task CargarAsync(Hueco hueco, InputFileChangeEventArgs e)
+    {
+        if (e.File.Size > ServicioArchivosAutocontrol.TamanoMaximoBytes_wys)
+        {
+            hueco.Archivo = null;
+            hueco.Error = "El archivo pasa de 50 MB.";
+            resultados = null;
+            return;
+        }
+
+        await PrepararAsync(hueco, async () =>
+        {
+            await using var contenido = e.File.OpenReadStream(ServicioArchivosAutocontrol.TamanoMaximoBytes_wys);
+            return hueco.EsPatron
+                ? await ServicioArchivos.PrepararPatronAsync(contenido, e.File.Name)
+                : await ServicioArchivos.PrepararMuestraAsync(contenido, e.File.Name);
+        });
+    }
+
+    /// <summary>
+    /// Carga como patrón uno de los PDF encontrados en la carpeta de patrones: el servidor lo lee de la
+    /// carpeta y lo revisa igual que si se hubiera elegido desde el PC.
+    /// </summary>
+    private Task CargarDeCarpetaAsync(string nombreArchivo) =>
+        PrepararAsync(patron, () => Buscador.AbrirAsync(AutocontrolId, nombreArchivo));
+
+    /// <summary>
+    /// Pasos comunes al cargar un archivo, venga del PC o de la carpeta: lo prepara, enseña su vista y,
+    /// si es el patrón, lee la litografía y la versión de su nombre. Si no vale, enseña el motivo.
+    /// </summary>
+    private async Task PrepararAsync(Hueco hueco, Func<Task<ArchivoPreparado>> preparar)
     {
         hueco.Archivo = null;
         hueco.Error = null;
         resultados = null;
         errorLocalizacion = null;
 
-        if (e.File.Size > ServicioArchivosAutocontrol.TamanoMaximoBytes_wys)
-        {
-            hueco.Error = "El archivo pasa de 50 MB.";
-            return;
-        }
-
         hueco.EstaCargando = true;
         try
         {
-            await using var contenido = e.File.OpenReadStream(ServicioArchivosAutocontrol.TamanoMaximoBytes_wys);
-            hueco.Archivo = hueco.EsPatron
-                ? await ServicioArchivos.PrepararPatronAsync(contenido, e.File.Name)
-                : await ServicioArchivos.PrepararMuestraAsync(contenido, e.File.Name);
+            hueco.Archivo = await preparar();
 
             if (hueco.EsPatron)
             {

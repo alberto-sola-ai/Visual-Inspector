@@ -1,11 +1,11 @@
 ﻿{
-    "generado":  "2026-10-30T10:31:10",
+    "generado":  "2026-11-24T08:53:52",
     "componentes":  [
                         {
                             "nombre":  ".NET",
                             "descripcion":  "La plataforma sobre la que funciona toda la aplicación (pantallas Blazor, servicios y seguridad). Licencia MIT.",
                             "instalada":  "10.0.12",
-                            "ultima":  "10.0.14",
+                            "ultima":  "10.0.15",
                             "recomendacion":  "Recomendada"
                         },
                         {
@@ -13,6 +13,13 @@
                             "descripcion":  "La base de datos donde se guardan usuarios, parámetros, órdenes y autocontroles. Rama de soporte largo (LTS). Licencia GPL v2, gratuita; funciona como servicio aparte.",
                             "instalada":  "11.4",
                             "ultima":  "11.4 (rama LTS)",
+                            "recomendacion":  "Al día"
+                        },
+                        {
+                            "nombre":  "Google.Apis.Sheets.v4",
+                            "descripcion":  "Lee la planificación de producción de la hoja de Google (Google Sheets) para elegir la orden con un clic en Nuevo Autocontrol. Entra con una cuenta de servicio de solo lectura. Licencia Apache 2.0.",
+                            "instalada":  "1.78.0.4330",
+                            "ultima":  "1.78.0.4330",
                             "recomendacion":  "Al día"
                         },
                         {
@@ -26,57 +33,64 @@
                             "nombre":  "Markdig",
                             "descripcion":  "Convierte la guía de usuario (un archivo de texto en Markdown) en la pantalla Ayuda, sin permitir HTML en bruto. Licencia BSD-2-Clause.",
                             "instalada":  "1.5.0",
-                            "ultima":  "1.5.1",
+                            "ultima":  "1.6.0",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.AspNetCore.Identity.EntityFrameworkCore",
                             "descripcion":  "Guarda en la base de datos los usuarios, sus roles y sus permisos. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
-                            "ultima":  "10.0.14",
+                            "ultima":  "11.0.0",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.EntityFrameworkCore.Design",
                             "descripcion":  "Herramienta para crear y cambiar las tablas (migraciones). Solo se usa al programar, no en el servidor. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
-                            "ultima":  "10.0.14",
+                            "ultima":  "11.0.0",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Microsoft.EntityFrameworkCore.Relational",
                             "descripcion":  "Motor de acceso a la base de datos (Entity Framework): lee y guarda los datos sin escribir SQL a mano, lo que evita inyecciones. Licencia MIT. Se mantiene en la versión 9 hasta que exista Pomelo 10.",
                             "instalada":  "9.0.21",
-                            "ultima":  "10.0.14",
+                            "ultima":  "11.0.0",
                             "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "MiniExcel",
                             "descripcion":  "Escribe los archivos de Excel (.xlsx) de las exportaciones de Trazabilidad e Impacto productivo. Licencia Apache 2.0.",
                             "instalada":  "1.46.0",
-                            "ultima":  "1.46.0",
-                            "recomendacion":  "Al día"
+                            "ultima":  "2.0.0",
+                            "recomendacion":  "Recomendada"
+                        },
+                        {
+                            "nombre":  "MySqlConnector",
+                            "descripcion":  "Pieza por debajo de Pomelo que habla con MariaDB. Se fija una versión corregida porque la que trae Pomelo 9 tiene un fallo de seguridad conocido. Licencia MIT.",
+                            "instalada":  "2.6.1",
+                            "ultima":  "3.0.0",
+                            "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "OpenCvSharp4",
                             "descripcion":  "Visión artificial (OpenCV): lee las muestras escaneadas, recorta la pieza del fondo del escáner y localiza cada muestra dentro del patrón con cualquier giro. Licencia Apache 2.0.",
                             "instalada":  "4.13.0.20260627",
-                            "ultima":  "4.13.0.20260627",
-                            "recomendacion":  "Al día"
+                            "ultima":  "4.13.0.20261107",
+                            "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "OpenCvSharp4.official.runtime.linux-x64",
                             "descripcion":  "Parte nativa de OpenCV para Linux: la que usa el servidor (Docker). Licencia Apache 2.0.",
                             "instalada":  "4.13.0.20260627",
-                            "ultima":  "4.13.0.20260627",
-                            "recomendacion":  "Al día"
+                            "ultima":  "4.13.0.20261107",
+                            "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "OpenCvSharp4.runtime.win",
                             "descripcion":  "Parte nativa de OpenCV para Windows. Solo se usa en el equipo de desarrollo. Licencia Apache 2.0.",
                             "instalada":  "4.13.0.20260627",
-                            "ultima":  "4.13.0.20260627",
-                            "recomendacion":  "Al día"
+                            "ultima":  "4.13.0.20261107",
+                            "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "PDFsharp-MigraDoc",
@@ -103,8 +117,8 @@
                             "nombre":  "Serilog.AspNetCore",
                             "descripcion":  "Escribe los registros de la carpeta log: errores (err-log) y seguridad (Log-Wys-Seg). Licencia Apache 2.0.",
                             "instalada":  "10.0.0",
-                            "ultima":  "10.0.0",
-                            "recomendacion":  "Al día"
+                            "ultima":  "11.0.0",
+                            "recomendacion":  "Recomendada"
                         },
                         {
                             "nombre":  "Serilog.Expressions",
@@ -117,7 +131,7 @@
                             "nombre":  "System.Security.Cryptography.Pkcs",
                             "descripcion":  "Firma y cifrado de documentos que usa PDFsharp por dentro. Se fija una versión corregida porque la que trae PDFsharp tiene fallos de seguridad conocidos. Licencia MIT.",
                             "instalada":  "10.0.13",
-                            "ultima":  "10.0.14",
+                            "ultima":  "11.0.0",
                             "recomendacion":  "Recomendada"
                         }
                     ]

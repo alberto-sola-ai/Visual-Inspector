@@ -8,7 +8,7 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <!-- Necesario para los formatos españoles (fechas, números, euros) -->
     <InvariantGlobalization>false</InvariantGlobalization>
-    <Version>0.20.2</Version>
+    <Version>0.23.0</Version>
   </PropertyGroup>
 
   <!-- La carpeta recursos/ (logo, fuentes, iconos, tema.css) viaja con la aplicación;
@@ -24,6 +24,9 @@
     <Content Include="doc\guia-usuario.md" CopyToPublishDirectory="PreserveNewest" />
     <Content Remove="log\**" />
     <None Remove="log\**" />
+    <!-- La clave de Google (wys-api-sheet/, se escriba como se escriba) es un secreto: nunca se copia al publicar -->
+    <Content Remove="wys-api-sheet\**;wys-api-Sheet\**" />
+    <None Remove="wys-api-sheet\**;wys-api-Sheet\**" />
     <!-- Las pruebas (carpeta test/, fuera de Git) son un proyecto aparte: la aplicación no las compila -->
     <Compile Remove="test\**" />
     <Content Remove="test\**" />
@@ -40,6 +43,10 @@
     <PackageReference Include="Markdig" Version="1.5.0" />
     <PackageReference Include="MiniExcel" Version="1.46.0" />
     <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
+    <!-- Pomelo 9 trae MySqlConnector 2.4.0, con un fallo de seguridad conocido (GHSA-473q-m89c-ghf8:
+         con SslMode VerifyCA/VerifyFull sin SslCa podía enviar la contraseña sin protección). No afecta
+         a esta configuración, pero se fuerza la versión corregida (decisión de Alberto, 24/11/2026). -->
+    <PackageReference Include="MySqlConnector" Version="2.6.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.21" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.21" PrivateAssets="all" />
@@ -61,6 +68,12 @@
     <PackageReference Include="OpenCvSharp4" Version="4.13.0.20260627" />
     <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.13.0.20260627" />
     <PackageReference Include="OpenCvSharp4.official.runtime.linux-x64" Version="4.13.0.20260627" />
+  </ItemGroup>
+
+  <!-- Hoja de planificación de producción en Google Sheets: se lee con una cuenta de servicio
+       de solo lectura (Google.Apis.Sheets.v4, Apache 2.0) -->
+  <ItemGroup>
+    <PackageReference Include="Google.Apis.Sheets.v4" Version="1.78.0.4330" />
   </ItemGroup>
 
   <!-- Informe de fabricación en PDF (PDFsharp/MigraDoc).

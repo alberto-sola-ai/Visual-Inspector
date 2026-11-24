@@ -57,8 +57,31 @@ Un autocontrol son tres pasos: crearlo, cargar los archivos y validar las difere
 ### Paso 1. Crear el autocontrol
 
 1. Entra en **Autocontroles** y pulsa **Nuevo Autocontrol**.
-2. Elige la orden. Arriba salen las **órdenes de fabricación abiertas**: pulsa una y se rellenan
-   solas la orden y la línea. Si el último control de una orden fue hace 4 horas o más, sale
+2. Elige la orden. Arriba sale la **Planificación de producción**, con una columna por línea
+   (Línea 1, Línea 2… todas en la misma fila). En cada línea ves:
+   - **En verde**, la orden que está cargada ahora en la máquina, con una barra que se va llenando
+     según los tubos **fabricados** sobre la **cantidad** de la orden, y los **pendientes** (solo
+     informativos).
+   - Debajo, con el borde azul, las órdenes de esa línea que **siguen abiertas** en Visual
+     Inspector y hay que cerrar (ver «Órdenes abiertas pendientes de cerrar»).
+   - Al pie, **Siguientes (n)**: despliégalo para ver las órdenes que vienen detrás, en el orden en
+     que se fabricarán. También puedes elegir una de ellas.
+   - En las órdenes en verde y en las abiertas pone **cuántos autocontroles lleva**, cuánto hace del
+     último y cuál toca ahora (por ejemplo **RPI 3**).
+   - Cada orden muestra su número (**OF:** 1000064262), debajo su **especialidad** (por ejemplo
+     E2201359, solo como información) y su descripción.
+   - Arriba a la derecha hay una pequeña **leyenda** que explica cada color.
+   - Las órdenes que **ya tienen autocontroles** salen con el fondo **amarillo**. La de la máquina
+     conserva el borde verde a la izquierda, y las abiertas, el azul.
+   - Pulsa una orden y se rellenan solas la orden y la línea. La orden elegida se marca **en rojo**.
+   - Arriba se indica de cuándo son los datos de producción y cuándo se leyeron. La aplicación los
+     lee sola cada 15 minutos (lo pone junto a la hora de lectura) y la pantalla se pone al día sola
+     cada minuto; si quieres los últimos, pulsa **Actualizar ahora**.
+   - Si sale el aviso «No hay conexión con la planificación», ves la última que se leyó: comprueba
+     que la orden es la correcta y elige la línea a mano.
+
+   Si la planificación no está disponible, en su lugar salen las **órdenes de fabricación
+   abiertas**: pulsa una y se rellenan solas la orden y la línea. Si el último control de una orden fue hace 4 horas o más, sale
    destacada en amarillo porque ya toca otro. Lo mismo ves en la lista de **Autocontroles**: una columna
    **Tiempo AC** (tiempo desde el último autocontrol) dice cuánto hace del último autocontrol de cada
    orden en fabricación (por ejemplo `03 h : 50 min`; en rojo desde las 4 horas) y, delante del número de la orden, aparece un
@@ -67,11 +90,24 @@ Un autocontrol son tres pasos: crearlo, cargar los archivos y validar las difere
    finalizadas ni en las que aún no tienen ninguno registrado. La lista se actualiza sola cada minuto.
    Las columnas van en este orden: Línea, Orden de fabricación (con el icono delante), Tiempo AC,
    Control, Fecha y hora, Estado, Resultado y Realizado por.
-3. Si es una orden nueva, escríbela: son **exactamente 10 cifras, solo números**. El campo ya trae
-   escrito el inicio habitual de las órdenes; añade el resto.
-4. Elige la **línea** (L1, L2…). Es obligatoria.
+3. Debajo de la planificación está la franja para crear el autocontrol, con la orden, las
+   observaciones y el botón **Crear autocontrol**. Se queda fija abajo aunque bajes por la pantalla.
+   Si prefieres, escribe la orden a mano en **Orden de fabricación**: son **exactamente 10 cifras, solo
+   números**. El campo ya trae escrito el inicio habitual de las órdenes; añade el resto.
+4. La **línea** normalmente no hay que elegirla: la pone la aplicación (la de la planificación o, si
+   la orden ya no está en ella, la de la orden abierta) y se ve en la columna de la orden y en la
+   ventana de confirmación. El campo **Línea** solo aparece en dos casos, y entonces es obligatorio:
+   - **Autocontrol fuera de planificación:** escribes a mano una orden que no está en la planificación
+     (ni en **Siguientes**) ni abierta. Sale el aviso «No está en la planificación ni abierta: elige la
+     línea…». Comprueba primero el número; si es correcto, elige la línea y sigue.
+   - **Sin conexión con la planificación** (sale el aviso «No hay conexión con la planificación»).
 5. Si quieres, escribe observaciones.
-6. Pulsa **Crear autocontrol**.
+6. Pulsa **Crear autocontrol**. Se abre una ventana con los datos del autocontrol (orden, descripción,
+   especialidad, línea, qué RPI será, fecha y hora, y las observaciones) para que los revises:
+   - **Continuar** crea el autocontrol.
+   - **Cancelar** cierra la ventana sin crear nada, para que corrijas lo que haga falta.
+   - Si se va a finalizar otra orden de la misma línea, la ventana lo avisa en rojo (ver «Finalizar
+     una orden»).
 
 La fecha y la hora las pone la aplicación. El número del autocontrol también: **RPI 1** es el inicial,
 y los siguientes son **RPI 2**, **RPI 3**… Puedes hacer uno cuando lo consideres necesario; se
@@ -86,6 +122,12 @@ Tienes tres huecos: **Patrón (PDF)**, **Muestra 1** y **Muestra 2**.
   estar en cualquier orientación.
 - Cada archivo puede pesar como máximo 50 MB.
 - Pulsa **Elegir archivo** en cada hueco. El explorador se abre en la última carpeta que usaste.
+- **Patrón desde la carpeta de patrones:** si la orden viene de la planificación, en el hueco del
+  patrón salen los PDF de la carpeta de patrones que llevan su especialidad sin la E (por ejemplo,
+  para E2201829, los que tienen 2201829 en el nombre). La versión más alta sale primero. Pulsa el que
+  corresponda y se carga solo. Si no es ninguno, usa **Elegir archivo** debajo.
+- Si la orden está fuera de planificación, o sale «No se ha podido leer la carpeta de patrones», elige
+  el patrón con **Elegir archivo**, como siempre.
 
 Los archivos **no se guardan** en la aplicación: se usan para comparar y se descartan al salir de
 la pantalla. Lo que queda guardado es una huella de cada archivo (para demostrar qué archivos se
@@ -232,10 +274,25 @@ autocontroles nuevos. Los autocontroles que estuvieran **sin registrar se borran
 porque ya no se podrían registrar; la ventana de confirmación te dice cuántos son.
 
 Una línea fabrica una orden a la vez: **al crear un autocontrol de una orden nueva en una línea que ya
-tiene otra orden en fabricación, la anterior se finaliza**. Al pulsar **Crear autocontrol** la
-aplicación te dice qué orden se finalizará (y cuántos autocontroles sin registrar se borrarán) y te
-pide que lo aceptes con **Sí, finalizar y crear el autocontrol**. Si pulsas **No, volver**, no se
-hace nada. Si la línea tenía más de una orden abierta, se finalizan todas.
+tiene otra orden en fabricación, la anterior se finaliza**. La pantalla te avisa antes, y al pulsar
+**Crear autocontrol** la ventana de confirmación te dice en rojo qué orden se finalizará (y cuántos
+autocontroles sin registrar se borrarán). Si pulsas **Continuar**, lo aceptas; si pulsas
+**Cancelar**, no se hace nada. Si la línea tenía más de una orden abierta, se finalizan todas.
+
+### Órdenes abiertas pendientes de cerrar
+
+En **Nuevo Autocontrol**, debajo de la orden en verde de cada línea, salen con el borde azul las
+órdenes de esa línea que **siguen abiertas** en Visual Inspector (tienen algún autocontrol y no
+están finalizadas) pero no son la que está en curso. Lo normal es que ya estén terminadas.
+
+Para cerrar una, pulsa **Finalizar orden** debajo de ella y confirma con **Sí, finalizar**. Pasa lo
+mismo que al finalizarla desde su ficha: ya no admite autocontroles nuevos y se borran los que
+estuvieran sin registrar. Si la orden sigue fabricándose, no la finalices: déjala como está. También
+puedes pulsarla para hacerle otro autocontrol.
+
+La aplicación nunca las cierra sola. El botón **Finalizar orden** solo sale si la orden tiene algún
+autocontrol registrado y si la planificación se ha leído bien hace poco, para no cerrar nada por
+error.
 
 ### Reabrir una orden
 
@@ -292,9 +349,26 @@ más útil para hacer tus propias tablas dinámicas. El CSV contiene solo ese de
 
 ## Preguntas frecuentes
 
+**No encuentro mi orden en la planificación de producción.**
+Mira también en **Siguientes** de su línea y pulsa **Actualizar ahora** por si acaba de cambiar.
+Si sigue sin salir, escríbela a mano en **Orden de fabricación** y elige la línea: queda como
+autocontrol fuera de planificación. Si crees que la planificación está mal, avisa a quien la prepara
+en producción.
+
+**No veo dónde elegir la línea.**
+Con la planificación disponible no hace falta: la línea la pone la aplicación según la planificación
+(o la de la orden abierta) y la ves en la ventana de confirmación. Solo se pide si escribes una orden
+que no está en la planificación ni abierta. Si crees que está mal, pulsa
+**Cancelar** y avisa a quien prepara la planificación en producción.
+
+**No sale la planificación de producción.**
+Puede que no se haya podido leer o que esté desactivada. Escribe la orden a mano, como siempre. Si
+pasa a menudo, avisa a IT.
+
 **No encuentro mi orden en la lista de órdenes abiertas.**
-Solo salen las órdenes que siguen en fabricación y ya tienen algún autocontrol. Si es nueva,
-escríbela a mano. Si estaba finalizada, pide a un administrador que la reabra.
+Esta lista sale cuando no hay planificación de producción. Solo muestra las órdenes que siguen en
+fabricación y ya tienen algún autocontrol. Si es nueva, escríbela a mano. Si estaba finalizada,
+pide a un administrador que la reabra.
 
 **Me dice que la orden está finalizada.**
 Ya no admite autocontroles nuevos. Pide a un administrador que la reabra.
