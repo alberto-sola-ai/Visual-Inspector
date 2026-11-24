@@ -1,6 +1,7 @@
 # Pruebas de seguridad
 
-Última ejecución: 26/10/2026 · Versión: 0.12.5 · Resultado: **86 de 86 correctas**
+Última ejecución: 24/11/2026 · Versión: 0.23.0 · Resultado: **167 de 167 correctas** (incluidas las
+de reglas de negocio, exportación, planificación y patrones; en la 0.12.5 eran 86)
 
 ## Qué es esto
 
@@ -22,6 +23,8 @@ aplicación.
 | No fiarse de lo que llega | Un archivo disfrazado (un programa con nombre de PDF), uno de más de 50 MB o un texto con trucos (inyección) se rechazan. La orden de fabricación siempre se comprueba completa en el servidor (10 cifras) y el inicio habitual de las órdenes solo admite cifras. La línea de fabricación es obligatoria y solo vale una de la lista. Las órdenes en fabricación que se sugieren solo las ve quien puede hacer autocontroles, y nunca salen las finalizadas ni las desactivadas | Bien |
 | Registros (logs) | Solo el administrador los lee, del más reciente al más antiguo, y cada consulta queda apuntada en el diario de seguridad | Bien |
 | Sin secretos (3.1) | La configuración no lleva contraseñas, y `.env`, `log/`, las claves y los archivos de clientes no se suben a GitHub | Bien |
+| Planificación de producción (Zero Trust) | Lo que llega de la hoja de Google no se da por bueno: las filas con una línea que no existe, una orden que no tiene 10 cifras, sin prioridad o repetida se descartan. Con conexión, la línea la decide el servidor y no la pantalla; sin conexión, se elige a mano | Bien |
+| Carpeta de patrones (Zero Trust) | Solo se enseñan los PDF de la especialidad de la orden, y solo se puede abrir uno de esa lista: pedir otro archivo de la carpeta o salirse de ella (`../`) se rechaza. Sin carpeta, no hay error. La ruta del parámetro debe ser completa | Bien |
 | Sin pistas (4.1) | El servidor no dice qué programa usa | Bien |
 | Detrás del proxy (Nginx Proxy Manager) | La aplicación solo se fía de las cabeceras del proxy indicado (IP real y https); las de cualquier otro equipo o con la configuración mal escrita se ignoran, así nadie puede falsear su IP en el diario | Bien |
 | Cabeceras del navegador (4.2) | El navegador solo carga lo de la propia aplicación y no deja meterla dentro de otra web | Bien |

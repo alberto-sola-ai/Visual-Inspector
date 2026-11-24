@@ -59,14 +59,30 @@ public sealed record IncidenciaInforme(
     ActuacionIncidencia? Actuaciones, int? MinutosParada, int? TubosRetenidos);
 
 /// <summary>
-/// Todo el informe de fabricación de una orden: cabecera, resumen, autocontroles e incidencias.
+/// Una diferencia que el operario validó como correcta, para el informe de fabricación: también
+/// forma parte de la trazabilidad (decisión de Alberto, 24/11/2026).
+/// </summary>
+public sealed record DiferenciaCorrectaInforme(
+    int NumeroControl, DateTime FechaControl, int Numero, MotivoDiferencia Motivo, bool EnMuestra1, bool EnMuestra2,
+    decimal AnchoMm, decimal AltoMm, string ValidadoPor, DateTime FechaValidacion, byte[] Recorte);
+
+/// <summary>
+/// Todo el informe de fabricación de una orden: cabecera, resumen, autocontroles, incidencias y
+/// diferencias validadas como correctas.
 /// </summary>
 /// <param name="EsProvisional">La orden aún no está finalizada: el informe puede cambiar.</param>
 public sealed record InformeFabricacion(
     FichaOrden Orden, bool EsProvisional, IReadOnlyList<string> VersionesPatron,
     int DiferenciasTotales, int Incidencias, int IncidenciasEnLasDos,
     IReadOnlyDictionary<MotivoDiferencia, int> IncidenciasPorMotivo,
-    IReadOnlyList<IncidenciaInforme> DetalleIncidencias, DateTime Generado, string GeneradoPor);
+    IReadOnlyList<IncidenciaInforme> DetalleIncidencias, IReadOnlyList<DiferenciaCorrectaInforme> DetalleCorrectas,
+    DateTime Generado, string GeneradoPor)
+{
+    /// <summary>
+    /// Cuántas diferencias validó el operario como correctas.
+    /// </summary>
+    public int Correctas => DetalleCorrectas.Count;
+}
 
 /// <summary>
 /// Gestiona las órdenes de fabricación: listarlas, ver su ficha, finalizarlas al terminar la
@@ -162,7 +178,16 @@ public sealed partial class ServicioOrdenes(
         orden.FinalizadaPor = await usuarioActual.ObtenerNombreAsync();
         // Los autocontroles sin registrar se borran en la misma operación
         var borrados = ServicioAutocontroles.BorrarSinRegistrar(datos, orden);
-        await datos.SaveChangesAsync();
+        try
+        {
+            await datos.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Otra persona ha tocado la orden a la vez (por ejemplo, la ha cerrado al crear un autocontrol
+            // en su línea): no se guarda nada y se avisa, en lugar de romper la pantalla
+            return "La orden ha cambiado mientras la finalizabas (quizá otra persona la ha cerrado). Vuelve a mirarla.";
+        }
 
         foreach (var borrado in borrados)
         {
@@ -232,12 +257,21 @@ public sealed partial class ServicioOrdenes(
                 d.AnchoMm, d.AltoMm, d.Comentario, d.CreadoPor, d.FechaCreacion, d.Recorte, d.Actuaciones, d.MinutosParada, d.TubosRetenidos))
             .ToList();
 
+        // Las validadas como correctas también quedan en el informe, con quién y cuándo y su recorte:
+        // la trazabilidad incluye lo que se dio por bueno, no solo las incidencias
+        var correctas = diferencias
+            .Where(d => d.Validacion == ValidacionDiferencia.Correcta)
+            .OrderBy(d => d.FechaControl).ThenBy(d => d.Numero)
+            .Select(d => new DiferenciaCorrectaInforme(d.NumeroControl, d.FechaControl, d.Numero, d.Motivo, d.EnMuestra1, d.EnMuestra2,
+                d.AnchoMm, d.AltoMm, d.CreadoPor, d.FechaCreacion, d.Recorte))
+            .ToList();
+
         var versiones = ficha.Autocontroles.Where(a => a.Cuenta).Select(a => a.VersionPatron).Where(v => v is not null).Distinct().Select(v => v!).ToList();
         var porMotivo = Enum.GetValues<MotivoDiferencia>().ToDictionary(m => m, m => incidencias.Count(i => i.Motivo == m));
 
         return new InformeFabricacion(ficha, ficha.Estado != EstadoOrden.Finalizada, versiones,
             diferencias.Count, incidencias.Count, incidencias.Count(i => i.EnMuestra1 && i.EnMuestra2),
-            porMotivo, incidencias, DateTime.Now, await usuarioActual.ObtenerNombreAsync());
+            porMotivo, incidencias, correctas, DateTime.Now, await usuarioActual.ObtenerNombreAsync());
     }
 
     /// <summary>

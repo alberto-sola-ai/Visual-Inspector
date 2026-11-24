@@ -39,13 +39,15 @@ public sealed record TramoARevisar(int ControlDesde, DateTime Desde, int Control
 /// <summary>
 /// Un autocontrol dentro del cuadro de mando de su orden.
 /// </summary>
+/// <param name="Correctas">Diferencias que el operario validó como correctas en ese control.</param>
 public sealed record ControlDelPanel(
     int Id, int NumeroControl, DateTime FechaControl, EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado,
-    int Incidencias, string? VersionPatron);
+    int Incidencias, string? VersionPatron, int Correctas);
 
 /// <summary>
 /// Las cifras de trazabilidad de una orden: lo que se enseña en su cuadro de mando.
 /// </summary>
+/// <param name="Correctas">Diferencias validadas como correctas en los autocontroles registrados.</param>
 public sealed record PanelTrazabilidad(
     int Id, string Codigo, string? Litografia, string? Linea, EstadoOrden Estado,
     DateTime Inicio, DateTime? FechaFin, string? FinalizadaPor,
@@ -57,7 +59,8 @@ public sealed record PanelTrazabilidad(
     ImpactoProductivo Impacto,
     IReadOnlyList<TramoARevisar> TramosARevisar,
     IReadOnlyList<ControlDelPanel> Controles,
-    IReadOnlyList<string> VersionesPatron)
+    IReadOnlyList<string> VersionesPatron,
+    int Correctas)
 {
     /// <summary>
     /// Porcentaje de incidencias cuya corrección se verificó, o null si no hubo incidencias.
@@ -97,7 +100,7 @@ public sealed partial class ServicioTrazabilidad(
     /// </summary>
     private sealed record DatosControl(
         int Id, int NumeroControl, DateTime FechaControl, EstadoAutocontrol Estado, ResultadoAutocontrol? Resultado,
-        string? VersionPatron, int Muestras, bool EsIntegro, IReadOnlyList<IncidenciaCalculo> Incidencias)
+        string? VersionPatron, int Muestras, bool EsIntegro, IReadOnlyList<IncidenciaCalculo> Incidencias, int Correctas)
     {
         public bool EstaRegistrado => Estado == EstadoAutocontrol.Registrado;
     }
@@ -177,8 +180,10 @@ public sealed partial class ServicioTrazabilidad(
             resumen.Incidencias, resumen.CorreccionesVerificadas, resumen.ControlesIntegros,
             resumen.PorMotivo, resumen.Impacto, resumen.Tramos,
             controles.Select(c => new ControlDelPanel(c.Id, c.NumeroControl, c.FechaControl, c.Estado, c.Resultado,
-                c.Incidencias.Count, c.VersionPatron)).ToList(),
-            versiones);
+                c.Incidencias.Count, c.VersionPatron, c.Correctas)).ToList(),
+            versiones,
+            // Lo que se dio por bueno también es trazabilidad; cuenta igual que las incidencias, en los registrados
+            controles.Where(c => c.EstaRegistrado).Sum(c => c.Correctas));
     }
 
     /// <summary>
@@ -205,13 +210,15 @@ public sealed partial class ServicioTrazabilidad(
                     && a.RegistradoPor != null && a.RegistradoPor != ""
                     && a.FechaRegistro != null,
                 Incidencias = a.Diferencias.Where(d => d.Validacion == ValidacionDiferencia.Incidencia)
-                    .Select(d => new { d.Motivo, d.Actuaciones, d.MinutosParada, d.TubosRetenidos }).ToList()
+                    .Select(d => new { d.Motivo, d.Actuaciones, d.MinutosParada, d.TubosRetenidos }).ToList(),
+                Correctas = a.Diferencias.Count(d => d.Validacion == ValidacionDiferencia.Correcta)
             })
             .ToListAsync();
 
         return filas.Select(f => (f.OrdenFabricacionId, new DatosControl(f.Id, f.NumeroControl, f.FechaControl, f.Estado, f.Resultado,
             f.VersionPatron, (f.Muestra1 ? 1 : 0) + (f.Muestra2 ? 1 : 0), f.EsIntegro,
-            f.Incidencias.Select(i => new IncidenciaCalculo(i.Motivo, i.Actuaciones, i.MinutosParada, i.TubosRetenidos)).ToList()))).ToList();
+            f.Incidencias.Select(i => new IncidenciaCalculo(i.Motivo, i.Actuaciones, i.MinutosParada, i.TubosRetenidos)).ToList(),
+            f.Correctas))).ToList();
     }
 
     /// <summary>

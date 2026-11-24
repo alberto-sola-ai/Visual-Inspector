@@ -86,6 +86,7 @@ public sealed class GeneradorInformePdf
         Resumen(seccion, informe);
         Autocontroles(seccion, informe);
         Incidencias(seccion, informe);
+        Correctas(seccion, informe);
 
         var renderizador = new PdfDocumentRenderer { Document = documento };
         renderizador.RenderDocument();
@@ -219,11 +220,13 @@ public sealed class GeneradorInformePdf
             (o.Autocontroles.Count(a => a.EsRegistradoValido).ToString(), "autocontroles registrados", false),
             (o.Autocontroles.Count(a => a.Cuenta && a.Resultado == ResultadoAutocontrol.ConIncidencias).ToString(), "autocontroles con incidencias", false),
             (informe.DiferenciasTotales.ToString(), "diferencias revisadas", false),
+            (informe.Correctas.ToString(), "validadas como correctas", false),
             (informe.Incidencias.ToString(), "incidencias", informe.Incidencias > 0)
         };
 
+        // Cinco cajas en los 17 cm de ancho útil de la página
         var tabla = seccion.AddTable();
-        for (var i = 0; i < cajas.Length; i++) tabla.AddColumn(Unit.FromCentimeter(4.25));
+        for (var i = 0; i < cajas.Length; i++) tabla.AddColumn(Unit.FromCentimeter(3.4));
         var fila = tabla.AddRow();
         for (var i = 0; i < cajas.Length; i++)
         {
@@ -372,6 +375,45 @@ public sealed class GeneradorInformePdf
             var leyenda = seccion.AddParagraph("Patrón a la izquierda; muestra(s) a la derecha.");
             leyenda.Format.Font.Size = 7;
             leyenda.Format.Font.Color = GrisTexto_wys;
+        }
+    }
+
+    /// <summary>
+    /// Detalle de cada diferencia validada como correcta: en qué control salió, motivo, quién la dio por
+    /// buena y su recorte, un poco más pequeño que el de las incidencias para que el informe no crezca
+    /// demasiado. También es trazabilidad (decisión de Alberto, 24/11/2026).
+    /// </summary>
+    private static void Correctas(Section seccion, InformeFabricacion informe)
+    {
+        seccion.AddParagraph("Diferencias validadas como correctas", StyleNames.Heading1);
+        if (informe.DetalleCorrectas.Count == 0)
+        {
+            seccion.AddParagraph("No hubo diferencias validadas como correctas en esta orden.");
+            return;
+        }
+
+        foreach (var c in informe.DetalleCorrectas)
+        {
+            seccion.AddParagraph(
+                $"{ServicioAutocontroles.NombreControlConTiempo(c.NumeroControl, c.FechaControl, informe.Orden.FechaInicio)} ({c.FechaControl:dd/MM/yyyy HH:mm}) · diferencia n.º {c.Numero} · correcta",
+                StyleNames.Heading2);
+
+            var datos = seccion.AddParagraph();
+            datos.Format.KeepWithNext = true;
+            datos.AddFormattedText(NombreMotivo(c.Motivo), TextFormat.Bold);
+            datos.AddText(c.EnMuestra1 && c.EnMuestra2 ? " · en las dos muestras" : $" · solo en la muestra {(c.EnMuestra1 ? 1 : 2)}");
+            datos.AddText($" · zona de {c.AnchoMm:N0} × {c.AltoMm:N0} mm");
+
+            var validada = seccion.AddParagraph($"Validada como correcta por {c.ValidadoPor} el {c.FechaValidacion:dd/MM/yyyy HH:mm}");
+            validada.Format.Font.Color = GrisTexto_wys;
+            validada.Format.Font.Size = 8;
+            validada.Format.KeepWithNext = true;
+
+            var parrafoImagen = seccion.AddParagraph();
+            parrafoImagen.Format.SpaceBefore = Unit.FromPoint(3);
+            var imagen = parrafoImagen.AddImage("base64:" + Convert.ToBase64String(c.Recorte));
+            imagen.Width = Unit.FromCentimeter(10);
+            imagen.LockAspectRatio = true;
         }
     }
 

@@ -127,9 +127,14 @@
                                 }
                                 <span class="small">@TextoAutocontroles(abierta)</span>
                             </button>
-                            @* Finalizar solo si la hoja está al día (para no cerrar por un fallo de Google)
-                               y si la orden tiene algún autocontrol registrado (si no, no se puede) *@
-                            @if (planificacion.EsReciente(DateTime.Now) && abierta.Registrados > 0)
+                            @* Finalizar solo si la hoja está al día (para no cerrar por un fallo de Google),
+                               si la orden tiene algún autocontrol registrado (si no, no se puede) y si ya no
+                               está en la hoja (si sigue como «siguiente», se reprogramó y no ha terminado) *@
+                            @if (planificacion.Ordenes.Any(p => p.Codigo == abierta.Codigo))
+                            {
+                                <div class="small text-secondary mt-1">Sigue en la planificación: no se propone finalizarla.</div>
+                            }
+                            else if (planificacion.EsReciente(DateTime.Now) && abierta.Registrados > 0)
                             {
                                 @if (ordenAFinalizar == abierta.Id)
                                 {
@@ -409,6 +414,8 @@ else if (planificacion.EstaActiva)
     private bool estaActualizando;
     // Línea que pone la aplicación a la orden cuando hay planificación (o el aviso si no está en ella)
     private LineaAsignada? lineaAsignada;
+    // Orden para la que se pidió esa línea (para no arrastrar la línea elegida a mano a otra orden)
+    private string? codigoLineaAsignada;
     // Cada cuántos minutos se lee sola la planificación (para decirlo en pantalla)
     private int minutosLectura;
     // La pantalla abierta recoge cada minuto lo último que tiene el servidor (planificación y órdenes
@@ -525,8 +532,10 @@ else if (planificacion.EstaActiva)
     /// </summary>
     private async Task ActualizarLineaAsignadaAsync()
     {
-        var yaEraFueraDePlanificacion = lineaAsignada?.EsFueraDePlanificacion == true;
+        // La línea elegida a mano solo se respeta si es para la misma orden fuera de planificación
+        var yaEraFueraDePlanificacion = lineaAsignada?.EsFueraDePlanificacion == true && codigoLineaAsignada == codigoOrden;
         lineaAsignada = await ServicioAutocontroles.ObtenerLineaAsignadaAsync(codigoOrden);
+        codigoLineaAsignada = codigoOrden;
         if (!EsLineaDeLaPlanificacion)
         {
             return;
@@ -704,10 +713,14 @@ else if (planificacion.EstaActiva)
     /// Botón «Crear autocontrol»: antes de crear nada, abre la ventana con los datos del autocontrol
     /// para que el operario los revise y diga Continuar o Cancelar.
     /// </summary>
-    private void PedirConfirmacion()
+    private async Task PedirConfirmacion()
     {
         error = null;
-        esConfirmando = true;
+        // Se vuelve a calcular qué RPI será y qué se cerraría, por si otra persona ha creado o cerrado
+        // algo desde que se eligió la orden: la ventana tiene que enseñar lo que va a pasar de verdad
+        prevision = await ServicioAutocontroles.PrevisualizarControlAsync(codigoOrden);
+        await ActualizarAvisoCierreAsync();
+        esConfirmando = prevision is not null;
     }
 
     /// <summary>
@@ -719,18 +732,27 @@ else if (planificacion.EstaActiva)
     {
         error = null;
         estaOcupado = true;
-        var resultado = await ServicioAutocontroles.CrearAsync(codigoOrden, linea, observaciones, aceptaCierre: ordenesACerrar.Count > 0);
-        if (resultado.Id is not null)
+        try
         {
-            Navegacion.NavigateTo($"autocontroles/{resultado.Id}");
-            return;
-        }
+            // Se mandan las órdenes que la ventana dijo que se finalizarían: el servidor solo cierra esas
+            var resultado = await ServicioAutocontroles.CrearAsync(codigoOrden, linea, observaciones,
+                aceptaCierre: ordenesACerrar.Count > 0, cierresVistos: ordenesACerrar.Select(o => o.Codigo).ToList());
+            if (resultado.Id is not null)
+            {
+                Navegacion.NavigateTo($"autocontroles/{resultado.Id}");
+                return;
+            }
 
-        error = resultado.Error;
-        // Si algo ha cambiado (por ejemplo otra persona abrió una orden en la línea), se cierra la
-        // ventana y se vuelve a mirar qué se finalizaría, para que el operario lo revise de nuevo
-        await ActualizarAvisoCierreAsync();
-        estaOcupado = false;
+            error = resultado.Error;
+            // Si algo ha cambiado (la planificación, o otra persona abrió una orden en la línea), se cierra
+            // la ventana y se vuelve a mirar la línea y qué se finalizaría, para que el operario lo revise
+            await ActualizarLineaAsignadaAsync();
+            await ActualizarAvisoCierreAsync();
+        }
+        finally
+        {
+            estaOcupado = false;
+        }
     }
 
     /// <summary>

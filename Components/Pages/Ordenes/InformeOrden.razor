@@ -55,6 +55,7 @@ else
         <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@o.Autocontroles.Count(a => a.EsRegistradoValido)</div>autocontroles registrados</div>
         <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@o.Autocontroles.Count(a => a.Cuenta && a.Resultado == ResultadoAutocontrol.ConIncidencias)</div>autocontroles con incidencias</div>
         <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@informe.DiferenciasTotales</div>diferencias revisadas</div>
+        <div class="wys-caja wys-caja--azul"><div class="h3 text-white mb-0">@informe.Correctas</div>validadas como correctas</div>
         <div class="wys-caja @(informe.Incidencias > 0 ? "wys-caja--roja" : "wys-caja--azul")"><div class="h3 text-white mb-0">@informe.Incidencias</div>incidencias</div>
     </div>
     @if (informe.Incidencias > 0)
@@ -135,6 +136,34 @@ else
                 <p class="wys-trazabilidad mt-0">Validada por @i.ValidadoPor el @i.FechaValidacion.ToString("dd/MM/yyyy HH:mm")</p>
                 <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(i.Recorte)}")" class="border" style="max-width: 100%; max-height: 220px"
                      alt="Incidencia @i.Numero" />
+            </div>
+        }
+    }
+
+    @* Las diferencias que el operario dio por buenas también son trazabilidad: quién las validó, cuándo y
+       su recorte (decisión de Alberto, 24/11/2026) *@
+    <h2 class="h4 mt-4">Diferencias validadas como correctas</h2>
+    @if (informe.DetalleCorrectas.Count == 0)
+    {
+        <p>No hubo diferencias validadas como correctas en esta orden.</p>
+    }
+    else
+    {
+        @foreach (var c in informe.DetalleCorrectas)
+        {
+            <div class="border-bottom py-3">
+                <h3 class="h6">
+                    @ServicioAutocontroles.NombreControlConTiempo(c.NumeroControl, c.FechaControl, o.FechaInicio) (@c.FechaControl.ToString("dd/MM/yyyy HH:mm")) · diferencia n.º @c.Numero
+                    <span class="badge text-bg-success ms-1">Correcta</span>
+                </h3>
+                <p class="mb-1">
+                    <strong>@ComparacionAutocontrol.NombreMotivo(c.Motivo)</strong>
+                    · @(c.EnMuestra1 && c.EnMuestra2 ? "en las dos muestras" : $"solo en la muestra {(c.EnMuestra1 ? 1 : 2)}")
+                    · zona de @c.AnchoMm.ToString("N0") × @c.AltoMm.ToString("N0") mm
+                </p>
+                <p class="wys-trazabilidad mt-0">Validada como correcta por @c.ValidadoPor el @c.FechaValidacion.ToString("dd/MM/yyyy HH:mm")</p>
+                <img src="@($"data:image/jpeg;base64,{Convert.ToBase64String(c.Recorte)}")" class="border" style="max-width: 100%; max-height: 160px"
+                     alt="Diferencia correcta @c.Numero" />
             </div>
         }
     }

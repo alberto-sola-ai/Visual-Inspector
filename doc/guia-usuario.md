@@ -292,7 +292,8 @@ puedes pulsarla para hacerle otro autocontrol.
 
 La aplicación nunca las cierra sola. El botón **Finalizar orden** solo sale si la orden tiene algún
 autocontrol registrado y si la planificación se ha leído bien hace poco, para no cerrar nada por
-error.
+error. Si la orden sigue en la planificación como una de las **Siguientes** (por ejemplo, se empezó y
+se reprogramó), sale «Sigue en la planificación» y no se propone finalizarla.
 
 ### Reabrir una orden
 
@@ -302,8 +303,10 @@ Si una orden finalizada necesita más autocontroles, solo un administrador puede
 ## El informe de fabricación
 
 En la ficha de la orden, el botón de informe abre el **informe de fabricación**: datos de la
-orden, resumen, autocontroles e incidencias con su comentario, quién las validó y su recorte.
-Se puede descargar en **PDF**.
+orden, resumen, autocontroles, incidencias con su comentario, quién las validó y su recorte, y
+las **diferencias validadas como correctas**, también con quién y cuándo las dio por buenas y su
+recorte. El resumen indica cuántas diferencias se revisaron, cuántas fueron correctas y cuántas
+incidencias. Se puede descargar en **PDF**, con los mismos apartados.
 
 Mientras la orden no está finalizada, el informe sale marcado como **PROVISIONAL**.
 
@@ -311,7 +314,9 @@ Mientras la orden no está finalizada, el informe sale marcado como **PROVISIONA
 
 En **Calidad → Trazabilidad** ves las órdenes cerradas. Al elegir una, aparece su cuadro de
 **Calidad de impresión**: autocontroles completados, muestras escaneadas, incidencias detectadas,
-correcciones verificadas, y dos barras (eficacia de corrección e integridad de autocontroles).
+correcciones verificadas, diferencias revisadas y validadas como correctas, y dos barras (eficacia
+de corrección e integridad de autocontroles). En la tabla de autocontroles se ven también las
+correctas y las incidencias de cada uno.
 
 Una incidencia se da por **corregida** si en el siguiente autocontrol registrado ya no se repite
 ese motivo.
@@ -354,6 +359,11 @@ Mira también en **Siguientes** de su línea y pulsa **Actualizar ahora** por si
 Si sigue sin salir, escríbela a mano en **Orden de fabricación** y elige la línea: queda como
 autocontrol fuera de planificación. Si crees que la planificación está mal, avisa a quien la prepara
 en producción.
+
+**Al pulsar Continuar sale «La planificación ha cambiado» o «Ha cambiado la situación de la línea».**
+Mientras tenías abierta la ventana de confirmación, cambió algo: la planificación movió la orden a
+otra línea, u otra persona abrió una orden en esa línea. No se ha creado ni cerrado nada. Revisa los
+datos y pulsa otra vez **Crear autocontrol**.
 
 **No veo dónde elegir la línea.**
 Con la planificación disponible no hace falta: la línea la pone la aplicación según la planificación

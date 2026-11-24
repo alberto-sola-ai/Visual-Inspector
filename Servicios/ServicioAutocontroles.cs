@@ -872,7 +872,11 @@ public sealed partial class ServicioAutocontroles(
     /// (<paramref name="aceptaCierre"/>): sin esa aceptación no se hace nada (decisiones de Alberto,
     /// 26/10/2026 y 30/10/2026). El servidor lo exige aunque la pantalla se haya saltado.
     /// </summary>
-    public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? linea, string? observaciones, bool aceptaCierre = false)
+    /// <param name="cierresVistos">Órdenes que el operario vio en la ventana de confirmación que se iban a
+    /// finalizar. Si se indican, solo se aceptan esas: si el servidor fuera a cerrar otras (porque la
+    /// planificación o la línea han cambiado mientras tanto), no se hace nada y se pide revisar.</param>
+    public async Task<ResultadoCreacion> CrearAsync(string? codigoOrden, string? linea, string? observaciones, bool aceptaCierre = false,
+        IReadOnlyCollection<string>? cierresVistos = null)
     {
         await autorizacion.ExigirPermisoAsync(Permisos.AutocontrolesRealizar_wys);
 
@@ -933,6 +937,12 @@ public sealed partial class ServicioAutocontroles(
                     var asignada = AsignarLinea(estadoPlanificacion, codigo, orden.Id == 0 ? null : orden.Linea, lineas);
                     if (asignada.Linea is not null)
                     {
+                        // Si la pantalla enseñó otra línea (la planificación ha cambiado mientras tanto), no se
+                        // crea nada: el operario tiene que ver la línea con la que se va a quedar
+                        if (lineaElegida is not null && !string.Equals(lineaElegida, asignada.Linea, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return new(null, $"La planificación ha cambiado: esta orden está ahora en la línea {asignada.Linea}. Revísalo y vuelve a crear el autocontrol.");
+                        }
                         lineaElegida = asignada.Linea;
                     }
                     else if (lineaElegida is null)
@@ -950,6 +960,13 @@ public sealed partial class ServicioAutocontroles(
                 {
                     return new(null, $"La línea {lineaElegida} ya tiene en fabricación la orden {string.Join(", ", cerradas.Select(c => c.Codigo).Order())}. " +
                         "Hay que aceptar que se finalice para poder crear el autocontrol.");
+                }
+                // Solo se cierran las órdenes que el operario vio: si ahora saldrían otras, se para y se avisa
+                var noVistas = cierresVistos is null ? [] : cerradas.Where(c => !cierresVistos.Contains(c.Codigo)).Select(c => c.Codigo).Order().ToList();
+                if (noVistas.Count > 0)
+                {
+                    return new(null, $"Ha cambiado la situación de la línea {lineaElegida}: también se finalizaría la orden {string.Join(", ", noVistas)}. " +
+                        "Revísalo y vuelve a crear el autocontrol.");
                 }
 
                 // La orden se queda con la línea de su último autocontrol

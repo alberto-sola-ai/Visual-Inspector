@@ -61,6 +61,9 @@ public sealed class ServicioPlanificacion(
             return;
         }
 
+        // Solo se marca un fallo de lectura si de verdad se llegó a pedir la hoja: un fallo antes (por
+        // ejemplo, al leer los ajustes) no debe hacer parecer activa una planificación apagada
+        var seLlegoALeer = false;
         try
         {
             _ultimoIntento = DateTime.Now;
@@ -89,11 +92,22 @@ public sealed class ServicioPlanificacion(
                 await parametros.ObtenerValorAsync(ServicioParametros.Lineas_wys, ServicioParametros.LineasIniciales_wys));
             var prefijo = (await parametros.ObtenerValorAsync(ServicioParametros.PrefijoOrden_wys, ServicioParametros.PrefijoOrdenInicial_wys)).Trim();
 
+            seLlegoALeer = true;
             var filas = await LectorHojaGoogle.LeerAsync(rutaClave, idHoja, pestana, cancelacion);
             var resultado = ConversorPlanificacion.Convertir(filas, lineas, prefijo);
             if (!resultado.TieneCabecera)
             {
                 registro.LogWarning("Hoja de planificación: no se encuentran las columnas LINEA, PRIORIDAD y OF en la pestaña {Pestana}.", pestana);
+                MarcarFallo();
+                return;
+            }
+            // Una hoja sin ninguna orden válida no es una planificación de verdad (suele ser que producción
+            // la está recargando justo ahora): se sigue con la copia anterior en lugar de dar por terminadas
+            // todas las órdenes abiertas
+            if (resultado.Ordenes.Count == 0)
+            {
+                registro.LogWarning("Hoja de planificación: se ha leído sin ninguna orden válida ({Descartadas} filas descartadas). Se sigue con la copia anterior.",
+                    resultado.FilasDescartadas);
                 MarcarFallo();
                 return;
             }
@@ -114,7 +128,10 @@ public sealed class ServicioPlanificacion(
         catch (Exception error)
         {
             registro.LogWarning(error, "Hoja de planificación: no se ha podido leer. Se sigue mostrando la copia anterior.");
-            MarcarFallo();
+            if (seLlegoALeer)
+            {
+                MarcarFallo();
+            }
         }
         finally
         {

@@ -45,7 +45,8 @@ else
             </div>
         </header>
 
-        @* Cuatro cifras clave *@
+        @* Seis cifras clave. Las diferencias validadas como correctas también son trazabilidad
+           (decisión de Alberto, 24/11/2026) *@
         <div class="vi-cuadro__cifras">
             <div class="vi-cifra">
                 <div class="vi-cifra__valor">@panel.ControlesCompletados/@panel.ControlesIniciados</div>
@@ -62,6 +63,14 @@ else
             <div class="vi-cifra">
                 <div class="vi-cifra__valor">@panel.CorreccionesVerificadas/@panel.Incidencias</div>
                 <div class="vi-cifra__nombre">Correcciones verificadas</div>
+            </div>
+            <div class="vi-cifra">
+                <div class="vi-cifra__valor">@(panel.Correctas + panel.Incidencias)</div>
+                <div class="vi-cifra__nombre">Diferencias revisadas</div>
+            </div>
+            <div class="vi-cifra">
+                <div class="vi-cifra__valor">@panel.Correctas</div>
+                <div class="vi-cifra__nombre">Validadas como correctas</div>
             </div>
         </div>
 
@@ -181,6 +190,7 @@ else
                 <th>Fecha y hora</th>
                 <th>Versión del patrón</th>
                 <th>Resultado</th>
+                <th>Correctas</th>
                 <th>Incidencias</th>
             </tr>
         </thead>
@@ -208,6 +218,7 @@ else
                             @ServicioAutocontroles.NombreResultado(c.Resultado)
                         }
                     </td>
+                    <td>@c.Correctas</td>
                     <td>@c.Incidencias</td>
                 </tr>
             }

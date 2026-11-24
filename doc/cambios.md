@@ -1,5 +1,42 @@
 # Registro de cambios
 
+## 0.23.2 — 2026-11-24
+Correcciones de una revisión independiente del código de la planificación (decisión de Alberto, 24/11/2026:
+importantes y menores).
+
+- **Solo se cierran las órdenes que el operario vio.**
+  - Al pulsar Continuar, la pantalla envía qué órdenes avisó que se finalizarían.
+  - Si el servidor fuera a cerrar otras, porque la planificación cambió o alguien abrió otra orden en la línea
+    mientras la ventana estaba abierta, no crea ni cierra nada y pide revisarlo.
+  - Lo mismo si la planificación ha movido la orden a otra línea.
+- **Una lectura de la hoja sin ninguna orden válida cuenta como fallo.** Suele ser que producción la está
+  recargando. Se sigue con la copia anterior en lugar de dar por terminadas todas las órdenes abiertas.
+- **Finalizar a la vez que otra persona** ya no rompe la pantalla: sale un aviso.
+- Si falla la lectura de los ajustes, la planificación ya no aparece como activa estando apagada.
+- La línea elegida a mano para una orden fuera de planificación ya no se arrastra a otra orden.
+- La ventana de confirmación vuelve a calcular qué RPI será y qué se cerraría justo al abrirse.
+- Las órdenes abiertas que **siguen en la hoja** como «siguientes» ya no ofrecen Finalizar («Sigue en la
+  planificación»).
+- Crear el autocontrol desbloquea siempre el botón, aunque algo falle.
+- Prueba nueva (no se cierra una orden no vista): 169 de 169 correctas.
+- **Guía de usuario actualizada**: órdenes pendientes de cerrar y una pregunta frecuente.
+
+## 0.23.1 — 2026-11-24
+- **Las diferencias validadas como correctas entran en la trazabilidad** (decisión de Alberto, 24/11/2026). Ya se
+  guardaban todas en la base de datos (recorte, quién y cuándo), pero solo se enseñaban en la ficha de cada
+  autocontrol:
+  - **Informe de fabricación (pantalla y PDF):**
+    - caja nueva «validadas como correctas» en el resumen (en el PDF, cinco cajas);
+    - apartado nuevo «Diferencias validadas como correctas», con control, número, motivo, muestras, tamaño, quién y
+      cuándo la validó y su recorte (en el PDF, algo más pequeño que el de las incidencias).
+  - **Trazabilidad de la orden:** cifras nuevas «Diferencias revisadas» y «Validadas como correctas» (de los
+    autocontroles registrados, como las incidencias) y columna «Correctas» en la tabla de autocontroles.
+  - La exportación a Excel/CSV y la lista de trazabilidad no cambian.
+- Prueba nueva: el PDF se genera con las correctas y sus recortes; 168 de 168 correctas.
+- Documentación al día: `descripcion.md` (estaba en la 0.2.0), `pruebas-seguridad.md` (estaba en la 0.12.5) y
+  `README.md`.
+- **Guía de usuario actualizada**: «El informe de fabricación» y «Trazabilidad».
+
 ## Documentación — 2026-11-24
 - **`arquitectura.md`** al día (0.23.0):
   - Piezas y capas nuevas, carpetas `wys-api-sheet/` y `patrones/`.
