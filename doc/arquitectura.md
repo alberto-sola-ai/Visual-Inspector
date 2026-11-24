@@ -1,6 +1,6 @@
 # Arquitectura de Visual Inspector
 
-Última actualización: 22/10/2026 · Versión 0.6.0
+Última actualización: 24/11/2026 · Versión 0.23.0
 
 ## Resumen
 
@@ -16,6 +16,8 @@ desarrollo de la empresa (skill **wys-code**):
 | Registros | Serilog, ficheros diarios en `log/` |
 | Despliegue | Docker: la aplicación y MariaDB definidas en `docker-compose.yml` |
 | Ámbito | Interno WYS: la red de la empresa gestiona el cifrado (sin TLS en la aplicación) |
+| Planificación (0.21.0) | Hoja de Google Sheets de producción, leída con `Google.Apis.Sheets.v4` y una cuenta de servicio de solo lectura |
+| Patrones (0.23.0) | Carpeta de red de patrones PDF, montada en el servidor y prestada al contenedor en solo lectura |
 
 ## Capas
 
@@ -37,14 +39,20 @@ directamente: siempre pasan por un servicio, que es quien comprueba los permisos
  │              cabeceras, comprobación de permisos             │
  ├─────────────────────────────────────────────────────────────┤
  │ Servicios/   Lógica de negocio (usuarios, parámetros,        │
- │              versiones, autocontroles; próximamente visión)  │
+ │              autocontroles, órdenes, trazabilidad, impacto,  │
+ │              exportación, informes)                          │
+ │   Vision/         Archivos, localización, comparación y      │
+ │                   búsqueda del patrón en la carpeta          │
+ │   Planificacion/  Lectura del Google Sheet (en 2.º plano)    │
  ├─────────────────────────────────────────────────────────────┤
  │ Datos/       AppDbContext, entidades, trazabilidad,          │
  │              migraciones, inicialización                     │
  └─────────────────────────────────────────────────────────────┘
-        │  red interna de Docker (MariaDB no se publica fuera)
-        ▼
- MariaDB 11.4 (volumen datos-mariadb)
+        │  red interna de Docker            │ solo lectura
+        ▼  (MariaDB no se publica fuera)     ▼
+ MariaDB 11.4 (volumen datos-mariadb)   Google Sheets (internet, cada 15 min)
+                                        Carpeta de patrones (/app/patrones)
+                                        Clave de Google (/app/wys-api-sheet)
 ```
 
 ## Carpetas del proyecto
@@ -54,7 +62,9 @@ directamente: siempre pasan por un servicio, que es quien comprueba los permisos
 | `Components/` | Pantallas y piezas de pantalla Blazor |
 | `Datos/` | Base de datos: contexto, entidades, migraciones (`Datos/Migraciones/`) e inicialización |
 | `Seguridad/` | Permisos, cifrado de contraseñas, registro de seguridad, cabeceras |
-| `Servicios/` | Lógica de negocio |
+| `Servicios/` | Lógica de negocio; `Servicios/Vision/` (visión artificial y búsqueda del patrón) y `Servicios/Planificacion/` (hoja de Google) |
+| `wys-api-sheet/` | Clave de la cuenta de servicio de Google (secreto: fuera de Git, de la imagen de Docker y de la publicación) |
+| `patrones/` | Patrones de prueba en local; en Docker, carpeta de patrones por defecto si no se indica otra (fuera de Git y de la imagen) |
 | `recursos/` | Marca WYS (logo, fuentes, iconos, `tema.css`) e informe `versiones.json` |
 | `wwwroot/` | Bootstrap y estilos propios (`app.css`) |
 | `doc/` | Documentación técnica; `doc/master/` contiene las notas del Máster |
@@ -214,6 +224,46 @@ pequeño de cada diferencia como evidencia para el informe.
 Si el patrón de un autocontrol tiene una litografía distinta de la de su orden, la aplicación
 avisa antes de comparar (posible patrón equivocado).
 
+## Integraciones externas (0.21.0 – 0.23.0)
+
+Las dos son **de solo lectura** y **opcionales**: si fallan, la aplicación sigue funcionando como
+antes (orden y línea escritas a mano, patrón elegido desde el PC) y el motivo va a `log/err-log`.
+
+### Planificación de producción (Google Sheets)
+
+```
+ ProcesoPlanificacion (2.º plano, cada MinutosLecturaPlanificacion)
+        │  LectorHojaGoogle: cuenta de servicio, solo lectura, 30 s máx.
+        ▼
+ ConversorPlanificacion: columnas por título, «LINEA 1» → L1, OF de 10 cifras,
+        │                 especialidad, hora de carga; descarta filas que no encajan
+        ▼
+ ServicioPlanificacion (una sola copia en memoria: EstadoPlanificacion)
+        │
+        ├─► ServicioAutocontroles: permiso, línea asignada (AsignarLinea), resumen de órdenes
+        │         └─► OrganizadorPlanificacion: por línea, en curso / por cerrar / siguientes
+        └─► Nuevo Autocontrol (la pantalla se refresca sola cada minuto)
+```
+
+- No se guarda en la base de datos: la fuente de verdad es la hoja. Si una lectura falla, se sigue
+  enseñando la última copia con un aviso.
+- **Conexión** = última lectura correcta y de menos de 2 horas (`EstadoPlanificacion.EsReciente`). Con
+  conexión, la línea la decide el servidor: la de la hoja o, si no está en ella, la de la orden abierta.
+  Una OF que no está en ninguno de los dos sitios es un autocontrol fuera de planificación y su línea
+  la elige el operario. Sin conexión, todo como antes.
+- Se guardan en la orden, y solo desde la hoja, la descripción (si no tenía) y la especialidad.
+- Detalle y puesta en marcha: [planificacion-google.md](planificacion-google.md).
+
+### Carpeta de patrones
+
+- `BuscadorPatrones` lee los nombres de los PDF de la carpeta, con un tiempo máximo de 10 s y sin
+  subcarpetas, y se queda con los que llevan la especialidad de la orden sin la E. Solo deja abrir un
+  nombre de esa lista (sin salir de la carpeta) y lo prepara igual que un archivo subido desde el PC.
+- Carpeta: parámetro `CarpetaPatrones` si tiene valor; si no, `Patrones:Carpeta` (en Docker
+  `/app/patrones`, prestada desde `PATRONES_CARPETA_SERVIDOR` del `.env`).
+- Desde Docker no se puede entrar como invitado en la carpeta de red: IT la monta en el servidor con
+  un usuario de solo lectura. Detalle: [patrones.md](patrones.md).
+
 ## Motor de visión (previsto)
 
 Irá en `Servicios/Vision/`, separado de las pantallas, para poder probarlo por su cuenta.
@@ -311,6 +361,11 @@ rechazo.
 | Sin borrado de registros | Propuesto por Alberto y descartado (23/10/2026): borrar el diario de seguridad permitiría borrar el rastro; los diarios se borran solos (errores a los 30 días, seguridad a los 90) |
 | Línea de fabricación en la orden | Decisión de Alberto (23/10/2026): obligatoria al crear cada autocontrol, viene elegida la del último y la orden se queda con ella. Lista de líneas en el parámetro `Lineas`. Para los futuros KPI de eficiencia operativa |
 | Registros desde la aplicación | Decisión de Alberto (23/10/2026): el administrador elige el diario (errores o seguridad) y el día (`Servicios/ServicioRegistros.cs`). Solo lectura; como mucho los 1.000 apuntes más recientes; cada consulta se apunta en `Log-Wys-Seg` |
+| Planificación desde Google Sheets | Decisión de Alberto (24/11/2026): cuenta de servicio de solo lectura con la clave como archivo prestado al contenedor (no como variable), lectura cada 15 minutos más «Actualizar ahora», copia en memoria sin tabla nueva. El estado sale de la prioridad (1 = en curso), no de la columna ESTADO |
+| Línea según la planificación | Decisión de Alberto (24/11/2026): con conexión, la línea no se elige ni se enseña; solo para un autocontrol fuera de planificación o sin conexión. Las órdenes nunca se cierran solas por no estar en la hoja: se propone finalizarlas |
+| Confirmación al crear | Decisión de Alberto (24/11/2026): ventana con todos los datos, Continuar / Cancelar; si se va a finalizar otra orden de la línea, se dice ahí |
+| Patrón por especialidad | Decisión de Alberto (24/11/2026): el navegador no permite filtrar su explorador por nombre, así que la lista la prepara el servidor leyendo la carpeta de red. Se descartó que la aplicación hable directamente con la carpeta de Windows (SMB): la monta IT en el servidor |
+| MySqlConnector 2.6.1 forzado | Decisión de Alberto (24/11/2026): Pomelo 9 trae la 2.4.0 con un fallo conocido (GHSA-473q-m89c-ghf8) que no afectaba a esta configuración |
 
 ## Próximos pasos
 
@@ -325,3 +380,8 @@ En el orden del principio de desarrollo del MVP (cada paso, solo cuando el anter
 5. ~~Comparaciones y lista de posibles diferencias, con su recorte.~~ Hecho (0.5.0).
 6. ~~Formulario de validación (correcta / incidencia + comentario) y registro del autocontrol.~~ Hecho (0.6.0).
 7. ~~Finalizar la orden e informe de fabricación (pantalla + PDF con marca WYS).~~ Hecho (0.7.0).
+8. ~~Elegir la orden desde la planificación de producción y el patrón por especialidad.~~ Hecho (0.21.0 – 0.23.0).
+9. Puesta en producción de las integraciones: clave de Google en `wys-api-sheet/` del servidor, carpeta
+   de patrones montada por IT y `PATRONES_CARPETA_SERVIDOR` en el `.env` (recordatorio en `.env.example`).
+10. Repositorio privado (pendiente, decisión de Alberto 24/11/2026): hoy es público y lleva en
+    `appsettings.json` el identificador del Google Sheet.

@@ -1,5 +1,20 @@
 # Registro de cambios
 
+## Documentación — 2026-11-24
+- **`arquitectura.md`** al día (0.23.0):
+  - Piezas y capas nuevas, carpetas `wys-api-sheet/` y `patrones/`.
+  - Apartado nuevo «Integraciones externas», con el flujo de la planificación y de la carpeta de patrones.
+  - Decisiones del 24/11/2026 y próximos pasos: puesta en producción y repositorio privado.
+- **`guia-master.md`** al día hasta la 0.23.0:
+  - Cifras actuales: 24 commits, 167 pruebas y 12 migraciones.
+  - Mejoras y cronología, ejemplos de prompts y malentendidos de esta etapa.
+  - Bibliotecas nuevas, Docker con los secretos prestados y la carpeta de red.
+  - El incidente de la clave contado tal cual, lecciones nuevas, próximos pasos y glosario.
+  - Se corrige que el repositorio es **público** (pasará a privado).
+- **`CLAUDE.md`** del proyecto: las dos integraciones externas y la regla de no subir datos internos mientras el
+  repositorio sea público.
+- **Carpeta de la clave** renombrada a `wys-api-sheet` (minúsculas), como espera Linux.
+
 ## 0.23.0 — 2026-11-24
 - **Patrón desde la carpeta de patrones, filtrado por especialidad** (decisiones de Alberto, 24/11/2026): al cargar
   los archivos del autocontrol, el hueco **Patrón (PDF)** enseña los PDF de la carpeta de red de patrones que

@@ -23,6 +23,15 @@ Este proyecto sigue las normas de desarrollo de Witte y Solá.
   TLS ni certificados). En producción, Nginx Proxy Manager pone el dominio y el certificado
   delante de la aplicación (`USAR_CABECERAS_PROXY` y `PROXY_CONFIABLE` en el `.env`).
 - **Tecnología:** C# / .NET 10 · Blazor Server · MariaDB 11.4 · Docker.
+- **Integraciones externas (solo lectura, opcionales: si fallan, la app sigue como antes):**
+  - *Planificación de producción en Google Sheets* (desde 0.21.0): cuenta de servicio de solo lectura;
+    su clave es un archivo `.json` en `wys-api-sheet/` (secreto: fuera de Git, de la imagen de Docker y
+    de la publicación; nunca leer ni mostrar su contenido). Detalle en `doc/planificacion-google.md`.
+  - *Carpeta de red de patrones PDF* (desde 0.23.0): se busca el patrón por la especialidad de la
+    orden. En Docker la monta IT en el servidor (`PATRONES_CARPETA_SERVIDOR` en `.env`); la app no
+    puede abrir rutas `\\servidor\…` desde Linux. Detalle en `doc/patrones.md`.
+  - El repositorio de GitHub es público (pasará a privado): no escribir IPs, rutas de red, correos
+    de cuentas de servicio ni identificadores internos en archivos que se suben.
 - **Excepciones a las normas WYS:**
   - *Temporal (21/10/2026):* la capa de datos usa Entity Framework 9 + Pomelo 9 sobre .NET 10,
     porque Pomelo aún no tiene versión para Entity Framework 10. Cuando salga Pomelo 10, subir

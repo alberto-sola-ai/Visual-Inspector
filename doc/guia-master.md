@@ -4,7 +4,7 @@ Documento de apoyo para el Máster de Inteligencia Artificial. Recoge cómo se h
 Visual Inspector desde el primer día, con una IA como copiloto de programación, y sirve de base
 para pasarlo a un documento formal (memoria del TFM, presentación…).
 
-Periodo descrito: del 19/10/2026 (primer commit) al 30/10/2026 (versión 0.20.2). Cada tema tiene además su capítulo en [[03-preparacion-entorno]], [[04-primer-prototipo]], [[05-integracion-ia]], [[06-base-de-datos]], [[07-testing]], [[08-mejoras]] y [[09-conclusiones]].
+Periodo descrito: del 19/10/2026 (primer commit) al 24/11/2026 (versión 0.23.0). Cada tema tiene además su capítulo en [[03-preparacion-entorno]], [[04-primer-prototipo]], [[05-integracion-ia]], [[06-base-de-datos]], [[07-testing]], [[08-mejoras]] y [[09-conclusiones]].
 
 ---
 
@@ -13,15 +13,16 @@ Periodo descrito: del 19/10/2026 (primer commit) al 30/10/2026 (versión 0.20.2)
 | Concepto | Valor |
 |---|---|
 | Nombre | Visual Inspector |
-| Qué hace | Ayuda al autocontrol visual de la impresión de tubos de aluminio: compara el patrón gráfico aprobado por el cliente (PDF) con las dos muestras escaneadas, señala las diferencias, el operario las valida y queda todo registrado con un informe de fabricación en PDF |
+| Qué hace | Ayuda al autocontrol visual de la impresión de tubos de aluminio: compara el patrón gráfico aprobado por el cliente (PDF) con las dos muestras escaneadas, señala las diferencias, el operario las valida y queda todo registrado con un informe de fabricación en PDF. Toma la orden de la planificación de producción (Google Sheets) y busca el patrón en la carpeta de red por su especialidad |
 | Empresa | Witte y Solà, S.A. (WYS) — fabricación de tubos de aluminio |
 | Ámbito | Aplicación interna de la red de WYS |
 | Tecnología | C# · .NET 10 · Blazor Server · MariaDB 11.4 · Docker · OpenCV |
 | Copiloto de IA | Claude Code (Anthropic) dentro de Visual Studio Code |
 | Organización del conocimiento | Bóveda de Obsidian «MasterIA» |
-| Versiones | De la 0.1.1 a la 0.20.2. 21 commits en GitHub (hasta la 0.19.20; la serie 0.20 aún no está subida). El repositorio es público |
-| Tamaño | 46 archivos C# (≈7.000 líneas), 57 pantallas Razor (≈5.700 líneas), 11 migraciones de base de datos |
-| Pruebas | 125 pruebas automáticas (seguridad, reglas de negocio y exportación), todas correctas |
+| Versiones | De la 0.1.1 a la 0.23.0. 24 commits en GitHub, todo subido. El repositorio es público (pasará a privado) |
+| Tamaño | 53 archivos C# (≈8.100 líneas, sin contar las migraciones), 57 pantallas Razor (≈6.300 líneas), 12 migraciones de base de datos |
+| Pruebas | 167 pruebas automáticas (seguridad, reglas de negocio, exportación, planificación y patrones), todas correctas |
+| Integraciones | Google Sheets (planificación de producción, solo lectura) y carpeta de red de patrones (solo lectura) |
 
 ---
 
@@ -91,6 +92,9 @@ Con el MVP terminado, Alberto fue probando la aplicación y pidiendo ajustes. Lo
 | 0.18.0 – 0.18.6 | Guía de usuario y ayuda dentro de la aplicación, aviso al cambiar de tolerancia y logo nuevo |
 | 0.19.0 – 0.19.20 | Una sola orden abierta por línea con aceptación, alertas de las cuatro horas, «RPI» en lugar de «Control» y ajustes de diseño |
 | 0.20.0 – 0.20.2 | Exportación a Excel y CSV de trazabilidad e impacto, y el icono de la aplicación sin caché |
+| 0.21.0 – 0.21.1 | Planificación de producción desde Google Sheets (cuenta de servicio de solo lectura, lectura cada 15 minutos) y corrección de seguridad de `MySqlConnector` |
+| 0.21.2 – 0.22.3 | Pantalla por líneas (en curso en verde con barra de fabricados, abiertas por cerrar, siguientes en desplegable, leyenda de colores, especialidad), la línea la pone la planificación, ventana de confirmación al crear, autocontrol fuera de planificación y refresco automático |
+| 0.23.0 | Patrón desde la carpeta de red filtrado por la especialidad de la orden, y parámetro para cambiar la carpeta |
 
 El detalle de cada versión está en [cambios.md](cambios.md), y las mejoras explicadas por temas en [[08-mejoras]].
 
@@ -104,6 +108,7 @@ El detalle de cada versión está en [cambios.md](cambios.md), y las mejoras exp
 | 23/10/2026 | Diseño, pruebas de seguridad, administración, línea de fabricación (0.10.2 → 0.12.2) |
 | 26/10/2026 | Trazabilidad, impacto productivo, modo nocturno, limpieza de datos y ayuda (0.12.3 → 0.18.4) |
 | 30/10/2026 | Una sola orden por línea, alertas, exportación a Excel y CSV y ajustes de diseño (0.18.5 → 0.20.2) |
+| 24/11/2026 | Integración con la planificación de producción (Google Sheets) y con la carpeta de patrones de la red, en una sola sesión (0.21.0 → 0.23.0) |
 
 ---
 
@@ -231,6 +236,10 @@ mensajes eran cortos y del día a día de la fábrica. La IA preguntaba lo que f
 | «Si existen autocontroles de una OF abierta… deberían salir las OF abiertas como sugerencia» | Lista de órdenes abiertas con un clic |
 | «Corrígelo e inclúyelo en el informe» | Corrección de los avisos de seguridad y actualización del informe |
 | «¿Cómo lo ves?» | La IA da su opinión razonada antes de tocar nada |
+| «En vez de introducir una orden de forma manual, la idea es seleccionarla desde un documento de Google Sheet… Revisa bien cómo podemos hacerlo y vamos viendo» | Modo plan: la IA revisó el código, preguntó cómo entrar en Google (cuenta de servicio), las columnas y los casos dudosos, y presentó un plan antes de programar |
+| «Para mejorar la estética… todo en la misma línea, colorear en verde la que está en curso, solo orden y descripción» | Rediseño visual en varias vueltas cortas, cada una probada y desplegada |
+| «¿Hay algo que tú veas para mejorar el aspecto gráfico?» | La IA propuso cinco mejoras ordenadas por impacto; el usuario eligió tres |
+| «Si no estuviera conectado al planning, solo debe salir el desplegable de línea» | La IA detectó un hueco (una orden nueva no estaría en una copia vieja) y ajustó la regla |
 
 ### 5.3 Patrones que funcionaron
 
@@ -253,6 +262,10 @@ Fueron muy instructivos, porque muestran los límites de comunicarse con una IA:
 | Inicio «10000» en la orden | Un inicio fijo que no se podía tocar | «No, lo que quiero es que el 10000 esté por defecto pero sea editable»: se cambió a un campo ya relleno |
 | «No veo el botón desactivar» | — | La IA revisó el código y explicó que estaba dentro de la ficha del usuario, no en el listado |
 | Menú junto al logo | Ambigüedad «a la derecha… junto al logo» | La IA dibujó un esquema en texto y preguntó antes de mover nada |
+| «La OF viene sin el 10000 delante» y, un minuto después, «No perdona, sí viene» | La IA preparó el completado del inicio | Se dejó como respaldo sin romper nada: con 10 cifras se usa tal cual |
+| «Fondo amarillo si la línea tiene autocontroles previos» | ¿La tarjeta, todas las tarjetas o toda la columna? | La IA preguntó con tres opciones antes de programar |
+| Poner en el parámetro la ruta de red `\\servidor\…` | El usuario esperaba que funcionara | La app corre en Docker (Linux) y no puede abrir rutas de Windows: se mejoró el mensaje para explicarlo y se documentó que IT monta la carpeta en el servidor |
+| Respuestas con «Other» que llegaban vacías | La IA recibía la opción, pero no el texto escrito | Volvió a preguntar indicando qué faltaba, en lugar de suponerlo |
 
 Lección: **cuando hay ambigüedad, un dibujo en texto o una tabla de opciones ahorra mucho
 trabajo**. La IA lo hacía antes de programar.
@@ -353,6 +366,8 @@ aplicación pueda mantenerla el equipo de IT. La visión artificial se hace igua
 | MiniExcel 1.46.0 | Escribir los archivos de Excel de las exportaciones | Apache 2.0 |
 | Markdig | Mostrar la guía de usuario (Markdown) en la pantalla de ayuda, sin HTML en bruto | BSD-2-Clause |
 | System.Security.Cryptography.Pkcs 10.0.13 | Forzada a una versión corregida (la que traía PDFsharp tenía fallos de seguridad conocidos) | MIT |
+| Google.Apis.Sheets.v4 1.78 | Leer la planificación de producción de Google Sheets con una cuenta de servicio de solo lectura | Apache 2.0 |
+| MySqlConnector 2.6.1 | Forzada a una versión corregida (la que traía Pomelo tenía un fallo conocido que no afectaba a esta configuración) | MIT |
 | xUnit + ASP.NET TestHost + EF InMemory | Pruebas automáticas (solo en el equipo, no van en la aplicación) | Apache 2.0 / MIT |
 
 **Criterio de licencias**: solo bibliotecas gratuitas. Un caso real: **PDFsharp desde la versión
@@ -369,7 +384,7 @@ de seguridad conocidos.
 | C# Dev Kit y C# (`ms-dotnettools.*`) | Programar en C# y .NET |
 | Container Tools (`ms-azuretools.vscode-containers`) | Ver y manejar los contenedores de Docker |
 | Docker Desktop | Ejecutar los contenedores en el PC |
-| Git + GitHub | Control de versiones (repositorio privado) |
+| Git + GitHub | Control de versiones (repositorio público; pasará a privado) |
 | Herramienta `dotnet-ef` | Crear las migraciones de la base de datos |
 | Microsoft Edge (modo *headless*) | Capturas automáticas de las pantallas para revisarlas |
 
@@ -421,6 +436,8 @@ docker compose up --build
         ├── Contenedor «app»      → Visual Inspector (.NET 10 sobre Ubuntu 24.04)
         │      puerto 8082 del PC → 8080 dentro
         │      volúmenes: registros-app (log/) · claves-app (sesiones)
+        │      prestadas en solo lectura: wys-api-sheet/ (clave de Google)
+        │                                 y la carpeta de patrones
         │
         └── Contenedor «mariadb»  → MariaDB 11.4
                SIN puerto hacia fuera: solo lo ve la aplicación
@@ -446,6 +463,13 @@ docker compose up --build
 - **Probar en Linux lo hecho en Windows**: el informe PDF se generó también dentro de un
   contenedor Linux para confirmar que las fuentes y el logo salían igual.
 - **Puerto**: se cambió del 8080 al 8082 en el PC para no chocar con otras aplicaciones.
+- **Secretos como archivos prestados**: la clave de Google no va en la imagen ni en una variable;
+  se presta al contenedor en solo lectura. Se comprobó que no quedaba dentro de la imagen.
+- **Carpeta de red desde Linux**: desde Docker no se pudo entrar en la carpeta de patrones como
+  invitado (en Windows se entra con el usuario de la sesión sin notarlo). Solución: que IT la monte en
+  el servidor con un usuario de solo lectura.
+- **Mayúsculas en los nombres**: la carpeta `wys-api-Sheet` funcionaba en Windows, pero en Linux no
+  habría coincidido con `wys-api-sheet`; se renombró y las reglas de exclusión aceptan las dos formas.
 
 ### 9.4 Comandos habituales
 
@@ -484,7 +508,7 @@ Al terminar cada cambio, la IA emitía una **Revisión de seguridad WYS** con el
 ### 10.2 Pruebas automáticas de seguridad
 
 Se creó un proyecto de pruebas (**xUnit**) en la carpeta `test/`, que se queda en el equipo:
-no se sube a GitHub ni entra en la aplicación. En la versión 0.12.5 eran **86 de 86 correctas**; hoy, con las pruebas de las reglas de negocio y de la exportación, son **125 pruebas, todas correctas**. Cómo se plantearon, qué encontraron y qué no se ha probado está en [[07-testing]].
+no se sube a GitHub ni entra en la aplicación. En la versión 0.12.5 eran **86 de 86 correctas**; en la 0.20.2, con las reglas de negocio y la exportación, 125; hoy (0.23.0), con la planificación y los patrones, son **167 pruebas, todas correctas**. Dos de ellas leen el Google Sheet y la carpeta de red reales si están disponibles desde el equipo. Cómo se plantearon, qué encontraron y qué no se ha probado está en [[07-testing]].
 
 | Qué se prueba | Ejemplos |
 |---|---|
@@ -494,6 +518,7 @@ no se sube a GitHub ni entra en la aplicación. En la versión 0.12.5 eran **86 
 | Configuración | Sin contraseñas en los archivos de configuración; `.env`, registros y archivos de clientes fuera de Git |
 | Aplicación en marcha (Docker) | Sin entrar, todo manda a la entrada; un formulario falso desde otra web se rechaza; la base de datos no se alcanza desde fuera |
 | Funciones nuevas | Línea de fabricación solo de la lista; registros solo para el administrador; órdenes abiertas solo para quien hace autocontroles |
+| Planificación y patrones | Filas de la hoja que no encajan se descartan; «LINEA 1» → L1; sin conexión la línea se elige a mano; el patrón solo se abre si está en la lista filtrada (no se puede salir de la carpeta); la búsqueda por códigos se traduce a un `IN (…)` normal en MariaDB |
 
 **Las pruebas encontraron dos fallos reales**, que se corrigieron:
 
@@ -528,6 +553,18 @@ Detalle en [pruebas-seguridad.md](pruebas-seguridad.md) y [seguridad.md](segurid
 | Borrar registros: **descartado** | Permitiría borrar el rastro; los diarios se borran solos a los 30 y 90 días |
 | Eliminar usuarios: **aplazado** | Basta con desactivarlos, que se puede deshacer |
 | PDFsharp fijado en 6.2.4 | Las versiones nuevas son AGPL |
+| Planificación en memoria, sin tabla | La fuente de verdad es la hoja de producción; si Google falla, se sigue con la última copia |
+| La línea la pone la planificación | Menos errores del operario; a mano solo sin conexión o fuera de planificación |
+| Las órdenes nunca se cierran solas por no estar en la hoja | Se proponen; decide el operario |
+| Patrón filtrado por el servidor | El navegador no deja filtrar su explorador por nombre |
+| Carpeta de red montada por IT, no SMB desde la app | Más sencillo y sin bibliotecas nuevas; un cambio de ruta pasa por IT |
+
+**Un incidente de seguridad, contado tal cual:** al revisar que no se subiera ningún secreto a
+GitHub, la búsqueda de la IA leyó también el archivo de la clave de Google y su contenido apareció en
+la conversación. No llegó a GitHub ni a ningún otro sitio. La IA lo dijo enseguida, explicó el riesgo
+(bajo: la clave solo permite leer esa hoja) y cómo renovar la clave, y el usuario decidió con esa
+información. Lección: **las búsquedas de secretos deben excluir las carpetas donde están los propios
+secretos**, y la IA también se equivoca, así que la transparencia es parte del trabajo.
 
 **Lecciones para el máster:**
 
@@ -542,6 +579,11 @@ Detalle en [pruebas-seguridad.md](pruebas-seguridad.md) y [seguridad.md](segurid
    pruebas son imprescindibles.
 6. **Saber cuándo decir «no se puede»** también es valioso: la IA explicó los límites del
    navegador y de la seguridad en lugar de forzar una solución mala.
+7. **Integrar con sistemas reales tiene sorpresas fuera del código**: permisos de Google, una
+   carpeta de red que pide usuario desde Linux, mayúsculas en nombres de carpeta… Probar contra los
+   sistemas reales (con pruebas que se saltan solas si no están disponibles) las sacó a la luz.
+8. **Diseñar para el fallo**: cada integración tiene su plan B (si Google o la carpeta fallan, la
+   aplicación sigue funcionando como antes), así la producción nunca se para por ellas.
 
 ---
 
@@ -551,8 +593,13 @@ Detalle en [pruebas-seguridad.md](pruebas-seguridad.md) y [seguridad.md](segurid
 - **Prueba completa con un operario** y archivos de producción, y probar la limpieza de datos contra una copia de la base de datos.
 - **Revisar la tolerancia** con más muestras de otros clientes y añadir pruebas automáticas al comparador.
 - **Filtros** de la lista de autocontroles (solo con alerta, por línea, por estado de la orden y por resultado) y el cliente en la orden para analizar el impacto por cliente.
-- Desplegar en un servidor de WYS (pendiente de que IT defina el servidor).
-- Actualizar a Entity Framework 10 cuando salga Pomelo 10, y revisar el aviso de seguridad de `MySqlConnector`.
+- Desplegar en un servidor de WYS (pendiente de que IT defina el servidor), con la clave de Google y
+  la carpeta de patrones montada (recordatorio en `.env.example`).
+- Probar en pantalla, con un operario, la planificación por líneas, la ventana de confirmación y el
+  patrón por especialidad.
+- Pasar el repositorio de GitHub a privado.
+- Actualizar a Entity Framework 10 cuando salga Pomelo 10. (El aviso de `MySqlConnector` ya se
+  resolvió en la 0.21.1.)
 
 El detalle está en [[08-mejoras]] y [[09-conclusiones]].
 
@@ -567,7 +614,10 @@ El detalle está en [[08-mejoras]] y [[09-conclusiones]].
 | Litografía | Código del diseño (L + 7 cifras), por ejemplo L2201989 |
 | OF | Orden de fabricación (10 cifras) |
 | RPI | AutoControl Retenido Para Inspección. Los autocontroles de una orden se numeran RPI 1 (inicial), RPI 2… |
-| Línea | Línea de fabricación de la fábrica (L1 … L7) |
+| Línea | Línea de fabricación de la fábrica (Línea 1 … Línea 7; en la hoja, «LINEA 1») |
+| Planificación | Hoja de Google Sheets de producción con las órdenes de cada línea por prioridad; la de prioridad 1 es la que está en máquina |
+| Especialidad | Código del producto en la planificación (E + 7 cifras); el PDF del patrón lleva esas cifras en su nombre |
+| Cuenta de servicio | «Cuenta robot» de Google con su propia clave, que la aplicación usa para leer la hoja |
 | MVP | Producto mínimo viable |
 | Agente de IA | IA que no solo responde, sino que actúa: lee, escribe y ejecuta |
 | Skill | Paquete de instrucciones que la IA carga cuando la tarea lo necesita |
@@ -592,6 +642,8 @@ El detalle está en [[08-mejoras]] y [[09-conclusiones]].
 | Seguridad explicada en sencillo | `doc/seguridad.md` |
 | Pruebas de seguridad | `doc/pruebas-seguridad.md` y carpeta `test/` (solo en el equipo) |
 | Puesta en marcha (Docker) | `doc/puesta-en-marcha.md` |
+| Planificación desde Google Sheets | `doc/planificacion-google.md` |
+| Carpeta de patrones | `doc/patrones.md` |
 | Instrucciones para la IA | `CLAUDE.md` (proyecto y bóveda) |
 | Código | `Components/` (pantallas), `Servicios/` (lógica y visión), `Datos/` (base de datos), `Seguridad/` |
 | Docker | `Dockerfile`, `docker-compose.yml`, `.env.example` |
